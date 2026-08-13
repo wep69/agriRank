@@ -177,7 +177,8 @@ agri_pairs <- function(x, by = NULL, factor = NULL, method = c("wilcoxon", "cono
 #'   treatment factor is used; factorial cells are compared when necessary.
 #' @param adjust PMCMRplus p-value adjustment method.
 #' @export
-agri_conover <- function(x, by = NULL, factor = NULL, adjust = "holm") {
+agri_conover <- function(x, by = NULL, factor = NULL, adjust = "holm", cld = FALSE,
+                         alpha = 0.05) {
   if (!inherits(x, "agri_rank_fit")) .agri_stop("`x` must be an agri_rank_fit.")
   .require_pkg("PMCMRplus", "Conover multiple comparisons")
   if (inherits(x$engine, "agri_incomplete_wild")) .agri_stop("Conover comparisons are not defined for the native incomplete repeated-measures engine.")
@@ -220,6 +221,12 @@ agri_conover <- function(x, by = NULL, factor = NULL, adjust = "holm") {
       adj <- if (identical(adjust, "none")) raw else PMCMRplus::frdAllPairsConoverTest(y = ds[[y]], groups = grp, blocks = bl, p.adjust.method = adjust)
       tab <- .pmcmr_matrix_long(adj, stratum = st, blocked = TRUE)
       rawtab <- .pmcmr_matrix_long(raw, stratum = st, blocked = TRUE)
+      if (!nrow(tab)) {
+        # Perfectly concordant blocks leave the Friedman-type Conover statistic
+        # undefined, because the within-block residual variation is zero.
+        .agri_warn(sprintf("Stratum '%s': the Friedman-type Conover statistic is undefined because the block rankings agree perfectly. No pairwise comparison is reported for this stratum.", st))
+        next
+      }
       key <- paste(rawtab$group1, rawtab$group2, sep = "\r")
       tab$p_value <- rawtab$p_adjusted[match(paste(tab$group1, tab$group2, sep = "\r"), key)]
       tab$method <- "Conover all-pairs after Friedman-type ranking"
@@ -229,6 +236,12 @@ agri_conover <- function(x, by = NULL, factor = NULL, adjust = "holm") {
   if (!length(ans)) return(data.frame())
   out <- do.call(rbind, ans); rownames(out) <- NULL
   attr(out, "adjust") <- adjust
+  if (isTRUE(cld)) {
+    # Letters summarize the same adjusted p-values, computed within each
+    # stratum. They are an aid to reading the table, not a replacement for it.
+    attr(out, "cld") <- .cld_from_pairs(out, alpha = alpha)
+    attr(out, "cld_alpha") <- alpha
+  }
   out
 }
 
@@ -242,14 +255,39 @@ agri_contrast <- function(x, C, labels = NULL, B = NULL, seed = NULL, adjust = "
   .agri_stop("General user-defined contrasts are currently implemented for the native repeated wild-rank engine. Use the backend object for other engines.")
 }
 
+# Letters are only interpretable within a stratum: two treatments compared in
+# different simple-effect strata were never tested against each other, so a
+# single global display would invite a comparison the data do not support.
+.cld_from_pairs <- function(pr, alpha = 0.05) {
+  .require_pkg("multcompView", "compact letter displays")
+  pr <- as.data.frame(pr)
+  if (!all(c("group1", "group2") %in% names(pr)))
+    .agri_stop("CLD currently requires ordinary pairwise group comparisons.")
+  strata <- if ("stratum" %in% names(pr)) as.character(pr$stratum) else rep("all", nrow(pr))
+  out <- lapply(unique(strata), function(st) {
+    s <- pr[strata == st, , drop = FALSE]
+    pv <- s$p_adjusted %||% s$p_value
+    keep <- is.finite(pv)
+    if (!any(keep)) return(NULL)
+    pv <- pv[keep]
+    names(pv) <- paste(s$group1[keep], s$group2[keep], sep = "-")
+    lt <- multcompView::multcompLetters(pv, threshold = alpha)$Letters
+    data.frame(stratum = st, group = names(lt), letter = unname(lt),
+               stringsAsFactors = FALSE)
+  })
+  out <- do.call(rbind, out[!vapply(out, is.null, logical(1))])
+  if (is.null(out)) .agri_stop("No finite adjusted p-value is available for a letter display.")
+  if (all(out$stratum == "all")) out$stratum <- NULL
+  rownames(out) <- NULL
+  attr(out, "alpha") <- alpha
+  out
+}
+
 #' Compact letter display
 #' @export
 agri_cld <- function(x, adjust = "holm", alpha = 0.05, ...) {
-  .require_pkg("multcompView", "compact letter displays")
-  pr <- agri_pairs(x, adjust = adjust, ...)
-  if (!all(c("group1", "group2") %in% names(pr))) .agri_stop("CLD currently requires ordinary pairwise group comparisons.")
-  pv <- pr$p_adjusted %||% pr$p_value
-  names(pv) <- paste(pr$group1, pr$group2, sep = "-")
-  letters <- multcompView::multcompLetters(pv, threshold = alpha)$Letters
-  data.frame(group = names(letters), letter = unname(letters), stringsAsFactors = FALSE)
+  # Accept either a fitted model, in which case the pairwise table is computed
+  # here, or a table already produced by agri_pairs() or agri_conover().
+  pr <- if (is.data.frame(x)) x else agri_pairs(x, adjust = adjust, ...)
+  .cld_from_pairs(pr, alpha = alpha)
 }
