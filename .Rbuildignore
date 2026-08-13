@@ -7,3 +7,8 @@
 ^cran-comments\.md$
 ^\.git$
 ^\.gitignore$
+^data-raw$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^RELEASE_NOTES.*\.md$

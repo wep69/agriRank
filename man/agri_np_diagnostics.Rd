@@ -7,15 +7,22 @@
 \details{The diagnostics are descriptive. They should not be used as an automatic significance-driven model-selection rule.}
 \value{A list containing error metrics, residual summaries, residual-fitted rank association and method-specific details.}
 \examples{
-set.seed(32)
-d <- data.frame(dose = 1:40); d$y <- log1p(d$dose) + rnorm(40, 0, .15)
-# Example 1
-f1 <- agri_np_regression(y ~ dose, d, method = "smoothing_spline")
+data(agri_dose)
+
+# Example 1: smoothing spline
+f1 <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
 agri_np_diagnostics(f1)
-# Example 2
-f2 <- agri_np_regression(y ~ dose, d, method = "loess")
+# RMSE and MAE are in Mg/ha, the same unit as the response.
+
+# Example 2: LOESS on the same data, for comparison
+f2 <- agri_np_regression(yield ~ dose, agri_dose, method = "loess")
 agri_np_diagnostics(f2)
-# Example 3
-f3 <- agri_np_regression(y ~ dose, d, method = "isotonic", shape = "increasing")
+
+# Example 3: a monotone constraint, which this response violates beyond the
+# plateau. The diagnostics are descriptive: a larger residual error here is
+# evidence that the declared shape does not match the agronomy, not a licence
+# to select the engine by error alone.
+f3 <- agri_np_regression(yield ~ dose, agri_dose, method = "isotonic",
+                         shape = "increasing")
 agri_np_diagnostics(f3)
 }

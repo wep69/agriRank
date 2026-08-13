@@ -17,14 +17,22 @@ agri_np_optimum(object, predictor = NULL, objective = c("max",
 \details{This is a descriptive optimum of the chosen smoother. It is not an economic optimum and should not replace a prespecified mechanistic or parametric dose-response model when that model is scientifically required. A boundary flag is returned.}
 \value{One-row data frame with predictor, optimum, fitted response, objective and boundary indicator.}
 \examples{
-set.seed(35)
-d <- data.frame(N = seq(0, 240, length.out = 60));
-d$yield <- 4 + .08*d$N - .00022*d$N^2 + rnorm(60, 0, .6)
-f <- agri_np_regression(yield ~ N, d, method = "smoothing_spline")
-# Example 1
+data(agri_dose)
+f <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
+
+# Example 1: descriptive optimum over the observed nitrogen range
 agri_np_optimum(f)
-# Example 2
+
+# Example 2: restricted to an operationally feasible range
 agri_np_optimum(f, range = c(40, 220))
-# Example 3
+
+# Example 3: the minimum, useful when the response is a cost or a damage score
 agri_np_optimum(f, objective = "min")
+
+# Example 4: an optimum without uncertainty is not a recommendation.
+# Pair it with the bootstrap and report the interval, not only the point.
+b <- agri_np_bootstrap(f, B = 199, seed = 1)   # use B >= 999 in analysis
+opt <- agri_np_optimum(f)
+opt
+utils::head(b)
 }

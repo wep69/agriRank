@@ -26,12 +26,18 @@ Static figures should expose observed data and uncertainty whenever possible. `a
 
 ## `agri_plot()`: three examples
 
-```r
+```{r plot-data}
 x <- simulate_agri("crd", seed = 121)
 d <- agri_design(yield ~ treatment, x, design = "crd")
 fit <- agri_rank(d)
 agri_plot(d, type = "data")
+```
+
+```{r plot-effects}
 agri_plot(fit, type = "effects")
+```
+
+```{r plot-interaction}
 xf <- simulate_agri("factorial", seed = 122)
 df <- agri_design(yield ~ A * B, xf, design = "factorial")
 agri_plot(df, type = "interaction")
@@ -39,16 +45,24 @@ agri_plot(df, type = "interaction")
 
 Because the output is a `ggplot`, it can be extended:
 
-```r
+```{r plot-extended}
 agri_plot(fit) + ggplot2::labs(y = "Yield (Mg ha-1)") + ggplot2::theme_bw()
 ```
 
 ## `agri_interactive()`: three examples
 
-```r
-if (requireNamespace("plotly", quietly = TRUE)) agri_interactive(fit, "data")
-if (requireNamespace("plotly", quietly = TRUE)) agri_interactive(fit, "effects")
-if (requireNamespace("plotly", quietly = TRUE)) agri_interactive(df, "interaction")
+The chunk below builds the three widgets and reports their classes. The widgets
+themselves are not embedded: each one carries several megabytes of JavaScript,
+which would dominate the installed size of the package for no statistical gain.
+Print any of them in an interactive session to explore the graphic.
+
+```{r interactive-widgets}
+if (requireNamespace("plotly", quietly = TRUE)) {
+  w_data        <- agri_interactive(fit, "data")
+  w_effects     <- agri_interactive(fit, "effects")
+  w_interaction <- agri_interactive(df, "interaction")
+  vapply(list(w_data, w_effects, w_interaction), function(w) class(w)[1], character(1))
+}
 ```
 
 ## Figure design principles

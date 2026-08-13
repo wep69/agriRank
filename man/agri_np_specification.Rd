@@ -38,28 +38,33 @@ Hsiao C, Li Q, Racine JS (2007). A consistent model specification test with mixe
 Hayfield T, Racine JS (2008). Nonparametric Econometrics: The np Package. \emph{Journal of Statistical Software}, 27(5). doi:10.18637/jss.v027.i05.
 }
 \examples{
-# Example 1: test a linear fertilizer response
+# The candidate model must be fitted with x = TRUE, y = TRUE so that the
+# adapter can recover the design matrix and the response.
+# B = 19 keeps the examples fast. Use B >= 999 for any reported test.
+data(agri_dose)
+
+# Example 1: is a straight line enough for a fertilizer response?
 if (requireNamespace("np", quietly = TRUE)) {
-  set.seed(94)
-  d <- data.frame(dose = seq(0, 160, length.out = 35))
-  d$yield <- 5 + .06*d$dose - .00025*d$dose^2 + rnorm(35, 0, .4)
-  m1 <- lm(yield ~ dose, data = d, x = TRUE, y = TRUE)
+  m1 <- lm(yield ~ dose, data = agri_dose, x = TRUE, y = TRUE)
   agri_np_specification(m1, B = 19)
+  # A small p-value means the linear form is too restrictive: the data hold
+  # curvature that the straight line cannot represent.
 }
 
-# Example 2: assess a prespecified quadratic candidate
+# Example 2: and is the quadratic enough?
 if (requireNamespace("np", quietly = TRUE)) {
-  m2 <- lm(yield ~ dose + I(dose^2), data = d, x = TRUE, y = TRUE)
+  m2 <- lm(yield ~ dose + I(dose^2), data = agri_dose, x = TRUE, y = TRUE)
   agri_np_specification(m2, B = 19)
+  # These data plateau beyond 200 kg/ha, a shape no single quadratic
+  # reproduces, so rejection here is agronomically meaningful.
 }
 
-# Example 3: include an agronomic block as a nuisance predictor in the candidate
+# Example 3: with the agronomic block kept as a nuisance term
 if (requireNamespace("np", quietly = TRUE)) {
-  set.seed(95)
-  db <- expand.grid(block = factor(1:4), dose = seq(0, 140, length.out = 8))
-  db$yield <- 5 + .07*db$dose - .0003*db$dose^2 + as.numeric(db$block)/3 + rnorm(nrow(db), 0, .4)
-  mb <- lm(yield ~ block + dose + I(dose^2), data = db, x = TRUE, y = TRUE)
+  mb <- lm(yield ~ block + dose + I(dose^2), data = agri_dose, x = TRUE, y = TRUE)
   agri_np_specification(mb, B = 19)
+  # Failing to reject is not proof that the parametric form is correct; it
+  # only means this sample gives no evidence against it.
 }
 }
 \seealso{\code{\link{agri_np_regression}}, \code{\link{agri_np_significance}}, \code{\link{agri_np_diagnostics}}}

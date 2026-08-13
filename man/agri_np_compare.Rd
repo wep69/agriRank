@@ -19,15 +19,25 @@ agri_np_compare(formula, data, methods = c("smoothing_spline", "loess", "kernel"
 \details{When blocks are supplied, fold assignment is stratified within block so each block remains represented in training data. Results rank predictive error only and do not establish that one method has a more appropriate estimand or inferential null hypothesis.}
 \value{A data frame ordered by the requested error metric.}
 \examples{
-set.seed(33)
-d <- data.frame(x = seq(0, 12, length.out = 48)); d$y <- 3 + sin(d$x/2) + rnorm(48, 0, .3)
-# Example 1
-agri_np_compare(y ~ x, d, methods = c("smoothing_spline", "loess"), kfold = 4)
-# Example 2
-agri_np_compare(y ~ x, d, methods = c("smoothing_spline", "loess"), kfold = 4, metric = "MAE")
-# Example 3: stratified by agronomic block
-b <- transform(expand.grid(block = factor(1:4), x = seq(0, 10, length.out = 12)),
-               y = 4 + sin(x/2) + as.numeric(block)/5 + rnorm(48, 0, .25))
-if (requireNamespace("mgcv", quietly = TRUE))
-  agri_np_compare(y ~ x, b, methods = c("gam"), block = block, kfold = 3)
+# Cross-validation compares predictive error. It does not test a hypothesis and
+# must not be used to pick the engine with the smallest p-value.
+data(agri_dose)
+
+# Example 1: four engines on the nitrogen gradient, RMSE in Mg/ha
+if (requireNamespace("mgcv", quietly = TRUE)) {
+  agri_np_compare(yield ~ dose, agri_dose, kfold = 4, seed = 1,
+                  methods = c("smoothing_spline", "loess", "gam", "quantile"))
+}
+
+# Example 2: median absolute error, less sensitive to a single bad plot
+agri_np_compare(yield ~ dose, agri_dose, kfold = 4, seed = 1,
+                methods = c("smoothing_spline", "loess"), metric = "MedAE")
+
+# Example 3: keeping the agronomic block in every candidate model
+if (requireNamespace("mgcv", quietly = TRUE)) {
+  agri_np_compare(yield ~ dose, agri_dose, methods = c("gam", "quantile"),
+                  block = block, kfold = 3, seed = 2)
+  # A difference of a few hundredths of a Mg/ha between engines is not
+  # agronomic evidence; prefer the engine justified by the design.
+}
 }

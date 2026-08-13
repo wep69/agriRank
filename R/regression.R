@@ -700,8 +700,21 @@ print.summary.agri_np_reg_fit <- function(x, ...) {
 agri_np_predict <- function(object, newdata = NULL, interval = c("none", "confidence"), level = 0.95) {
   if (!inherits(object, "agri_np_reg_fit")) .agri_stop("`object` must be an agri_np_reg_fit.")
   interval <- match.arg(interval)
+  supplied <- !is.null(newdata)
   newdata <- newdata %||% object$data
   newdata <- .integer_validate_newdata(object, newdata)
+  # A fit that adjusts for a block carries the block in its model formula, so
+  # prediction data must say which block the prediction refers to. Failing here
+  # with the variable name is clearer than letting the backend report an
+  # unresolved symbol.
+  if (supplied) {
+    need <- unique(c(object$predictors, object$block %||% character()))
+    miss <- setdiff(need, names(as.data.frame(newdata)))
+    if (length(miss))
+      .agri_stop("`newdata` is missing the variable(s) used by the fitted model: ",
+                 paste(miss, collapse = ", "),
+                 ". Supply a value for each, for example the block level at which the prediction is intended.")
+  }
   want_se <- identical(interval, "confidence")
   supported <- object$method %in% c("gam", "scam", "cobs", "umbrella") ||
     (identical(object$method, "integer_grid") && object$base_method %in% c("gam", "scam", "cobs"))

@@ -21,22 +21,32 @@ agri_np_plot(object, type = c("fit", "residuals", "derivative",
 \description{Returns editable \pkg{ggplot2} objects displaying observed agronomic data with fitted smooths, residuals, or numerical derivatives.}
 \value{A \code{ggplot} object.}
 \examples{
-set.seed(37)
-d <- data.frame(dose = seq(0, 150, length.out = 45));
-d$yield <- 5 + .08*d$dose - .0003*d$dose^2 + rnorm(45, 0, .5)
-f <- agri_np_regression(yield ~ dose, d, method = "smoothing_spline")
-# Example 1
-agri_np_plot(f, type = "fit")
-# Example 2
-agri_np_plot(f, type = "residuals")
-# Example 3
-agri_np_plot(f, type = "derivative")
+data(agri_dose)
+f <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
 
-# A two-predictor surface is also available for multivariable engines.
+# Example 1: fitted response. The result is a ggplot, so units belong in labs().
+agri_np_plot(f, type = "fit") +
+  ggplot2::labs(x = expression("Nitrogen rate (kg ha"^-1*")"),
+                y = expression("Yield (Mg ha"^-1*")"))
+
+# Example 2: residuals against the fitted values
+agri_np_plot(f, type = "residuals")
+
+# Example 3: derivative, the agronomic return per extra unit of nitrogen
+agri_np_plot(f, type = "derivative") +
+  ggplot2::labs(x = expression("Nitrogen rate (kg ha"^-1*")"),
+                y = expression("Marginal yield (Mg ha"^-1*" per kg ha"^-1*")")) +
+  ggplot2::geom_hline(yintercept = 0, linetype = 2)
+# Where the derivative crosses zero the response stops paying.
+
+# Example 4: response surface over two interacting gradients
+data(agri_surface)
 if (requireNamespace("mgcv", quietly = TRUE)) {
-  ds <- expand.grid(N = seq(0, 180, length.out = 12), water = seq(0.5, 1.0, length.out = 8))
-  ds$yield <- 4 + .07 * ds$N - .0002 * ds$N^2 + 5 * ds$water + rnorm(nrow(ds), 0, .5)
-  fs <- agri_np_regression(yield ~ N + water, ds, method = "gam", gam_structure = "tensor")
-  agri_np_plot(fs, type = "surface", surface_predictors = c("N", "water"), n = 35)
+  fs <- agri_np_regression(yield ~ nitrogen + water, agri_surface,
+                           method = "gam", gam_structure = "tensor")
+  agri_np_plot(fs, type = "surface",
+               surface_predictors = c("nitrogen", "water"), n = 35) +
+    ggplot2::labs(x = expression("Nitrogen rate (kg ha"^-1*")"),
+                  y = "Irrigation depth (fraction of ETc)")
 }
 }

@@ -16,16 +16,25 @@ The function also reports the change per integer step. For unit-spaced supports,
 }
 \value{A data frame of first or second finite differences.}
 \examples{
-d <- data.frame(plants = rep(1:7, each = 4))
-set.seed(302); d$yield <- 10 + 7*d$plants - .55*d$plants^2 + rnorm(nrow(d))
-fit <- agri_np_regression(yield ~ plants, d, method = "integer_grid",
-  integer_base_method = "smoothing_spline", predictor_support = "integer_range")
+data(agri_density)
+fit <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
+                          integer_base_method = "smoothing_spline",
+                          predictor_support = "observed_integer")
+
+# Example 1: the yield gain, in Mg/ha, of adding one more plant per hill
 agri_integer_difference(fit, order = 1)
+# The row where the difference turns negative marks the density beyond which
+# competition costs more than the extra plant contributes.
 
+# Example 2: second differences, the rate at which that gain shrinks
 agri_integer_difference(fit, order = 2)
+# Consistently negative second differences describe a concave response.
 
-d2 <- subset(d, plants \%in\% c(1,3,5,7))
+# Example 3: when only alternate densities were tested, `delta_x` is 2 and
+# `difference_per_integer` rescales the gain to a single plant.
+d2 <- subset(agri_density, plants \%in\% c(1, 3, 5, 7, 9))
 fit2 <- agri_np_regression(yield ~ plants, d2, method = "integer_grid",
-  integer_base_method = "smoothing_spline", predictor_support = "observed_integer")
+                           integer_base_method = "smoothing_spline",
+                           predictor_support = "observed_integer")
 agri_integer_difference(fit2, order = 1)
 }

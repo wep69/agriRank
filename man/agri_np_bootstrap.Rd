@@ -20,20 +20,26 @@ agri_np_bootstrap(object, newdata = NULL, predictor = NULL, B = 499L, level = 0.
 \details{When a block or cluster is supplied, whole clusters are resampled. The resulting intervals are pointwise percentile intervals, not simultaneous bands. Large \code{B} should be used for final inference.}
 \value{A data frame containing the prediction grid, original fitted curve, lower and upper bootstrap limits, with bootstrap metadata as attributes.}
 \examples{
-set.seed(36)
-d <- data.frame(x = seq(0, 10, length.out = 35)); d$y <- sin(d$x/2) + rnorm(35, 0, .25)
-f <- agri_np_regression(y ~ x, d, method = "smoothing_spline")
-# Example 1: small teaching bootstrap
+# B = 19 keeps these examples fast. It is far too small for analysis: use
+# B >= 999 for reporting and B >= 4999 for final work whenever feasible.
+data(agri_dose)
+f <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
+
+# Example 1: resampled uncertainty of the fitted curve
 b1 <- agri_np_bootstrap(f, B = 19, n = 30)
 head(b1)
-# Example 2: user-defined prediction grid
-b2 <- agri_np_bootstrap(f, newdata = data.frame(x = seq(1, 9, length.out = 20)), B = 19)
-head(b2)
-# Example 3: block-aware bootstrap with a block-adjustable engine
+
+# Example 2: uncertainty exactly at the rates under discussion
+b2 <- agri_np_bootstrap(f, newdata = data.frame(dose = c(80, 160, 240)), B = 19)
+b2
+# The width of each interval, in Mg/ha, is what separates a recommendation
+# from a point estimate.
+
+# Example 3: block-aware bootstrap, which resamples whole blocks
 if (requireNamespace("mgcv", quietly = TRUE)) {
-  db <- expand.grid(block = factor(1:4), x = seq(0, 10, length.out = 10))
-  db$y <- 5 + sin(db$x/2) + as.numeric(db$block)/4 + rnorm(nrow(db), 0, .2)
-  fb <- agri_np_regression(y ~ x, db, method = "gam", block = block)
+  fb <- agri_np_regression(yield ~ dose, agri_dose, method = "gam", block = block)
   head(agri_np_bootstrap(fb, B = 19, n = 20))
+  # Resampling complete blocks preserves the randomization structure of the
+  # trial; resampling individual plots would not.
 }
 }

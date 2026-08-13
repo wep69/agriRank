@@ -14,17 +14,24 @@
 \details{The function operationalizes the decision lattice \eqn{\mathcal{X}_I}. It never rounds a continuous prediction request to the nearest integer.}
 \value{A data frame containing the integer predictor and fitted response, with confidence limits when available.}
 \examples{
-set.seed(301)
-d <- data.frame(plants = rep(1:8, each = 5))
-d$yield <- 20 + 6*d$plants - .4*d$plants^2 + rnorm(nrow(d))
-f1 <- agri_np_regression(yield ~ plants, d, method = "integer_grid",
-  integer_base_method = "smoothing_spline")
+data(agri_density)
+
+# Example 1: predicted yield, in Mg/ha, at every admissible plant density
+f1 <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
+                         integer_base_method = "smoothing_spline",
+                         predictor_support = "observed_integer")
 agri_integer_predict(f1)
+# One row per decision the grower can actually take. No fractional plant
+# appears, because half a plant cannot be sown.
 
-agri_integer_predict(f1, support = c(3, 4, 5, 6))
+# Example 2: restricted to the densities under discussion
+agri_integer_predict(f1, support = 4:7)
 
-f2 <- agri_np_regression(yield ~ plants, d, method = "integer_grid",
-  integer_base_method = "smoothing_spline",
-  predictor_support = "integer_range", integer_range = c(1, 10))
-agri_integer_predict(f2, support = 8:10)
+# Example 3: a support extended beyond what was tested. Extrapolating to 10
+# plants per hill must be justified agronomically, never by convenience.
+f2 <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
+                         integer_base_method = "smoothing_spline",
+                         predictor_support = "integer_range",
+                         integer_range = c(1, 12))
+agri_integer_predict(f2, support = 10:12)
 }

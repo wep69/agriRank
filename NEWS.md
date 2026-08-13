@@ -1,5 +1,25 @@
 # agriRank 0.13.0
 
+## Example data and documentation
+
+* Added three exported data sets: `agri_dose` (nitrogen rates in an RCBD, quadratic-plateau response), `agri_density` (plants per hill, an integer treatment with a unimodal response) and `agri_surface` (nitrogen by irrigation depth with a positive cross term). The generating script is in `data-raw/`.
+* Added the quantitative-gradient scenarios `"dose_response"`, `"integer_density"` and `"surface"` to `simulate_agri()`, mirroring the exported data sets for users who need fresh replicates.
+* Rewrote the examples of all 18 regression functions to use the exported data, to state units (Mg ha^-1^, kg ha^-1^) and to end in an agronomic reading rather than a bare call. Fitted objects now persist after the examples run.
+* Examples with resampling state explicitly that `B = 19` is a speed device and that analysis needs `B >= 999`.
+* `agri_cld()` accepts a comparison table from `agri_pairs()` or `agri_conover()`, and computes letters within each simple-effect stratum.
+* `agri_conover()` gains `cld` and `alpha` for an optional compact letter display.
+
+## Fixes
+
+* `agri_np_predict()` now names the missing variable when `newdata` omits a predictor or the declared block, instead of failing inside the backend with an unresolved symbol.
+* The Friedman-type Conover adapter no longer fails with a data-frame subscript error when block rankings agree perfectly; it warns and reports no comparison for that stratum.
+* `np_repeated()` without `subject=` and `agri_multienv()` without `environment=` now fail with the scientific reason.
+* The rankFD adapter populates the standardized omnibus table, which had been empty and silently disabled `agri_table()`, `agri_sensitivity()` and `agri_batch()` on that route.
+* Replaced the deprecated `ggplot2::aes_string()` in the interaction plot.
+* Interactive Plotly widgets are no longer auto-printed in examples and vignettes, which avoids a headless-browser dependency and removed about 4 MB from the installed size.
+
+# agriRank 0.12.0.9000
+
 * Added explicit split-split hierarchy through `subsubplot=` and `np_splitsplit()`.
 * Added explicit strip-plot declarations through `strip_a=`, `strip_b=` and `np_stripplot()`.
 * Added design-specific ARTool/permuco strata for split-split and strip-plot workflows.

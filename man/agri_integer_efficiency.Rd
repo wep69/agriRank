@@ -10,13 +10,18 @@
 \details{The output is descriptive. Economic efficiency requires explicit prices or costs and should not be inferred from biological response alone.}
 \value{A data frame on the declared integer support.}
 \examples{
-d <- data.frame(plants = rep(1:7, each = 4))
-set.seed(304); d$yield <- 15 + 5*d$plants - .35*d$plants^2 + rnorm(nrow(d))
-fit <- agri_np_regression(yield ~ plants, d, method = "integer_grid",
-  integer_base_method = "smoothing_spline")
+data(agri_density)
+fit <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
+                          integer_base_method = "smoothing_spline",
+                          predictor_support = "observed_integer")
+
+# Example 1: each admissible density as a fraction of the fitted maximum
 agri_integer_efficiency(fit)
 
+# Example 2: the densest options
 tail(agri_integer_efficiency(fit), 3)
 
-subset(agri_integer_efficiency(fit), relative_to_fitted_maximum >= .95)
+# Example 3: every density within 5 percent of the maximum. When several
+# qualify, the cheapest to establish is a defensible operational choice.
+subset(agri_integer_efficiency(fit), relative_to_fitted_maximum >= 0.95)
 }

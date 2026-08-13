@@ -21,21 +21,27 @@ the empirical bootstrap probabilities summarize uncertainty over actual admissib
 }
 \value{An object of class \code{agri_integer_bootstrap} containing probability mass over the integer support and refit diagnostics.}
 \examples{
-set.seed(306)
-d <- data.frame(plants = rep(1:8, each = 7))
-d$yield <- 20 + 7*d$plants - .55*d$plants^2 + rnorm(nrow(d))
-fit <- agri_np_regression(yield ~ plants, d, method = "integer_grid",
-  integer_base_method = "smoothing_spline")
-b1 <- agri_integer_bootstrap(fit, B = 19, seed = 1)
-b1
+# B = 19 keeps the examples fast. Use B >= 999 for any reported decision.
+data(agri_density)
+fit <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
+                          integer_base_method = "smoothing_spline",
+                          predictor_support = "observed_integer")
 
-agri_integer_confset(b1, level = .80)
+# Example 1: probability mass over the admissible densities
+boot_max <- agri_integer_bootstrap(fit, B = 19, seed = 1)
+boot_max
+# Each probability is the share of bootstrap refits in which that density was
+# optimal. The mass sums to one over the admissible support.
 
-# Example 2: inspect a second bootstrap object at a higher confidence target
-b80 <- agri_integer_bootstrap(fit, B = 19, seed = 11)
-agri_integer_confset(b80, level = .90)
+# Example 2: the mass converted into a discrete confidence set
+agri_integer_confset(boot_max, level = 0.80)
 
-# Example 3: minimum instead of maximum
-b2 <- agri_integer_bootstrap(fit, objective = "min", B = 19, seed = 2)
-b2$probabilities
+# Example 3: the minimum, for a response where less is better
+boot_min <- agri_integer_bootstrap(fit, objective = "min", B = 19, seed = 2)
+boot_min$probabilities
+
+# Example 4: resampling whole blocks, which preserves the randomization
+# structure of the trial
+boot_block <- agri_integer_bootstrap(fit, B = 19, seed = 3, cluster = "block")
+boot_block$failures
 }

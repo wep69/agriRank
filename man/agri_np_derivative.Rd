@@ -13,14 +13,22 @@
 \details{Derivative estimates near boundaries use the available one-sided span. Derivatives inherit all limitations of the fitted smoother and should be interpreted with uncertainty, especially near sparse regions.}
 \value{A data frame containing predictor values and estimated derivatives.}
 \examples{
-set.seed(34)
-d <- data.frame(dose = seq(0, 200, length.out = 50));
-d$yield <- 6 + .06*d$dose - .0002*d$dose^2 + rnorm(50, 0, .4)
-f <- agri_np_regression(yield ~ dose, d, method = "smoothing_spline")
-# Example 1
+data(agri_dose)
+f <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
+
+# Example 1: marginal yield, in Mg/ha per kg/ha of nitrogen
 head(agri_np_derivative(f))
-# Example 2
-agri_np_derivative(f, n = 50)
-# Example 3
-agri_np_derivative(f, h = 0.5)
+# A positive derivative means the next kilogram of nitrogen still pays.
+
+# Example 2: a finer evaluation grid
+d50 <- agri_np_derivative(f, n = 50)
+head(d50)
+
+# Example 3: `h` is the step of the finite difference. A larger step smooths
+# the derivative and can hide a local change of slope, so it should be chosen
+# on the scale of the treatment, not by trial and error.
+h_small <- agri_np_derivative(f, n = 25, h = 0.5)
+h_large <- agri_np_derivative(f, n = 25, h = 20)
+range(h_small$derivative)
+range(h_large$derivative)
 }

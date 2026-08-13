@@ -51,11 +51,18 @@ Shape constraints must be scientifically declared. They are not learned by tryin
 
 # The unified API
 
+The examples below use `agri_dose`, an exported data set: eight nitrogen rates,
+from 0 to 280 kg ha^-1^, evaluated in five complete blocks, with yield in
+Mg ha^-1^. Because it ships with the package, every object created here stays
+available for you to inspect afterwards.
+
+```{r dose-data}
+data(agri_dose)
+str(agri_dose)
+```
+
 ```{r}
-set.seed(2001)
-dose_data <- data.frame(dose = seq(0, 220, length.out = 55))
-dose_data$yield <- 5.2 + 0.075 * dose_data$dose -
-  0.00022 * dose_data$dose^2 + rnorm(nrow(dose_data), 0, 0.65)
+dose_data <- agri_dose
 
 fit_ss <- agri_np_regression(
   yield ~ dose,

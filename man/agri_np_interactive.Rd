@@ -15,19 +15,32 @@ agri_np_interactive(object, type = c("fit", "residuals",
 \value{A Plotly htmlwidget.}
 \seealso{\code{\link{agri_np_plot}}, \code{\link{agri_np_regression}}}
 \examples{
-set.seed(38)
-d <- data.frame(dose = seq(0, 150, length.out = 40))
-d$yield <- 5 + .08*d$dose - .0003*d$dose^2 + rnorm(40, 0, .5)
-f <- agri_np_regression(yield ~ dose, d, method = "smoothing_spline")
-# Example 1
-if (requireNamespace("plotly", quietly = TRUE)) agri_np_interactive(f)
-# Example 2
-if (requireNamespace("plotly", quietly = TRUE)) agri_np_interactive(f, type = "derivative")
-# Example 3: response surface
+# The examples build the widget and report its class. They deliberately do not
+# print it: rendering an htmlwidget outside an interactive session can launch a
+# headless browser, which is unavailable in many check and documentation
+# environments. Print the object in an interactive session to see the graphic.
+data(agri_dose)
+f <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
+
+# Example 1: interactive fitted response
+if (requireNamespace("plotly", quietly = TRUE)) {
+  w1 <- agri_np_interactive(f)
+  class(w1)
+}
+
+# Example 2: interactive derivative
+if (requireNamespace("plotly", quietly = TRUE)) {
+  w2 <- agri_np_interactive(f, type = "derivative")
+  class(w2)
+}
+
+# Example 3: interactive response surface over two gradients
+data(agri_surface)
 if (requireNamespace("plotly", quietly = TRUE) && requireNamespace("mgcv", quietly = TRUE)) {
-  ds <- expand.grid(N = seq(0, 180, length.out = 10), water = seq(.5, 1, length.out = 7))
-  ds$yield <- 4 + .07*ds$N - .0002*ds$N^2 + 4*ds$water + rnorm(nrow(ds), 0, .4)
-  fs <- agri_np_regression(yield ~ N + water, ds, method = "gam", gam_structure = "tensor")
-  agri_np_interactive(fs, type = "surface", surface_predictors = c("N", "water"), n = 30)
+  fs <- agri_np_regression(yield ~ nitrogen + water, agri_surface,
+                           method = "gam", gam_structure = "tensor")
+  w3 <- agri_np_interactive(fs, type = "surface",
+                            surface_predictors = c("nitrogen", "water"), n = 30)
+  class(w3)
 }
 }

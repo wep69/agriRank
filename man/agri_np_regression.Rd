@@ -71,78 +71,77 @@ Liao, X. and Meyer, M. C. (2019). cgam: An R Package for the Constrained General
 }
 \seealso{\code{\link{agri_np_predict}}, \code{\link{agri_integer_predict}}, \code{\link{agri_integer_optimum}}, \code{\link{agri_integer_difference}}, \code{\link{agri_integer_bootstrap}}, \code{\link{agri_np_compare}}, \code{\link{agri_np_plot}}}
 \examples{
-# Example 1: smoothing spline for a fertilizer gradient
-set.seed(21)
-d <- data.frame(dose = seq(0, 200, length.out = 40))
-d$yield <- 5 + 0.055 * d$dose - 0.00016 * d$dose^2 + rnorm(40, sd = 0.8)
-fit1 <- agri_np_regression(yield ~ dose, d, method = "smoothing_spline")
-fit1
+# All examples use the exported data sets, so the fitted objects stay in the
+# session and can be explored further. Yield is in Mg/ha, nitrogen in kg/ha and
+# plant density in plants per hill.
 
-# Example 2: LOESS for a nonlinear salinity response
-set.seed(22)
-d2 <- data.frame(ec = seq(0.5, 6, length.out = 50))
-d2$biomass <- 25 * exp(-0.13 * d2$ec^1.5) + rnorm(50, 0, 1)
-fit2 <- agri_np_regression(biomass ~ ec, d2, method = "loess", span = 0.6)
+# Example 1: smoothing spline over a nitrogen gradient
+data(agri_dose)
+fit1 <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
+fit1
+# The response flattens beyond roughly 200 kg/ha: no parametric quadratic
+# reproduces both the rising part and the plateau.
+
+# Example 2: LOESS on the same gradient, for comparison of smoothers
+fit2 <- agri_np_regression(yield ~ dose, agri_dose, method = "loess", span = 0.6)
 summary(fit2)
 
-# Example 3: block-adjusted GAM
+# Example 3: block-adjusted GAM, the design-aware choice for this trial
 if (requireNamespace("mgcv", quietly = TRUE)) {
-  set.seed(23)
-  d3 <- expand.grid(block = factor(1:5), dose = seq(0, 180, length.out = 12))
-  d3$yield <- 8 + 0.07 * d3$dose - 0.00022 * d3$dose^2 +
-    as.numeric(d3$block) + rnorm(nrow(d3))
-  fit3 <- agri_np_regression(yield ~ dose, d3, method = "gam", block = block)
+  fit3 <- agri_np_regression(yield ~ dose, agri_dose, method = "gam", block = block)
   summary(fit3)
+  # Adjusting for block removes soil-fertility variation from the residual.
 }
+
 # Example 4: direct transition from a declared quantitative RCBD
 if (requireNamespace("mgcv", quietly = TRUE)) {
-  dd <- expand.grid(block = factor(1:4), dose = seq(0, 150, length.out = 10))
-  set.seed(24);
-dd$yield <- 5 + .08*dd$dose - .0003*dd$dose^2 + as.numeric(dd$block)/4 + rnorm(nrow(dd), 0, .4)
-  des <- agri_design(yield ~ dose, dd, design = "rcbd", block = block, quantitative = dose)
+  des <- agri_design(yield ~ dose, agri_dose, design = "rcbd",
+                     block = block, quantitative = dose)
   fit4 <- agri_np_regression(des, method = "gam")
   fit4
+  # The block declared in the design is carried into the regression.
 }
 
-
-# Example 5: ordered-discrete kernel regression
+# Example 5: ordered-discrete kernel regression on an integer treatment
+data(agri_density)
 if (requireNamespace("np", quietly = TRUE)) {
-  set.seed(25)
-  d5 <- data.frame(insects = rep(0:8, each = 6))
-  d5$damage <- 4 + 1.7*d5$insects + rnorm(nrow(d5), 0, 1.2)
-  fit5 <- agri_np_regression(damage ~ insects, d5, method = "discrete_kernel",
+  fit5 <- agri_np_regression(yield ~ plants, agri_density,
+                             method = "discrete_kernel",
                              predictor_support = "observed_integer")
   agri_integer_predict(fit5)
 }
 
 # Example 6: unimodal isotonic plant-density response
 if (requireNamespace("Iso", quietly = TRUE)) {
-  set.seed(26)
-  d6 <- data.frame(plants = rep(1:9, each = 5))
-  d6$yield <- 30 + 8*pmin(d6$plants, 5) - 5*pmax(d6$plants - 5, 0) +
-    rnorm(nrow(d6), 0, 1.5)
-  fit6 <- agri_np_regression(yield ~ plants, d6, method = "unimodal_isotonic")
+  fit6 <- agri_np_regression(yield ~ plants, agri_density,
+                             method = "unimodal_isotonic",
+                             predictor_support = "observed_integer")
   agri_integer_optimum(fit6)
+  # Density responses rise and then fall through competition, so an
+  # increase-then-decrease constraint is scientifically justified here.
 }
 
 # Example 7: continuous latent spline, integer-only decisions
-set.seed(27)
-d7 <- data.frame(plants = rep(1:10, each = 5))
-d7$yield <- 25 + 7*d7$plants - .45*d7$plants^2 + rnorm(nrow(d7))
-fit7 <- agri_np_regression(yield ~ plants, d7, method = "integer_grid",
+fit7 <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
                            integer_base_method = "smoothing_spline",
-                           predictor_support = "integer_range")
-agri_integer_difference(fit7)
+                           predictor_support = "observed_integer")
+agri_integer_difference(fit7, order = 1)
+# Each row is the yield gain, in Mg/ha, of adding one more plant per hill.
 
 # Example 8: umbrella-order regression with an RCBD block adjustment
 if (requireNamespace("cgam", quietly = TRUE)) {
-  set.seed(28)
-  d8 <- expand.grid(block = factor(1:4), plants = 1:8)
-  d8$yield <- 24 + 8*pmin(d8$plants, 5) - 5*pmax(d8$plants - 5, 0) +
-    as.numeric(d8$block)/2 + rnorm(nrow(d8), 0, 1.2)
-  fit8 <- agri_np_regression(yield ~ plants, d8, method = "umbrella",
+  fit8 <- agri_np_regression(yield ~ plants, agri_density, method = "umbrella",
                              block = block, predictor_support = "observed_integer")
   agri_integer_optimum(fit8)
+}
+
+# Example 9: two interacting gradients
+data(agri_surface)
+if (requireNamespace("mgcv", quietly = TRUE)) {
+  fit9 <- agri_np_regression(yield ~ nitrogen + water, agri_surface,
+                             method = "gam", gam_structure = "tensor")
+  agri_np_predict(fit9, newdata = data.frame(nitrogen = 160, water = c(0.6, 1.0)))
+  # The return to 160 kg/ha of nitrogen depends on irrigation depth.
 }
 
 }

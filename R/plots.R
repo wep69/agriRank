@@ -34,7 +34,15 @@ agri_plot <- function(x, type = c("data", "effects", "interaction", "missing", "
     if (length(design$predictors) < 2L) .agri_stop("Interaction plot requires at least two factors.")
     a <- design$predictors[1L]; b <- design$predictors[2L]
     dd <- aggregate(dat[[y]], dat[c(a,b)], stats::median, na.rm = TRUE); names(dd)[ncol(dd)] <- ".median"
-    return(ggplot2::ggplot(dd, ggplot2::aes_string(x = b, y = ".median", group = a, shape = a)) + ggplot2::geom_point() + ggplot2::geom_line() + ggplot2::labs(y = paste("Median", y)) + ggplot2::theme_minimal())
+    # aes_string() was deprecated in ggplot2 3.0.0. The factor names are known
+    # only at run time, so the two factors are renamed to fixed internal columns
+    # and the original names are restored in the labels. This keeps the plot
+    # free of any additional dependency.
+    names(dd)[match(c(a, b), names(dd))] <- c(".a", ".b")
+    return(ggplot2::ggplot(dd, ggplot2::aes(x = .b, y = .median, group = .a, shape = .a)) +
+             ggplot2::geom_point() + ggplot2::geom_line() +
+             ggplot2::labs(x = b, y = paste("Median", y), shape = a) +
+             ggplot2::theme_minimal())
   }
   if (type == "missing") {
     mr <- agri_missing_report(design, response = y)

@@ -66,6 +66,27 @@ packageVersion("agriRank")
 agri_methods()
 ```
 
+## Example data
+
+Three data sets ship with the package, so every example and vignette works on a
+shared, agronomically interpretable experiment instead of a throwaway data frame:
+
+| Data set | Structure | Used for |
+|---|---|---|
+| `agri_dose` | 8 nitrogen rates, 0 to 280 kg ha⁻¹, in 5 blocks | continuous gradients, quadratic-plateau response |
+| `agri_density` | 1 to 9 plants per hill in 6 blocks | the integer decision workflow |
+| `agri_surface` | nitrogen by irrigation depth, 2 blocks | response surfaces with interacting gradients |
+
+```r
+data(agri_dose)
+fit <- agri_np_regression(yield ~ dose, agri_dose, method = "gam", block = block)
+agri_np_optimum(fit)
+```
+
+Yield is in Mg ha⁻¹ throughout. The generating script is in `data-raw/`, and
+`simulate_agri()` produces fresh replicates of the same three structures through
+the scenarios `"dose_response"`, `"integer_density"` and `"surface"`.
+
 ## Cheat sheet
 
 A two-page reference of the whole workflow, from design declaration to report.

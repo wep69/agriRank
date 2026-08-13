@@ -102,10 +102,12 @@ therefore it changes the answer. The comparison below fits the same data three
 times and reports the admissible support and the resulting discrete optimum.
 
 ```{r three-supports}
-set.seed(717)
-spacing <- data.frame(plants = rep(1:9, each = 8))
-spacing$yield <- 18 + 6.2 * spacing$plants - 0.52 * spacing$plants^2 +
-  rnorm(nrow(spacing), 0, 0.9)
+# agri_density ships with the package: plants per hill from 1 to 9 in six
+# complete blocks, yield in Mg/ha. The object stays available after the
+# vignette runs, so the analysis can be continued.
+data(agri_density)
+spacing <- agri_density
+str(spacing)
 
 fit_support <- function(support, ...) {
   f <- agri_np_regression(

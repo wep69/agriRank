@@ -2,10 +2,43 @@
 
 #' Simulate representative agricultural experiments
 #' @export
-simulate_agri <- function(design = c("crd", "rcbd", "factorial", "split_plot", "split_split", "strip_plot", "repeated", "repeated_missing", "multienv"), seed = 123,
+simulate_agri <- function(design = c("crd", "rcbd", "factorial", "split_plot", "split_split", "strip_plot", "repeated", "repeated_missing", "multienv", "dose_response", "integer_density", "surface"), seed = 123,
                           n = 6, missing_rate = 0.2) {
   design <- match.arg(design)
   .seed_eval(seed, switch(design,
+    # Quantitative gradients. These three scenarios exist so that the
+    # regression module can be demonstrated on data whose treatment is a
+    # continuous rate, an integer count, or a pair of interacting gradients.
+    dose_response = {
+      d <- expand.grid(block = factor(paste0("B", seq_len(n))),
+                       dose = seq(0, 280, by = 40), KEEP.OUT.ATTRS = FALSE)
+      b <- rnorm(nlevels(d$block), 0, 0.30)[d$block]
+      # Quadratic up to a plateau at 200 kg/ha, flat afterwards.
+      mu <- 3.1 + 0.0182 * pmin(d$dose, 200) - 0.0000362 * pmin(d$dose, 200)^2
+      d$yield <- mu + b + rnorm(nrow(d), 0, 0.24)
+      d[order(d$block, d$dose), c("block", "dose", "yield")]
+    },
+    integer_density = {
+      d <- expand.grid(block = factor(paste0("B", seq_len(n))),
+                       plants = 1:9, KEEP.OUT.ATTRS = FALSE)
+      b <- rnorm(nlevels(d$block), 0, 0.22)[d$block]
+      # Increase then decrease through intraspecific competition.
+      mu <- 2.4 + 1.05 * pmin(d$plants, 6) - 0.082 * pmin(d$plants, 6)^2 -
+        0.28 * pmax(d$plants - 6, 0)
+      d$yield <- mu + b + rnorm(nrow(d), 0, 0.21)
+      d[order(d$block, d$plants), c("block", "plants", "yield")]
+    },
+    surface = {
+      d <- expand.grid(block = factor(paste0("B", seq_len(max(2L, n %/% 3L)))),
+                       nitrogen = seq(0, 240, by = 40),
+                       water = seq(0.4, 1.2, by = 0.2), KEEP.OUT.ATTRS = FALSE)
+      b <- rnorm(nlevels(d$block), 0, 0.12)[d$block]
+      # The cross term makes nitrogen pay more under adequate irrigation.
+      mu <- 2.0 + 0.0165 * d$nitrogen - 0.0000402 * d$nitrogen^2 +
+        3.10 * d$water - 1.55 * d$water^2 + 0.0042 * d$nitrogen * d$water
+      d$yield <- mu + b + rnorm(nrow(d), 0, 0.20)
+      d[order(d$block, d$nitrogen, d$water), c("block", "nitrogen", "water", "yield")]
+    },
     crd = {
       treatment <- factor(rep(LETTERS[1:4], each = n)); y <- rgamma(length(treatment), shape = 3, scale = 2) + rep(c(0,1,2,3), each=n)
       data.frame(treatment, yield = y)

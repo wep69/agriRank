@@ -38,33 +38,32 @@ Racine JS, Hart J, Li Q (2006). Testing the Significance of Categorical Predicto
 Hayfield T, Racine JS (2008). Nonparametric Econometrics: The np Package. \emph{Journal of Statistical Software}, 27(5). doi:10.18637/jss.v027.i05.
 }
 \examples{
-# Example 1: one continuous predictor
+# B = 19 keeps the examples fast. Use B >= 999 for any reported test.
+
+# Example 1: does nitrogen matter at all?
+data(agri_dose)
 if (requireNamespace("np", quietly = TRUE)) {
-  set.seed(91)
-  d <- data.frame(dose = runif(35, 0, 180))
-  d$yield <- 5 + .06*d$dose - .00018*d$dose^2 + rnorm(35, 0, .5)
-  f <- agri_np_regression(yield ~ dose, d, method = "kernel")
+  f <- agri_np_regression(yield ~ dose, agri_dose, method = "kernel")
   agri_np_significance(f, B = 19, boot_type = "I")
+  # A small p-value says the response is not flat. It does not say the
+  # relationship is linear, nor where the optimum is.
 }
 
-# Example 2: test one variable from a mixed-predictor kernel model
+# Example 2: one gradient in the presence of another
+data(agri_surface)
 if (requireNamespace("np", quietly = TRUE)) {
-  set.seed(92)
-  d2 <- data.frame(dose = runif(40, 0, 150), cultivar = factor(rep(c("A", "B"), 20)))
-  d2$yield <- 4 + .05*d2$dose + ifelse(d2$cultivar == "B", 1, 0) + rnorm(40, 0, .5)
-  f2 <- agri_np_regression(yield ~ dose + cultivar, d2, method = "kernel")
-  agri_np_significance(f2, variables = "cultivar", B = 19, boot_type = "I")
+  f2 <- agri_np_regression(yield ~ nitrogen + water, agri_surface, method = "kernel")
+  agri_np_significance(f2, variables = "water", B = 19, boot_type = "I")
 }
 
-# Example 3: joint significance while retaining an RCBD block adjustment
+# Example 3: joint significance while retaining the block adjustment
 if (requireNamespace("np", quietly = TRUE)) {
-  set.seed(93)
-d3 <- expand.grid(block = factor(1:4), dose = seq(0, 120, length.out = 8), 
-    cultivar = factor(c("A", "B")))
-d3$yield <- 5 + 0.05 * d3$dose + as.numeric(d3$block)/5 + ifelse(d3$cultivar == 
-    "B", 0.8, 0) + rnorm(nrow(d3), 0, 0.45)
-  f3 <- agri_np_regression(yield ~ dose + cultivar, d3, method = "kernel", block = block)
-  agri_np_significance(f3, variables = c("dose", "cultivar"), joint = TRUE, B = 19, boot_type = "I")
+  f3 <- agri_np_regression(yield ~ nitrogen + water, agri_surface,
+                           method = "kernel", block = block)
+  agri_np_significance(f3, variables = c("nitrogen", "water"), joint = TRUE,
+                       B = 19, boot_type = "I")
+  # The joint test asks whether the two gradients together explain the
+  # response, which is the right question when they interact.
 }
 }
 \seealso{\code{\link{agri_np_regression}}, \code{\link{agri_np_specification}}, \code{\link{agri_np_compare}}}

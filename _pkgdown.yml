@@ -1,0 +1,65 @@
+url: https://wep69.github.io/agriRank/
+
+template:
+  bootstrap: 5
+
+reference:
+- title: Declare the design
+  desc: Every analysis starts from an explicit randomization structure.
+  contents: [agri_design, validate_agri_design, design_summary, simulate_agri]
+
+- title: Design-aware inference
+  contents: [agri_rank, agri_repeated, agri_multivariate, agri_multienv,
+             np_crd, np_rcbd, np_factorial, np_splitplot, np_splitsplit,
+             np_stripplot, np_repeated, incomplete_wild_rank_test]
+
+- title: Effects, comparisons and contrasts
+  contents: [agri_effects, agri_pairs, agri_conover, agri_cld, agri_contrast]
+
+- title: Regression for quantitative gradients
+  desc: >
+    Continuous smoothers, shape constraints and rank-robust slopes for
+    fertilizer rates, salinity, irrigation and other agronomic gradients.
+  contents: [agri_np_regression, agri_np_predict, agri_np_plot,
+             agri_np_derivative, agri_np_optimum, agri_np_bootstrap,
+             agri_np_compare, agri_np_diagnostics, agri_np_significance,
+             agri_np_specification, agri_np_interactive]
+
+- title: Integer decision support
+  desc: >
+    Treatments that can only take whole values, such as plants per hill,
+    irrigation events or sprays.
+  contents: [agri_integer_predict, agri_integer_optimum,
+             agri_integer_difference, agri_integer_threshold,
+             agri_integer_efficiency, agri_integer_bootstrap,
+             agri_integer_confset]
+
+- title: Missing data and sensitivity
+  contents: [agri_missing_report, agri_missing_sensitivity, agri_sensitivity,
+             agri_batch]
+
+- title: Trend, covariance and power
+  contents: [agri_trend, agri_ancova, agri_power]
+
+- title: Graphics, tables and reports
+  contents: [agri_plot, agri_interactive, agri_table, agri_dashboard,
+             agri_report, export_results, agri_methods]
+
+- title: Example data
+  desc: Shared data sets used across the examples and vignettes.
+  contents: [agri_dose, agri_density, agri_surface]
+
+articles:
+- title: Getting started
+  contents: [v00-overview, v01-design-validation]
+- title: Designs
+  contents: [v02-crd-oneway, v03-rcbd, v04-factorial, v06-splitplot,
+             v07-repeated-measures, v08-missing-repeated,
+             v10-multivariate-multienv]
+- title: Estimation and reporting
+  contents: [v05-effects-contrasts, v09-trend-ancova-power,
+             v11-batch-sensitivity, v12-graphics, v13-reporting]
+- title: Regression
+  contents: [v16-nonparametric-regression, v17-integer-support-regression]
+- title: Background
+  contents: [v14-theory-state-of-art, v15-integrated-agronomic-case]
