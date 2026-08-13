@@ -70,10 +70,14 @@ agri_methods()
 
 A two-page reference of the whole workflow, from design declaration to report.
 
-| Language | Download |
-|---|---|
-| Portuguese | [agriRank_Cheatsheet_PT.pdf](https://github.com/wep69/agriRank/raw/main/cheatsheet/agriRank_Cheatsheet_PT.pdf) |
-| English | [agriRank_Cheatsheet_EN.pdf](https://github.com/wep69/agriRank/raw/main/cheatsheet/agriRank_Cheatsheet_EN.pdf) |
+| Language | Download | Size |
+|---|---|---|
+| Portuguese | [agriRank_Cheatsheet_PT.pdf](https://github.com/wep69/agriRank/raw/main/cheatsheet/agriRank_Cheatsheet_PT.pdf) | 21 MB |
+| English | [agriRank_Cheatsheet_EN.pdf](https://github.com/wep69/agriRank/raw/main/cheatsheet/agriRank_Cheatsheet_EN.pdf) | 2.5 MB |
+
+Both are also attached to the
+[v0.13.0 release](https://github.com/wep69/agriRank/releases/tag/v0.13.0),
+together with the source tarball.
 
 The cheat sheets live in `cheatsheet/` in this repository and are deliberately
 kept **outside the R package**: they are listed in `.Rbuildignore`, so they do
