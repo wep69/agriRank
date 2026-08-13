@@ -118,4 +118,77 @@ test_that("the letter display refuses tables it cannot summarize", {
                regexp = "pairwise group comparisons")
   expect_error(agri_cld(data.frame(group1 = "A", group2 = "B", p_adjusted = NA_real_)),
                regexp = "finite adjusted p-value")
+  # A contrast that is not a simple difference between two groups.
+  expect_error(agri_cld(data.frame(contrast = "mean of A and B vs C",
+                                   p_adjusted_maxT = 0.02)),
+               regexp = "all-pairs")
+})
+
+test_that("every comparison route supports a letter display", {
+  skip_if_no_cld()
+
+  # Wilcoxon, the default route
+  d <- simulate_agri("crd", seed = 961)
+  f <- np_crd(yield ~ treatment, d)
+  w <- attr(agri_pairs(f, cld = TRUE), "cld")
+  expect_setequal(w$group, levels(d$treatment))
+  expect_identical(w, agri_cld(agri_pairs(f)))
+
+  # Conover through the same interface
+  cv <- attr(agri_pairs(f, method = "conover", cld = TRUE), "cld")
+  expect_setequal(cv$group, levels(d$treatment))
+
+  # Block-paired Wilcoxon
+  db <- simulate_agri("rcbd", seed = 962)
+  fb <- np_rcbd(yield ~ treatment, db, block = block)
+  expect_setequal(attr(agri_pairs(fb, cld = TRUE), "cld")$group,
+                  levels(db$treatment))
+
+  # Without the request there is no attribute
+  expect_null(attr(agri_pairs(f), "cld"))
+})
+
+test_that("the native wild-rank engine supports letters over its maxT contrasts", {
+  skip_if_no_cld()
+  rp <- simulate_agri("repeated_missing", seed = 963, n = 14, missing_rate = 0.15)
+  dr <- agri_design(height ~ treatment * time, rp, design = "repeated",
+                    subject = subject, within = time)
+  fw <- suppressWarnings(agri_repeated(dr, backend = "native_wild", B = 99,
+                                       seed = 1, missing_assumption = "MCAR"))
+  pw <- suppressWarnings(agri_pairs(fw, B = 99, seed = 1, cld = TRUE))
+  cld <- attr(pw, "cld")
+
+  # The contrast labels "stratum: g1 - g2" are parsed back into groups.
+  expect_true("stratum" %in% names(cld))
+  expect_setequal(unique(cld$stratum), levels(rp$treatment))
+  for (st in unique(cld$stratum)) {
+    expect_setequal(cld$group[cld$stratum == st], levels(rp$time))
+  }
+  expect_identical(cld, agri_cld(suppressWarnings(agri_pairs(fw, B = 99, seed = 1))))
+
+  # An incomplete family of contrasts is refused.
+  expect_error(agri_cld(as.data.frame(pw)[1:3, ]), regexp = "letter display needs all")
+})
+
+test_that("letters from maxT contrasts agree with their adjusted p-values", {
+  skip_if_no_cld()
+  rp <- simulate_agri("repeated_missing", seed = 964, n = 14, missing_rate = 0.10)
+  dr <- agri_design(height ~ treatment * time, rp, design = "repeated",
+                    subject = subject, within = time)
+  fw <- suppressWarnings(agri_repeated(dr, backend = "native_wild", B = 199,
+                                       seed = 2, missing_assumption = "MCAR"))
+  pw <- as.data.frame(suppressWarnings(agri_pairs(fw, B = 199, seed = 2)))
+  cld <- agri_cld(pw, alpha = 0.05)
+
+  lab <- as.character(pw$contrast)
+  st <- trimws(sub(":.*$", "", lab))
+  gr <- strsplit(trimws(sub("^[^:]*:", "", lab)), "\\s+-\\s+")
+  for (i in seq_len(nrow(pw))) {
+    p <- pw$p_adjusted_maxT[i]
+    if (!is.finite(p)) next
+    l1 <- cld$letter[cld$stratum == st[i] & cld$group == gr[[i]][1]]
+    l2 <- cld$letter[cld$stratum == st[i] & cld$group == gr[[i]][2]]
+    shared <- length(intersect(strsplit(l1, "")[[1]], strsplit(l2, "")[[1]])) > 0L
+    expect_equal(shared, p > 0.05, info = lab[i])
+  }
 })

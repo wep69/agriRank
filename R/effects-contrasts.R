@@ -70,13 +70,22 @@ agri_effects <- function(x, ci = FALSE, level = 0.95, B = if (ci) 999 else 0, se
 #' @param factor Factor to compare for native repeated wild fits.
 #' @param adjust Multiplicity method for ordinary comparisons.
 #' @export
-agri_pairs <- function(x, by = NULL, factor = NULL, method = c("wilcoxon", "conover"), adjust = "holm", B = NULL, seed = NULL, level = 0.95) {
+agri_pairs <- function(x, by = NULL, factor = NULL, method = c("wilcoxon", "conover"), adjust = "holm", B = NULL, seed = NULL, level = 0.95, cld = FALSE, alpha = 0.05) {
   if (!inherits(x, "agri_rank_fit")) .agri_stop("`x` must be an agri_rank_fit.")
   method <- match.arg(method)
-  if (identical(method, "conover")) return(agri_conover(x, by = by, factor = factor, adjust = adjust))
+  # Letters summarize whichever comparison table this call produces, so the
+  # request is simply forwarded to the route that builds it.
+  if (identical(method, "conover"))
+    return(agri_conover(x, by = by, factor = factor, adjust = adjust,
+                        cld = cld, alpha = alpha))
   if (inherits(x$engine, "agri_incomplete_wild")) {
     C <- .make_pairwise_C(x$engine, by = by, factor = factor)
-    return(.wild_contrast_maxT(x$engine, C, B = B, seed = seed, level = level))
+    out <- .wild_contrast_maxT(x$engine, C, B = B, seed = seed, level = level)
+    if (isTRUE(cld)) {
+      attr(out, "cld") <- .cld_from_pairs(out, alpha = alpha)
+      attr(out, "cld_alpha") <- alpha
+    }
+    return(out)
   }
   if (tolower(x$method) == "art" && requireNamespace("emmeans", quietly = TRUE)) {
     .agri_warn("For multifactor ART contrasts, ARTool's ART-C procedure is preferred. The generic comparisons below operate on observed treatment cells and preserve blocks when a complete paired block comparison is available.")
@@ -134,7 +143,12 @@ agri_pairs <- function(x, by = NULL, factor = NULL, method = c("wilcoxon", "cono
     }
   }
   if (!length(ans)) return(data.frame())
-  ans <- do.call(rbind, ans); ans$p_adjusted <- .p_adjust(ans$p_value, adjust); ans
+  ans <- do.call(rbind, ans); ans$p_adjusted <- .p_adjust(ans$p_value, adjust)
+  if (isTRUE(cld)) {
+    attr(ans, "cld") <- .cld_from_pairs(ans, alpha = alpha)
+    attr(ans, "cld_alpha") <- alpha
+  }
+  ans
 }
 
 
@@ -261,12 +275,43 @@ agri_contrast <- function(x, C, labels = NULL, B = NULL, seed = NULL, adjust = "
 .cld_from_pairs <- function(pr, alpha = 0.05) {
   .require_pkg("multcompView", "compact letter displays")
   pr <- as.data.frame(pr)
+
+  # Contrast tables from the native wild-rank engine label each comparison as
+  # "stratum: g1 - g2" instead of carrying group columns. Recover the groups so
+  # that the same letter display serves every engine.
+  if (!all(c("group1", "group2") %in% names(pr)) && "contrast" %in% names(pr)) {
+    lab <- as.character(pr$contrast)
+    has_st <- grepl(":", lab, fixed = TRUE)
+    st <- ifelse(has_st, trimws(sub(":.*$", "", lab)), "all")
+    rest <- ifelse(has_st, trimws(sub("^[^:]*:", "", lab)), lab)
+    parts <- strsplit(rest, "\\s+-\\s+")
+    if (any(lengths(parts) != 2L))
+      .agri_stop("CLD requires all-pairs comparisons. This table holds contrasts that are not simple pairwise differences, so a letter display would misrepresent them.")
+    pr$stratum <- st
+    pr$group1 <- vapply(parts, `[`, character(1), 1L)
+    pr$group2 <- vapply(parts, `[`, character(1), 2L)
+  }
   if (!all(c("group1", "group2") %in% names(pr)))
     .agri_stop("CLD currently requires ordinary pairwise group comparisons.")
-  strata <- if ("stratum" %in% names(pr)) as.character(pr$stratum) else rep("all", nrow(pr))
+
+  # A letter display is only interpretable when every pair of the compared
+  # groups was actually tested. A user-defined subset of contrasts would give
+  # letters that suggest comparisons the analysis never made.
+  strata0 <- if ("stratum" %in% names(pr)) as.character(pr$stratum) else rep("all", nrow(pr))
+  for (st in unique(strata0)) {
+    s <- pr[strata0 == st, , drop = FALSE]
+    g <- unique(c(s$group1, s$group2))
+    if (nrow(s) != choose(length(g), 2L))
+      .agri_stop(sprintf("Stratum '%s' has %d comparison(s) among %d groups, but a letter display needs all %d pairs. Use the comparison table directly.",
+                         st, nrow(s), length(g), choose(length(g), 2L)))
+  }
+
+  strata <- strata0
   out <- lapply(unique(strata), function(st) {
     s <- pr[strata == st, , drop = FALSE]
-    pv <- s$p_adjusted %||% s$p_value
+    # Multiplicity-adjusted p-values first: the max-T column of the native
+    # engine is already simultaneous over the pairwise family.
+    pv <- s$p_adjusted %||% s$p_adjusted_maxT %||% s$p_value
     keep <- is.finite(pv)
     if (!any(keep)) return(NULL)
     pv <- pv[keep]

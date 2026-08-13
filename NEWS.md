@@ -6,8 +6,10 @@
 * Added the quantitative-gradient scenarios `"dose_response"`, `"integer_density"` and `"surface"` to `simulate_agri()`, mirroring the exported data sets for users who need fresh replicates.
 * Rewrote the examples of all 18 regression functions to use the exported data, to state units (Mg ha^-1^, kg ha^-1^) and to end in an agronomic reading rather than a bare call. Fitted objects now persist after the examples run.
 * Examples with resampling state explicitly that `B = 19` is a speed device and that analysis needs `B >= 999`.
-* `agri_cld()` accepts a comparison table from `agri_pairs()` or `agri_conover()`, and computes letters within each simple-effect stratum.
-* `agri_conover()` gains `cld` and `alpha` for an optional compact letter display.
+* Compact letter displays are now available on **every** comparison route, not only Conover: `agri_pairs()` and `agri_conover()` gain `cld` and `alpha`, and `agri_cld()` accepts a comparison table produced by either one.
+* The simultaneous max-T contrasts of the native repeated wild-rank engine are covered as well. Their labels of the form `"stratum: g1 - g2"` are parsed back into groups, and the adjusted `p_adjusted_maxT` column is used.
+* Letters are computed within each simple-effect stratum, because groups compared in different strata were never tested against each other.
+* An incomplete family of comparisons, or a user-defined contrast that is not a simple difference between two groups, is refused with an explicit message instead of being summarized into letters that would imply comparisons the analysis never performed.
 
 ## Fixes
 

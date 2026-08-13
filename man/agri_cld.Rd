@@ -17,7 +17,17 @@ When the comparison table contains a \code{stratum} column, as produced by
 \code{agri_conover(by = ...)} or \code{agri_pairs(by = ...)}, letters are
 computed separately within each stratum. Two treatments evaluated in different
 simple-effect strata were never compared with each other, so a single global
-display would suggest a comparison the data do not support.}
+display would suggest a comparison the data do not support.
+
+Every comparison route of the package is supported: Wilcoxon comparisons,
+design-aware Conover comparisons, and the simultaneous max-T contrasts of the
+native repeated wild-rank engine, whose labels of the form
+\code{"stratum: g1 - g2"} are parsed back into groups.
+
+The letter display needs the complete set of pairs. A subset of comparisons, or
+a user-defined contrast that is not a simple difference between two groups, is
+refused with an explicit message, because letters derived from an incomplete
+family would imply comparisons that were never performed.}
 \value{A data frame with groups and letters, plus a \code{stratum} column when the comparisons were stratified.}
 \references{
 Pauly M, Brunner E, Konietschke F (2015), DOI: 10.1111/rssb.12073. Brunner E, Konietschke F, Pauly M, Puri ML (2017), DOI: 10.1111/rssb.12222. Konietschke F, Brunner E (2023), DOI: 10.32614/RJ-2023-029. See the package vignettes and `inst/references/agriRank-methods-verified.ris` for engine-specific verified references.
