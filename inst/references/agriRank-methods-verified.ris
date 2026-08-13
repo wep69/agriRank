@@ -1,0 +1,411 @@
+TY  - JOUR
+AU  - Pauly, Markus
+AU  - Brunner, Edgar
+AU  - Konietschke, Frank
+PY  - 2015
+TI  - Asymptotic Permutation Tests in General Factorial Designs
+JO  - Journal of the Royal Statistical Society: Series B (Statistical Methodology)
+VL  - 77
+IS  - 2
+SP  - 461
+EP  - 473
+DO  - 10.1111/rssb.12073
+ER  -
+
+TY  - JOUR
+AU  - Brunner, Edgar
+AU  - Konietschke, Frank
+AU  - Pauly, Markus
+AU  - Puri, Madan L.
+PY  - 2017
+TI  - Rank-based procedures in factorial designs: hypotheses about non-parametric treatment effects
+JO  - Journal of the Royal Statistical Society: Series B (Statistical Methodology)
+VL  - 79
+IS  - 5
+SP  - 1463
+EP  - 1485
+DO  - 10.1111/rssb.12222
+ER  -
+
+TY  - JOUR
+AU  - Umlauft, Maria
+AU  - Konietschke, Frank
+AU  - Pauly, Markus
+PY  - 2017
+TI  - Rank-based permutation approaches for non-parametric factorial designs
+JO  - British Journal of Mathematical and Statistical Psychology
+VL  - 70
+IS  - 3
+SP  - 368
+EP  - 390
+DO  - 10.1111/bmsp.12089
+ER  -
+
+TY  - JOUR
+AU  - Friedrich, Sarah
+AU  - Konietschke, Frank
+AU  - Pauly, Markus
+PY  - 2017
+TI  - A wild bootstrap approach for nonparametric repeated measurements
+JO  - Computational Statistics & Data Analysis
+VL  - 113
+SP  - 38
+EP  - 52
+DO  - 10.1016/j.csda.2016.06.016
+ER  -
+
+TY  - JOUR
+AU  - Umlauft, Maria
+AU  - Placzek, Marius
+AU  - Konietschke, Frank
+AU  - Pauly, Markus
+PY  - 2019
+TI  - Wild bootstrapping rank-based procedures: Multiple testing in nonparametric factorial repeated measures designs
+JO  - Journal of Multivariate Analysis
+VL  - 171
+SP  - 176
+EP  - 192
+DO  - 10.1016/j.jmva.2018.12.005
+ER  -
+
+TY  - JOUR
+AU  - Noguchi, Kimihiro
+AU  - Gel, Yulia R.
+AU  - Brunner, Edgar
+AU  - Konietschke, Frank
+PY  - 2012
+TI  - nparLD: An R Software Package for the Nonparametric Analysis of Longitudinal Data in Factorial Experiments
+JO  - Journal of Statistical Software
+VL  - 50
+IS  - 12
+SP  - 1
+EP  - 23
+DO  - 10.18637/jss.v050.i12
+ER  -
+
+TY  - JOUR
+AU  - Friedrich, Sarah
+AU  - Konietschke, Frank
+AU  - Pauly, Markus
+PY  - 2019
+TI  - Resampling-Based Analysis of Multivariate Data and Repeated Measures Designs with the R Package MANOVA.RM
+JO  - The R Journal
+VL  - 11
+IS  - 2
+SP  - 380
+EP  - 400
+DO  - 10.32614/RJ-2019-051
+ER  -
+
+TY  - JOUR
+AU  - Frossard, Jaromil
+AU  - Renaud, Olivier
+PY  - 2021
+TI  - Permutation Tests for Regression, ANOVA, and Comparison of Signals: The permuco Package
+JO  - Journal of Statistical Software
+VL  - 99
+IS  - 15
+SP  - 1
+DO  - 10.18637/jss.v099.i15
+ER  -
+
+TY  - JOUR
+AU  - Hothorn, Torsten
+AU  - Hornik, Kurt
+AU  - van de Wiel, Mark A.
+AU  - Zeileis, Achim
+PY  - 2008
+TI  - Implementing a Class of Permutation Tests: The coin Package
+JO  - Journal of Statistical Software
+VL  - 28
+IS  - 8
+SP  - 1
+EP  - 23
+DO  - 10.18637/jss.v028.i08
+ER  -
+
+TY  - JOUR
+AU  - Happ, Martin
+AU  - Zimmermann, Georg
+AU  - Brunner, Edgar
+AU  - Bathke, Arne C.
+PY  - 2020
+TI  - Pseudo-Ranks: How to Calculate Them Efficiently in R
+JO  - Journal of Statistical Software
+VL  - 95
+IS  - Code Snippet 1
+SP  - 1
+EP  - 22
+DO  - 10.18637/jss.v095.c01
+ER  -
+
+TY  - JOUR
+AU  - Brunner, Edgar
+AU  - Konietschke, Frank
+AU  - Bathke, Arne C.
+AU  - Pauly, Markus
+PY  - 2021
+TI  - Ranks and Pseudo-ranks—Surprising Results of Certain Rank Tests in Unbalanced Designs
+JO  - International Statistical Review
+VL  - 89
+IS  - 2
+SP  - 349
+EP  - 366
+DO  - 10.1111/insr.12418
+ER  -
+
+TY  - JOUR
+AU  - Konietschke, Frank
+AU  - Brunner, Edgar
+PY  - 2023
+TI  - rankFD: An R Software Package for Nonparametric Analysis of General Factorial Designs
+JO  - The R Journal
+VL  - 15
+IS  - 1
+SP  - 142
+EP  - 158
+DO  - 10.32614/RJ-2023-029
+ER  -
+
+TY  - JOUR
+AU  - Amro, Lubna
+AU  - Konietschke, Frank
+AU  - Pauly, Markus
+PY  - 2024
+TI  - Incompletely Observed Nonparametric Factorial Designs With Repeated Measurements: A Wild Bootstrap Approach
+JO  - Biometrical Journal
+VL  - 66
+IS  - 8
+SP  - e70008
+DO  - 10.1002/bimj.70008
+ER  -
+
+TY  - JOUR
+AU  - Jan, Show-Li
+AU  - Shieh, Gwowen
+PY  - 2025
+TI  - An Improved Nonparametric Test and Sample Size Procedures for the Randomized Complete Block Designs
+JO  - Sankhya B
+VL  - 87
+SP  - 686
+EP  - 711
+DO  - 10.1007/s13571-025-00362-2
+ER  -
+
+TY  - JOUR
+AU  - Thiel, Konstantin Emil
+AU  - Sattler, Paavo
+AU  - Bathke, Arne C.
+AU  - Zimmermann, Georg
+PY  - 2026
+TI  - Resampling NANCOVA: Nonparametric analysis of covariance in small samples
+JO  - Computational Statistics & Data Analysis
+VL  - 215
+SP  - 108290
+DO  - 10.1016/j.csda.2025.108290
+ER  -
+
+TY  - CONF
+AU  - Wobbrock, Jacob O.
+AU  - Findlater, Leah
+AU  - Gergle, Darren
+AU  - Higgins, James J.
+PY  - 2011
+TI  - The Aligned Rank Transform for Nonparametric Factorial Analyses Using Only ANOVA Procedures
+T2  - Proceedings of the SIGCHI Conference on Human Factors in Computing Systems
+SP  - 143
+EP  - 146
+PB  - ACM
+DO  - 10.1145/1978942.1978963
+ER  -
+
+TY  - CONF
+AU  - Elkin, Lisa A.
+AU  - Kay, Matthew
+AU  - Higgins, James J.
+AU  - Wobbrock, Jacob O.
+PY  - 2021
+TI  - An Aligned Rank Transform Procedure for Multifactor Contrast Tests
+T2  - Proceedings of the ACM Symposium on User Interface Software and Technology
+SP  - 754
+EP  - 768
+PB  - ACM
+DO  - 10.1145/3472749.3474784
+ER  -
+
+TY  - JOUR
+AU  - Hayfield, Tristen
+AU  - Racine, Jeffrey S.
+PY  - 2008
+TI  - Nonparametric Econometrics: The np Package
+JO  - Journal of Statistical Software
+VL  - 27
+IS  - 5
+DO  - 10.18637/jss.v027.i05
+ER  -
+
+TY  - JOUR
+AU  - Pya, Natalya
+AU  - Wood, Simon N.
+PY  - 2015
+TI  - Shape constrained additive models
+JO  - Statistics and Computing
+VL  - 25
+IS  - 3
+SP  - 543
+EP  - 559
+DO  - 10.1007/s11222-013-9448-7
+ER  -
+
+TY  - JOUR
+AU  - Sen, Pranab Kumar
+PY  - 1968
+TI  - Estimates of the Regression Coefficient Based on Kendall's Tau
+JO  - Journal of the American Statistical Association
+VL  - 63
+IS  - 324
+SP  - 1379
+EP  - 1389
+DO  - 10.1080/01621459.1968.10480934
+ER  -
+
+TY  - JOUR
+AU  - Wood, Simon N.
+PY  - 2025
+TI  - Generalized Additive Models
+JO  - Annual Review of Statistics and Its Application
+VL  - 12
+SP  - 497
+EP  - 526
+DO  - 10.1146/annurev-statistics-112723-034249
+ER  -
+
+TY  - JOUR
+AU  - Ng, Pin
+AU  - Maechler, Martin
+PY  - 2007
+TI  - A fast and efficient implementation of qualitatively constrained quantile smoothing splines
+JO  - Statistical Modelling
+VL  - 7
+IS  - 4
+SP  - 315
+EP  - 328
+DO  - 10.1177/1471082X0700700403
+ER  -
+
+TY  - JOUR
+AU  - Koenker, Roger
+AU  - Bassett, Gilbert, Jr.
+PY  - 1978
+TI  - Regression Quantiles
+JO  - Econometrica
+VL  - 46
+IS  - 1
+SP  - 33
+EP  - 50
+DO  - 10.2307/1913643
+ER  -
+
+TY  - JOUR
+AU  - Racine, Jeffrey S.
+AU  - Hart, Jeffrey
+AU  - Li, Qi
+PY  - 2006
+TI  - Testing the Significance of Categorical Predictor Variables in Nonparametric Regression Models
+JO  - Econometric Reviews
+VL  - 25
+IS  - 4
+SP  - 523
+EP  - 544
+DO  - 10.1080/07474930600972590
+ER  -
+
+TY  - JOUR
+AU  - Hsiao, Cheng
+AU  - Li, Qi
+AU  - Racine, Jeffrey S.
+PY  - 2007
+TI  - A consistent model specification test with mixed discrete and continuous data
+JO  - Journal of Econometrics
+VL  - 140
+IS  - 2
+SP  - 802
+EP  - 826
+DO  - 10.1016/j.jeconom.2006.07.015
+ER  -
+
+TY  - JOUR
+AU  - Wang, Min-Chiang
+AU  - van Ryzin, John
+PY  - 1981
+TI  - A class of smooth estimators for discrete distributions
+JO  - Biometrika
+VL  - 68
+IS  - 1
+SP  - 301
+EP  - 309
+DO  - 10.1093/biomet/68.1.301
+ER  -
+
+TY  - JOUR
+AU  - Racine, Jeffrey S.
+AU  - Li, Qi
+PY  - 2004
+TI  - Nonparametric estimation of regression functions with both categorical and continuous data
+JO  - Journal of Econometrics
+VL  - 119
+IS  - 1
+SP  - 99
+EP  - 130
+DO  - 10.1016/S0304-4076(03)00157-X
+ER  -
+
+TY  - JOUR
+AU  - Turner, T. R.
+AU  - Wollan, P. C.
+PY  - 1997
+TI  - Locating a maximum using isotonic regression
+JO  - Computational Statistics & Data Analysis
+VL  - 25
+IS  - 3
+SP  - 305
+EP  - 320
+DO  - 10.1016/S0167-9473(97)00009-1
+ER  -
+
+TY  - JOUR
+AU  - Stout, Quentin F.
+PY  - 2008
+TI  - Unimodal regression via prefix isotonic regression
+JO  - Computational Statistics & Data Analysis
+VL  - 53
+IS  - 2
+SP  - 289
+EP  - 297
+DO  - 10.1016/j.csda.2008.08.005
+ER  -
+
+TY  - JOUR
+AU  - Geng, Zhi
+AU  - Shi, Ning-Zhong
+PY  - 1990
+TI  - Isotonic Regression for Umbrella Orderings
+JO  - Journal of the Royal Statistical Society Series C: Applied Statistics
+VL  - 39
+IS  - 3
+SP  - 397
+EP  - 402
+DO  - 10.2307/2347399
+ER  -
+
+TY  - JOUR
+AU  - Liao, Xiyue
+AU  - Meyer, Mary C.
+PY  - 2019
+TI  - cgam: An R Package for the Constrained Generalized Additive Model
+JO  - Journal of Statistical Software
+VL  - 89
+IS  - 5
+DO  - 10.18637/jss.v089.i05
+ER  -
+

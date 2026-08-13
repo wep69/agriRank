@@ -1,0 +1,16 @@
+agriRank documentation/static build audit
+========================================
+Version: 0.12.0.9000
+R source files: 15
+Exports: 53
+Exports with source definitions: 53
+Registered S3 methods: 17
+Rd files: 54
+Dedicated Rd aliases for exports: 53/53
+Exports with >=3 documented example code lines: 53/53
+R Markdown vignettes: 18
+Testthat files: 8
+Exports directly referenced in tests: 53/53
+Undeclared namespaced external packages: 0
+Static delimiter/Rd/Rmd problems: 0
+Runtime R validation: pending because R/Rscript is not mounted in the current environment.

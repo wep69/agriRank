@@ -1,0 +1,23 @@
+# R
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+.Rapp.history
+
+# build artifacts
+*.tar.gz
+*.tgz
+*.zip
+*.Rcheck/
+src/*.o
+src/*.so
+src/*.dll
+inst/doc/
+
+# calibration output, reproducible from the scripts
+inst/calibration/results/
+
+# OS
+.DS_Store
+Thumbs.db

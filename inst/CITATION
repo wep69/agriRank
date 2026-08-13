@@ -1,0 +1,14 @@
+citHeader("To cite agriRank in publications, cite the package version and the methodological references corresponding to the engine used. The native incomplete repeated-measures engine additionally requires citation of Amro, Konietschke and Pauly (2024).")
+
+bibentry(
+  bibtype = "Manual",
+  title = "agriRank: Design-Aware Rank-Based, Permutation and Robust Inference for Agricultural Experiments",
+  author = c(
+    person(given = c("Walter", "Esfrain"), family = "Pereira",
+           comment = c(ORCID = "0000-0003-1085-0191")),
+    person(given = c("Magali", "Haidee"), family = "Pereira Martinez",
+           comment = c(ORCID = "0009-0009-5419-959X"))),
+  year = "2026",
+  note = "R package version 0.13.0",
+  textVersion = "Pereira, W. E., & Pereira Martinez, M. H. (2026). agriRank: Design-Aware Rank-Based, Permutation and Robust Inference for Agricultural Experiments. R package version 0.13.0."
+)

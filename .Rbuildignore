@@ -1,0 +1,9 @@
+^\.github$
+^README\.Rmd$
+^IMPLEMENTATION_SCOPE\.md$
+^VALIDATION_PLAN\.md$
+^inst/calibration/results$
+^cheatsheet$
+^cran-comments\.md$
+^\.git$
+^\.gitignore$

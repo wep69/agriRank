@@ -1,0 +1,61 @@
+Package: agriRank
+Type: Package
+Title: Design-Aware Rank-Based, Permutation and Robust Inference for Agricultural Experiments
+Version: 0.13.0
+Authors@R: c(
+    person(given = c("Walter", "Esfrain"), family = "Pereira",
+           email = "walterufpb@yahoo.com.br", role = c("aut", "cre", "cph"),
+           comment = c(ORCID = "0000-0003-1085-0191")),
+    person(given = c("Magali", "Haidee"), family = "Pereira Martinez",
+           role = "aut",
+           comment = c(ORCID = "0009-0009-5419-959X")))
+Description: A design-aware workflow for nonparametric, rank-based, permutation,
+    resampling and robust inference in agricultural experiments. The package
+    represents the randomization structure explicitly and integrates analysis of
+    completely randomized, randomized complete block, factorial, split-plot, split-split, strip-plot, multi-environment, multivariate,
+    repeated-measures and incomplete repeated-measures experiments. It provides
+    effect estimates, design-aware Conover comparisons, nonparametric,
+    integer-support and shape-constrained regression, multiplicity-aware
+    contrasts, ggplot2/Plotly
+    graphics, sensitivity analyses, batch workflows and reproducible reports.
+    An experimental native
+    wild-bootstrap engine implements rank-based quadratic-form inference for
+    incompletely observed repeated measurements following Amro, Konietschke and
+    Pauly (2024) under the assumptions documented by that method.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.2
+Depends: R (>= 4.1.0)
+Imports:
+    utils,
+    ggplot2
+Suggests:
+    ARTool,
+    coin,
+    emmeans,
+    gt,
+    knitr,
+    MANOVA.RM,
+    multcompView,
+    nparcomp,
+    nparLD,
+    permuco,
+    permute,
+    plotly,
+    PMCMRplus,
+    cgam,
+    cobs,
+    Iso,
+    mblm,
+    mgcv,
+    np,
+    quantreg,
+    scam,
+    quarto,
+    rankFD,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    WRS2
+Config/testthat/edition: 3
+VignetteBuilder: knitr

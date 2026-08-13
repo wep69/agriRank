@@ -1,0 +1,100 @@
+---
+title: "Effect estimation, contrasts and multiple comparisons"
+author: "agriRank Development Team"
+date: "2026-08-12"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Effect estimation, contrasts and multiple comparisons}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r agrirank-setup, include=FALSE}
+library(agriRank)
+```
+
+P-values alone do not describe treatment magnitude. `agriRank` treats effect estimation, uncertainty, planned contrasts, and multiplicity as first-class parts of the workflow.
+
+
+
+## `agri_effects()`: three examples
+
+```r
+x <- simulate_agri("crd", seed = 51)
+fit <- np_crd(yield ~ treatment, x)
+agri_effects(fit)
+agri_effects(fit, ci = TRUE, B = 199, seed = 52)
+if (requireNamespace("rankFD", quietly = TRUE)) {
+  xf <- simulate_agri("factorial", seed = 53)
+  ff <- np_factorial(yield ~ A * B, xf, method = "rankFD")
+  agri_effects(ff)
+}
+```
+
+## `agri_pairs()`: three examples
+
+```r
+agri_pairs(fit, adjust = "holm")
+xf <- simulate_agri("factorial", seed = 54)
+ff0 <- np_factorial(yield ~ A * B, xf, method = "auto")
+agri_pairs(ff0, by = "B", adjust = "holm")
+rm <- simulate_agri("repeated_missing", seed = 55, missing_rate = .10)
+drm <- agri_design(height ~ treatment * time, rm, design = "repeated", subject = subject, within = time)
+wr <- agri_rank(drm, method = "incomplete_wild", B = 299, missing_assumption = "MCAR")
+agri_pairs(wr, factor = "time", by = "treatment", B = 299, seed = 56)
+```
+
+## `agri_contrast()`: three examples with the native repeated wild-rank engine
+
+```r
+grid <- wr$engine$prep$cell_grid
+k <- nrow(grid)
+# 1. First cell against second cell
+C1 <- matrix(c(1, -1, rep(0, k - 2)), nrow = 1)
+agri_contrast(wr, C1, labels = "cell1-cell2", B = 299)
+
+# 2. Two simultaneous contrasts
+C2 <- rbind(c(1, -1, rep(0, k - 2)), c(rep(0, 2), 1, -1, rep(0, k - 4)))
+agri_contrast(wr, C2, labels = c("C1", "C2"), B = 299, seed = 57)
+
+# 3. A custom contrast matrix generated from the repeated cell grid
+C3 <- diag(k)[1:2, , drop = FALSE] - matrix(colMeans(diag(k)[3:k, , drop = FALSE]), 2, k, byrow = TRUE)
+agri_contrast(wr, C3, B = 299, seed = 58)
+```
+
+## `agri_cld()`: three examples
+
+```r
+if (requireNamespace("multcompView", quietly = TRUE)) agri_cld(fit)
+if (requireNamespace("multcompView", quietly = TRUE)) agri_cld(fit, adjust = "BH")
+if (requireNamespace("multcompView", quietly = TRUE)) agri_cld(fit, alpha = .01)
+```
+
+A compact letter display is a visual summary of adjusted pairwise decisions. It should not replace effect estimates, confidence intervals, or the scientific contrast definition.
+## Core methodological references
+
+The documentation uses the bibliographic year of the version of record. Core references were cross-checked against the publisher/journal record and at least one independent bibliographic source; see `inst/references/REFERENCE_VERIFICATION.md` and `inst/references/agriRank-methods-verified.ris`.
+
+- Pauly, M., Brunner, E., & Konietschke, F. (2015). Asymptotic permutation tests in general factorial designs. *Journal of the Royal Statistical Society: Series B*, 77(2), 461–473. DOI: 10.1111/rssb.12073.
+- Brunner, E., Konietschke, F., Pauly, M., & Puri, M. L. (2017). Rank-based procedures in factorial designs: hypotheses about non-parametric treatment effects. *Journal of the Royal Statistical Society: Series B*, 79(5), 1463–1485. DOI: 10.1111/rssb.12222.
+- Umlauft, M., Konietschke, F., & Pauly, M. (2017). Rank-based permutation approaches for non-parametric factorial designs. *British Journal of Mathematical and Statistical Psychology*, 70(3), 368–390. DOI: 10.1111/bmsp.12089.
+- Friedrich, S., Konietschke, F., & Pauly, M. (2017). A wild bootstrap approach for nonparametric repeated measurements. *Computational Statistics & Data Analysis*, 113, 38–52. DOI: 10.1016/j.csda.2016.06.016.
+- Umlauft, M., Placzek, M., Konietschke, F., & Pauly, M. (2019). Wild bootstrapping rank-based procedures: multiple testing in nonparametric factorial repeated measures designs. *Journal of Multivariate Analysis*, 171, 176–192. DOI: 10.1016/j.jmva.2018.12.005.
+- Noguchi, K., Gel, Y. R., Brunner, E., & Konietschke, F. (2012). nparLD: An R software package for the nonparametric analysis of longitudinal data in factorial experiments. *Journal of Statistical Software*, 50(12), 1–23. DOI: 10.18637/jss.v050.i12.
+- Friedrich, S., Konietschke, F., & Pauly, M. (2019). MANOVA.RM: Resampling-based analysis of multivariate data and repeated measures designs. *The R Journal*, 11(2), 380–400. DOI: 10.32614/RJ-2019-051.
+- Frossard, J., & Renaud, O. (2021). Permutation tests for regression, ANOVA, and comparison of signals: the permuco package. *Journal of Statistical Software*, 99(15). DOI: 10.18637/jss.v099.i15.
+- Hothorn, T., Hornik, K., van de Wiel, M. A., & Zeileis, A. (2008). Implementing a class of permutation tests: the coin package. *Journal of Statistical Software*, 28(8), 1–23. DOI: 10.18637/jss.v028.i08.
+- Brunner, E., Konietschke, F., Bathke, A. C., & Pauly, M. (2021). Ranks and pseudo-ranks: surprising results of certain rank tests in unbalanced designs. *International Statistical Review*, 89(2), 349–366. DOI: 10.1111/insr.12418.
+- Konietschke, F., & Brunner, E. (2023). rankFD: An R software package for nonparametric analysis of general factorial designs. *The R Journal*, 15(1), 142–158. DOI: 10.32614/RJ-2023-029.
+- Amro, L., Konietschke, F., & Pauly, M. (2024). Incompletely observed nonparametric factorial designs with repeated measurements: a wild bootstrap approach. *Biometrical Journal*, 66(8), e70008. DOI: 10.1002/bimj.70008.
+- Jan, S.-L., & Shieh, G. (2025). Power and sample size procedures for the Friedman test. *Sankhya B*, 87, 686–711. DOI: 10.1007/s13571-025-00362-2.
+- Thiel, N. et al. (2026). Resampling NANCOVA for small samples. *Computational Statistics & Data Analysis*, 215, 108290. DOI: 10.1016/j.csda.2025.108290.
+- Wobbrock, J. O., Findlater, L., Gergle, D., & Higgins, J. J. (2011). The aligned rank transform for nonparametric factorial analyses using only ANOVA procedures. *CHI 2011*, 143–146. DOI: 10.1145/1978942.1978963.
+- Elkin, L. A., Kay, M., Higgins, J. J., & Wobbrock, J. O. (2021). An aligned rank transform procedure for multifactor contrast tests. *UIST 2021*, 754–768. DOI: 10.1145/3472749.3474784.

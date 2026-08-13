@@ -1,0 +1,40 @@
+TY  - JOUR
+AU  - Amro, Lubna
+AU  - Konietschke, Frank
+AU  - Pauly, Markus
+PY  - 2024
+TI  - Incompletely Observed Nonparametric Factorial Designs With Repeated Measurements: A Wild Bootstrap Approach
+JO  - Biometrical Journal
+VL  - 66
+IS  - 8
+SP  - e70008
+DO  - 10.1002/bimj.70008
+ER  -
+
+TY  - JOUR
+AU  - Noguchi, Kimihiro
+AU  - Gel, Yulia R.
+AU  - Brunner, Edgar
+AU  - Konietschke, Frank
+PY  - 2012
+TI  - nparLD: An R Software Package for the Nonparametric Analysis of Longitudinal Data in Factorial Experiments
+JO  - Journal of Statistical Software
+VL  - 50
+IS  - 12
+SP  - 1
+EP  - 23
+ER  -
+
+TY  - JOUR
+AU  - Friedrich, Sarah
+AU  - Konietschke, Frank
+AU  - Pauly, Markus
+PY  - 2019
+TI  - Resampling-Based Analysis of Multivariate Data and Repeated Measures Designs with the R Package MANOVA.RM
+JO  - The R Journal
+VL  - 11
+IS  - 2
+SP  - 380
+EP  - 400
+DO  - 10.32614/RJ-2019-051
+ER  -
