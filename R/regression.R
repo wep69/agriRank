@@ -452,6 +452,17 @@ agri_np_regression <- function(formula, data = NULL,
   }
   if (length(block_nm)) dat[[block_nm]] <- .safe_factor(dat[[block_nm]])
   numeric_predictors <- predictors[vapply(dat[predictors], is.numeric, logical(1))]
+  # Qualitative predictors enter the model as factor adjustment terms. A
+  # character column is read as the qualitative variable it is; a factor with
+  # fewer than two levels carries no contrast against the response and is
+  # refused, because a model-matrix column of zeros would only pretend to
+  # estimate it.
+  factor_predictors <- setdiff(predictors, numeric_predictors)
+  for (v in factor_predictors) {
+    if (!is.factor(dat[[v]])) dat[[v]] <- factor(dat[[v]])
+    if (nlevels(dat[[v]]) < 2L)
+      .agri_stop(sprintf("Qualitative predictor `%s` has fewer than two levels. A qualitative factor needs at least two levels to contrast against the response; check its coding or remove it from the formula.", v))
+  }
   dq <- intersect(design_quantitative %||% character(), numeric_predictors)
   if (!is.null(integer_predictor)) {
     integer_predictor <- as.character(integer_predictor)[1L]
@@ -494,6 +505,14 @@ agri_np_regression <- function(formula, data = NULL,
   }
 
   one_numeric <- length(predictors) == 1L && length(numeric_predictors) == 1L
+  # A curve-only engine has no adjustment term in which a qualitative factor
+  # could live. Refusing it by name keeps the factor from being silently
+  # dropped or from entering a smoother that would ignore it.
+  no_factor_methods <- c("theil_sen", "siegel", "smoothing_spline", "cobs",
+                         "isotonic", "unimodal_isotonic", "loess")
+  if (length(factor_predictors) && method %in% no_factor_methods)
+    .agri_stop(sprintf("Method `%s` does not adjust for qualitative predictors in agriRank; it cannot retain %s. Use quantile, kernel, GAM or SCAM, which keep a factor as an adjustment term, or analyze the factor with the designed-experiment workflow.",
+                       method, paste(sprintf("`%s`", factor_predictors), collapse = ", ")))
   if (!identical(shape, "none") && !method %in% c("scam", "cobs", "isotonic", "integer_grid"))
     .agri_stop("A shape constraint is only implemented by SCAM, COBS, isotonic regression, integer-grid wrappers, or `method = 'auto'`. Do not declare a shape that the selected engine will ignore.")
   if (identical(method, "umbrella") && !identical(shape, "none"))
@@ -627,7 +646,8 @@ agri_np_regression <- function(formula, data = NULL,
   out <- c(list(
     call = match.call(), formula = formula, formula_used = formula_used,
     data = dat, response = response, predictors = predictors,
-    numeric_predictors = numeric_predictors, primary_predictor = primary,
+    numeric_predictors = numeric_predictors, factor_predictors = factor_predictors,
+    primary_predictor = primary,
     block = block_nm, design = design_object, method = method, tau = tau, family = fam, shape = shape,
     engine = engine, weights = weights,
     integer_predictor = if (!is.null(integer_info)) primary else NULL,
@@ -658,6 +678,14 @@ print.agri_np_reg_fit <- function(x, ...) {
   cat("  Method: ", x$method, "\n", sep = "")
   cat("  Response: ", x$response, "\n", sep = "")
   cat("  Predictors: ", paste(x$predictors, collapse = ", "), "\n", sep = "")
+  if (length(x$factor_predictors)) {
+    cat("  Qualitative predictors: ", paste(x$factor_predictors, collapse = ", "), "\n", sep = "")
+    ref <- vapply(x$factor_predictors, function(f) {
+      lv <- levels(x$data[[f]])
+      sprintf("reference level of %s is \"%s\"", f, lv[1L])
+    }, character(1))
+    cat("  Note: ", paste(ref, collapse = "; "), ". Coefficients are contrasts against the reference.\n", sep = "")
+  }
   if (length(x$block)) cat("  Block adjustment: ", x$block, "\n", sep = "")
   if (!identical(x$shape, "none")) cat("  Shape constraint: ", x$shape, "\n", sep = "")
   if (!is.null(x$integer_support) && length(x$integer_support)) {
@@ -728,9 +756,69 @@ agri_np_predict <- function(object, newdata = NULL, interval = c("none", "confid
 #' @export
 predict.agri_np_reg_fit <- function(object, newdata = NULL, ...) agri_np_predict(object, newdata = newdata, ...)
 
+# Effective degrees of freedom, when the engine exposes them. Reported next to
+# any R-squared so that a high value obtained through flexibility is visible.
+.np_effective_df <- function(object) {
+  z <- switch(object$method,
+    smoothing_spline = object$engine$df,
+    loess = object$engine$enp,
+    gam = ,
+    scam = tryCatch(sum(summary(object$engine)$edf), error = function(e) NULL),
+    theil_sen = ,
+    siegel = ,
+    quantile = tryCatch(length(stats::coef(object$engine)), error = function(e) NULL),
+    isotonic = tryCatch(length(unique(stats::fitted(object$engine))), error = function(e) NULL),
+    unimodal_isotonic = tryCatch(length(unique(object$engine$y)), error = function(e) NULL),
+    integer_grid = tryCatch(.np_effective_df(object$base_fit), error = function(e) NULL),
+    NULL)
+  if (is.null(z) || !length(z)) NA_real_ else as.numeric(z[1L])
+}
+
+# Out-of-fold coefficient of determination. Unlike the fitted pseudo-R2, this
+# one does not improve by making the smoother more flexible.
+.np_cv_r2 <- function(object, kfold = 5L, seed = 1) {
+  d <- object$data
+  n <- nrow(d)
+  kfold <- max(2L, min(as.integer(kfold), n))
+  y <- d[[object$response]]
+  pred <- rep(NA_real_, n)
+  .seed_eval(seed, {
+    folds <- sample(rep(seq_len(kfold), length.out = n))
+    for (k in seq_len(kfold)) {
+      tr <- d[folds != k, , drop = FALSE]
+      te <- d[folds == k, , drop = FALSE]
+      fitk <- tryCatch(
+        agri_np_regression(object$formula, tr, method = object$method, tau = object$tau,
+                           family = object$family, shape = object$shape,
+                           block = object$block, na_action = "fail",
+                           span = object$settings$span, degree = object$settings$degree,
+                           k = object$settings$k,
+                           gam_structure = object$settings$gam_structure %||% "additive",
+                           kernel_regtype = object$settings$kernel_regtype %||% "ll",
+                           bwmethod = object$settings$bwmethod,
+                           predictor_support = if (!is.null(object$integer_support)) "custom_integer" else "continuous",
+                           integer_predictor = object$integer_predictor,
+                           integer_values = object$integer_support,
+                           integer_base_method = object$base_method %||% "gam"),
+        error = function(e) NULL)
+      if (is.null(fitk)) next
+      pp <- tryCatch(agri_np_predict(fitk, te), error = function(e) NULL)
+      if (is.null(pp)) next
+      if (is.matrix(pp)) pp <- pp[, 1L]
+      if (is.data.frame(pp)) pp <- pp[[intersect(c("fit", "fitted"), names(pp))[1L]]]
+      pred[folds == k] <- as.numeric(pp)
+    }
+  })
+  ok <- is.finite(pred) & is.finite(y)
+  if (sum(ok) < 3L) return(NA_real_)
+  sst <- sum((y[ok] - mean(y[ok]))^2)
+  if (!(sst > 0)) return(NA_real_)
+  1 - sum((y[ok] - pred[ok])^2) / sst
+}
+
 #' Regression diagnostics and predictive-error summaries
 #' @export
-agri_np_diagnostics <- function(object) {
+agri_np_diagnostics <- function(object, cv = FALSE, kfold = 5L, seed = 1) {
   if (!inherits(object, "agri_np_reg_fit")) .agri_stop("`object` must be an agri_np_reg_fit.")
   res <- object$residuals
   fit <- object$fitted
@@ -746,9 +834,32 @@ agri_np_diagnostics <- function(object) {
     sm <- tryCatch(summary(object$engine), error = function(e) NULL)
     if (!is.null(sm)) details$edf <- tryCatch(sum(sm$edf), error = function(e) NA_real_)
   }
+  # Explained-variation indices. Three are reported because they answer
+  # different questions and can disagree, which is itself informative.
+  y <- object$data[[object$response]]
+  oky <- is.finite(y) & is.finite(fit)
+  sst <- sum((y[oky] - mean(y[oky]))^2)
+  sse <- sum((y[oky] - fit[oky])^2)
+  pseudo_r2 <- if (sst > 0) 1 - sse / sst else NA_real_
+  spearman_r2 <- if (sum(oky) >= 4L)
+    suppressWarnings(stats::cor(y[oky], fit[oky], method = "spearman"))^2 else NA_real_
+  edf <- .np_effective_df(object)
+  cv_r2 <- NA_real_
+  if (isTRUE(cv)) cv_r2 <- .np_cv_r2(object, kfold = kfold, seed = seed)
+
+  r2 <- data.frame(
+    pseudo_r2 = pseudo_r2,
+    cv_r2 = cv_r2,
+    spearman_r2 = spearman_r2,
+    effective_df = edf,
+    n = sum(oky)
+  )
+  attr(r2, "note") <- "pseudo_r2 = 1 - SSE/SST on the fitted values; it rewards flexibility and must be read next to effective_df. cv_r2 uses out-of-fold predictions and is the honest one for comparing engines. spearman_r2 is the squared rank correlation between observed and fitted, coherent with the rank-based estimands of the package. None of them is the least-squares R-squared of a linear model."
+
   list(
     method = object$method,
     metrics = object$metrics,
+    r2 = r2,
     residual_median = stats::median(res, na.rm = TRUE),
     residual_MAD = stats::mad(res, na.rm = TRUE),
     residual_fitted_spearman = spearman_rf,
@@ -814,6 +925,7 @@ agri_np_compare <- function(formula, data,
   rownames(ans) <- NULL
   attr(ans, "metric") <- metric
   attr(ans, "note") <- "Cross-validation ranks predictive error only; it does not select an inferential method by p-value."
+  class(ans) <- c("agri_np_compare", class(ans))
   ans
 }
 
@@ -867,36 +979,115 @@ agri_np_optimum <- function(object, predictor = NULL, objective = c("max", "min"
   )
 }
 
-.bootstrap_sample <- function(data, cluster = NULL) {
+.bootstrap_sample <- function(data, cluster = NULL, relabel = TRUE) {
   if (is.null(cluster) || !length(cluster)) return(data[sample.int(nrow(data), nrow(data), replace = TRUE), , drop = FALSE])
   lev <- unique(as.character(data[[cluster]]))
   draw <- sample(lev, length(lev), replace = TRUE)
   pieces <- lapply(seq_along(draw), function(j) {
     d <- data[as.character(data[[cluster]]) == draw[j], , drop = FALSE]
-    d[[cluster]] <- factor(paste0(draw[j], "__boot", j))
+    # Relabeling duplicated clusters keeps backends from pooling the copies,
+    # and is admissible only while the cluster variable is not itself a
+    # modeled term. When the cluster is a fixed adjustment factor, the
+    # original labels must survive so that fitted terms and predictions stay
+    # comparable across replicates.
+    if (isTRUE(relabel)) d[[cluster]] <- factor(paste0(draw[j], "__boot", j))
+    else d[[cluster]] <- factor(as.character(d[[cluster]]), levels = lev)
     d
   })
   do.call(rbind, pieces)
+}
+
+# B below 999 is a speed device for examples and vignettes. The note is raised
+# once per session so teaching material stays readable while an interactive
+# user still sees it at the first undersized call.
+.agri_state <- new.env(parent = emptyenv())
+.np_check_B <- function(B) {
+  if (B < 999L && !isTRUE(getOption("agriRank.quiet_small_B")) &&
+      is.null(.agri_state$small_B_warned)) {
+    .agri_state$small_B_warned <- TRUE
+    .agri_warn("B < 999 is a speed device for examples and vignettes; final inference needs B >= 999. Silence this note with options(agriRank.quiet_small_B = TRUE).")
+  }
+}
+
+# A coefficient replicate is comparable with the original vector only when it
+# estimates exactly the same parameters. Dummy coefficients of qualitative
+# factors can be reordered, or lost when a bootstrap sample depletes a level,
+# so alignment is by term name; anything else is a failed replicate, not data
+# to be read in the original order.
+.np_align_coefficients <- function(original, pp) {
+  if (length(pp) != length(original)) return(NULL)
+  if (is.null(names(original)) || is.null(names(pp))) return(pp)
+  if (!identical(sort(names(pp)), sort(names(original)))) return(NULL)
+  pp[names(original)]
+}
+
+# Names of the coefficients attributable to the agronomic block. Block effects
+# are nuisance adjustment terms: under cluster resampling their meaning changes
+# with every draw of the blocks, so they must not enter a coefficient
+# bootstrap target.
+.np_block_term_names <- function(object) {
+  b <- object$block
+  if (!length(b)) return(character())
+  x <- object$data[[b]]
+  if (!is.factor(x)) x <- factor(x)
+  mm <- tryCatch(stats::model.matrix(~., data = stats::setNames(list(x), b)),
+                 error = function(e) NULL)
+  if (is.null(mm)) return(character())
+  setdiff(colnames(mm), "(Intercept)")
+}
+
+# Resolve the cluster argument received through non-standard evaluation. A
+# forwarded NULL promise must fall back to the declared block, never be read
+# as a variable literally named after the forwarding formal.
+.np_resolve_cluster <- function(object, cexpr, cval) {
+  if (identical(cexpr, quote(NULL))) return(object$block)
+  if (is.null(cval)) return(NULL)
+  if (is.character(cval)) return(cval)
+  .capture_names(cexpr, names(object$data))
 }
 
 #' Cluster-aware bootstrap confidence bands for a regression curve
 #' @export
 agri_np_bootstrap <- function(object, newdata = NULL, predictor = NULL,
                               B = 499L, level = 0.95, seed = 1,
-                              cluster = NULL, n = 200L, fixed = list()) {
+                              cluster = NULL, n = 200L, fixed = list(),
+                              target = c("curve", "coefficients"),
+                              band = c("pointwise", "simultaneous"),
+                              keep_replicates = FALSE) {
   if (!inherits(object, "agri_np_reg_fit")) .agri_stop("`object` must be an agri_np_reg_fit.")
+  target <- match.arg(target)
+  band <- match.arg(band)
+  .np_check_B(B)
   cexpr <- substitute(cluster)
   cval <- tryCatch(cluster, error = function(e) NULL)
   cluster_nm <- if (identical(cexpr, quote(NULL))) object$block else if (is.character(cval)) cval else .capture_names(cexpr, names(object$data))
   if (length(cluster_nm) > 1L) .agri_stop("Bootstrap currently supports at most one cluster variable.")
-  if (is.null(newdata)) newdata <- .np_prediction_grid(object, predictor = predictor, n = n, fixed = fixed)
-  original <- agri_np_predict(object, newdata)
-  if (is.matrix(original)) original <- original[, 1L]
-  boot <- matrix(NA_real_, nrow(newdata), B)
+  # Coefficients are only meaningful for the engines that define them; the
+  # extractor refuses the others with an explicit message. Block adjustment
+  # terms are excluded from the target: under cluster resampling their meaning
+  # changes with every draw of the blocks, so only the scientific coefficients
+  # of the declared formula are resampled.
+  if (identical(target, "coefficients")) {
+    original_full <- stats::coef(object)
+    block_terms <- .np_block_term_names(object)
+    original <- if (is.null(names(original_full))) original_full
+                else original_full[setdiff(names(original_full), block_terms)]
+    if (!length(original))
+      .agri_stop("No scientific coefficient remains after removing the block adjustment terms from the bootstrap target.")
+    newdata <- NULL
+  } else {
+    if (is.null(newdata)) newdata <- .np_prediction_grid(object, predictor = predictor, n = n, fixed = fixed)
+    original <- agri_np_predict(object, newdata)
+    if (is.matrix(original)) original <- original[, 1L]
+  }
+  boot <- matrix(NA_real_, length(original), B)
   failures <- 0L
   .seed_eval(seed, {
     for (b in seq_len(B)) {
-      db <- .bootstrap_sample(object$data, cluster = cluster_nm)
+      # Cluster labels are kept intact because the cluster may itself be a
+      # modeled adjustment factor whose terms and predictions must stay
+      # defined and comparable in every replicate.
+      db <- .bootstrap_sample(object$data, cluster = cluster_nm, relabel = FALSE)
       z <- tryCatch(
         agri_np_regression(object$formula, db, method = object$method, tau = object$tau,
                            family = object$family, shape = object$shape,
@@ -913,19 +1104,57 @@ agri_np_bootstrap <- function(object, newdata = NULL, predictor = NULL,
         error = function(e) NULL
       )
       if (is.null(z)) { failures <- failures + 1L; next }
-      pp <- tryCatch(agri_np_predict(z, newdata), error = function(e) NULL)
+      pp <- tryCatch(
+        if (identical(target, "coefficients")) stats::coef(z) else agri_np_predict(z, newdata),
+        error = function(e) NULL)
       if (is.null(pp)) { failures <- failures + 1L; next }
       if (is.matrix(pp)) pp <- pp[, 1L]
+      if (identical(target, "coefficients")) {
+        if (length(block_terms) && !is.null(names(pp)))
+          pp <- pp[setdiff(names(pp), block_terms)]
+        pp <- .np_align_coefficients(original, pp)
+        if (is.null(pp)) { failures <- failures + 1L; next }
+      } else if (length(pp) != length(original)) { failures <- failures + 1L; next }
       boot[, b] <- as.numeric(pp)
     }
   })
   alpha <- 1 - level
   lower <- apply(boot, 1L, stats::quantile, probs = alpha/2, na.rm = TRUE, names = FALSE)
   upper <- apply(boot, 1L, stats::quantile, probs = 1-alpha/2, na.rm = TRUE, names = FALSE)
-  out <- cbind(newdata, fit = as.numeric(original), lower = lower, upper = upper)
+
+  if (identical(band, "simultaneous")) {
+    # Sup-t band: scale the pointwise standard errors by the quantile of the
+    # maximum absolute standardized deviation across the grid. A pointwise band
+    # covers each point at the nominal level; this one covers the whole curve.
+    se <- apply(boot, 1L, stats::sd, na.rm = TRUE)
+    se[!is.finite(se) | se <= 0] <- NA_real_
+    zmat <- abs((boot - original) / se)
+    sup <- suppressWarnings(apply(zmat, 2L, max, na.rm = TRUE))
+    sup <- sup[is.finite(sup)]
+    crit <- if (length(sup)) stats::quantile(sup, probs = level, names = FALSE) else NA_real_
+    lower <- original - crit * se
+    upper <- original + crit * se
+  }
+
+  out <- if (identical(target, "coefficients")) {
+    data.frame(term = names(original) %||% paste0("b", seq_along(original)),
+               estimate = as.numeric(original), lower = lower, upper = upper,
+               stringsAsFactors = FALSE)
+  } else {
+    cbind(newdata, fit = as.numeric(original), lower = lower, upper = upper)
+  }
   attr(out, "B") <- B
   attr(out, "failures") <- failures
   attr(out, "cluster") <- cluster_nm
+  attr(out, "level") <- level
+  attr(out, "target") <- target
+  attr(out, "band") <- band
+  attr(out, "predictor") <- if (identical(target, "curve")) (predictor %||% object$primary_predictor) else NULL
+  attr(out, "response") <- object$response
+  # The replicates are what make a histogram of the slope, a cloud of fitted
+  # curves or a custom band possible. They are kept only on request because
+  # they are B times larger than the summary.
+  if (isTRUE(keep_replicates)) attr(out, "replicates") <- boot
   class(out) <- c("agri_np_bootstrap", class(out))
   out
 }
@@ -1272,42 +1501,120 @@ print.agri_integer_confset <- function(x, ...) {
 }
 
 
-#' ggplot2 visualization for nonparametric regression
-#' @param object An `agri_np_reg_fit` object.
-#' @param type One-dimensional fit, residual, derivative, or two-dimensional surface.
-#' @param predictor Numeric focal predictor for one-dimensional graphics.
-#' @param n Grid resolution.
-#' @param fixed Named values at which other covariates are held fixed.
-#' @param interval Request an analytic confidence ribbon when the backend supports it.
-#' @param group Optional grouping variable for conditional curves.
-#' @param surface_predictors Two numeric predictors for a response-surface plot.
-#' @param ... Reserved for future extensions.
+.np_add_units <- function(p, type, x_unit = NULL, y_unit = NULL) {
+  if (type %in% c("forest")) return(p)
+  if (!is.null(x_unit) && !is.null(p$labels$x))
+    p <- p + ggplot2::labs(x = paste0(p$labels$x, " (", x_unit, ")"))
+  if (!is.null(y_unit) && !is.null(p$labels$y))
+    p <- p + ggplot2::labs(y = paste0(p$labels$y, " (", y_unit, ")"))
+  p
+}
+
 #' @export
-agri_np_plot <- function(object, type = c("fit", "residuals", "derivative", "surface"),
+agri_np_plot <- function(object, type = c("fit", "residuals", "derivative", "surface",
+                                          "qq", "scale_location", "order",
+                                          "efficiency", "difference", "levels", "forest"),
                          predictor = NULL, n = 200L, fixed = list(), interval = FALSE,
-                         group = NULL, surface_predictors = NULL, ...) {
+                         group = NULL, surface_predictors = NULL, bootstrap = NULL,
+                         seed = 1, palette = c("color", "grey"),
+                         x_unit = NULL, y_unit = NULL, ..., jitter = FALSE) {
   if (!inherits(object, "agri_np_reg_fit")) .agri_stop("`object` must be an agri_np_reg_fit.")
   type <- match.arg(type)
+  palette <- match.arg(palette)
+  if (type == "forest") return(agri_np_forest(object, bootstrap = bootstrap, seed = seed, palette = palette, ...))
+  if (type == "levels") return(.np_level_plot(object, bootstrap = bootstrap, seed = seed, ...))
+  p <- .np_plot_inner(object, type, predictor = predictor, n = n, fixed = fixed,
+                      interval = interval, group = group,
+                      surface_predictors = surface_predictors,
+                      bootstrap = bootstrap, seed = seed, palette = palette,
+                      jitter = jitter)
+  .np_add_units(p, type, x_unit, y_unit)
+}
+
+.np_plot_inner <- function(object, type = c("fit", "residuals", "derivative", "surface",
+                                           "qq", "scale_location", "order",
+                                           "efficiency", "difference", "levels", "forest"),
+                          predictor = NULL, n = 200L, fixed = list(), interval = FALSE,
+                          group = NULL, surface_predictors = NULL, bootstrap = NULL,
+                          seed = 1, palette = "color", jitter = FALSE) {
+  if (!inherits(object, "agri_np_reg_fit")) .agri_stop("`object` must be an agri_np_reg_fit.")
+  type <- match.arg(type)
+  if (type == "levels") return(.np_level_plot(object, bootstrap = bootstrap, seed = seed))
   predictor <- predictor %||% object$primary_predictor
   if (type == "residuals") {
     dd <- data.frame(fitted = object$fitted, residual = object$residuals)
     return(ggplot2::ggplot(dd, ggplot2::aes(x = fitted, y = residual)) +
       ggplot2::geom_point() + ggplot2::geom_hline(yintercept = 0, linetype = 2) +
-      ggplot2::labs(x = "Fitted value", y = "Residual") + ggplot2::theme_minimal())
+      ggplot2::labs(x = "Fitted value", y = "Residual") + agri_theme())
+  }
+  # Classical residual diagnostics. They are descriptive: agriRank never uses a
+  # normality diagnostic to choose an inferential method.
+  if (type == "qq") {
+    r <- object$residuals[is.finite(object$residuals)]
+    q <- stats::qqnorm(r, plot.it = FALSE)
+    dd <- data.frame(theoretical = q$x, sample = q$y)
+    return(ggplot2::ggplot(dd, ggplot2::aes(x = theoretical, y = sample)) +
+      ggplot2::geom_point() +
+      ggplot2::geom_qq_line(ggplot2::aes(sample = sample), inherit.aes = FALSE) +
+      ggplot2::labs(x = "Theoretical quantile", y = "Residual quantile") +
+      agri_theme())
+  }
+  if (type == "scale_location") {
+    dd <- data.frame(fitted = object$fitted,
+                     root_abs = sqrt(abs(object$residuals)))
+    return(ggplot2::ggplot(dd, ggplot2::aes(x = fitted, y = root_abs)) +
+      ggplot2::geom_point() +
+      ggplot2::labs(x = "Fitted value", y = "Square root of absolute residual") +
+      agri_theme())
+  }
+  if (type == "order") {
+    dd <- data.frame(index = seq_along(object$residuals), residual = object$residuals)
+    return(ggplot2::ggplot(dd, ggplot2::aes(x = index, y = residual)) +
+      ggplot2::geom_point() + ggplot2::geom_line(alpha = 0.4) +
+      ggplot2::geom_hline(yintercept = 0, linetype = 2) +
+      ggplot2::labs(x = "Row order in the data", y = "Residual") +
+      agri_theme())
+  }
+  if (type == "efficiency") {
+    .require_integer_fit(object)
+    dd <- as.data.frame(agri_integer_efficiency(object, fixed = fixed))
+    xv <- names(dd)[1L]
+    dd$.x <- dd[[xv]]; dd$.y <- dd$relative_to_fitted_maximum
+    return(ggplot2::ggplot(dd, ggplot2::aes(x = .x, y = .y)) +
+      ggplot2::geom_hline(yintercept = 0.95, linetype = 3) +
+      ggplot2::geom_step(direction = "mid", alpha = 0.5) +
+      ggplot2::geom_point(size = 2) +
+      ggplot2::scale_x_continuous(breaks = dd$.x) +
+      ggplot2::labs(x = xv, y = "Fitted response relative to the maximum") +
+      agri_theme())
+  }
+  if (type == "difference") {
+    .require_integer_fit(object)
+    dd <- as.data.frame(agri_integer_difference(object, order = 1L, fixed = fixed))
+    return(ggplot2::ggplot(dd, ggplot2::aes(x = to, y = difference)) +
+      ggplot2::geom_col(width = 0.6) +
+      ggplot2::geom_hline(yintercept = 0, linetype = 2) +
+      ggplot2::scale_x_continuous(breaks = dd$to) +
+      ggplot2::labs(x = predictor,
+                    y = paste0("Gain in ", object$response, " from the previous decision")) +
+      agri_theme())
   }
   if (type == "derivative") {
     if (!is.null(object$integer_support) && length(object$integer_support)) {
       dd <- agri_integer_difference(object, order = 1L, fixed = fixed)
+      # A finite difference is defined only between admissible decisions, so it
+      # is drawn as steps and points rather than as a continuous line.
       return(ggplot2::ggplot(dd, ggplot2::aes(x = to, y = difference)) +
-        ggplot2::geom_line() + ggplot2::geom_point() +
+        ggplot2::geom_step(direction = "mid", alpha = 0.5) + ggplot2::geom_point() +
         ggplot2::geom_hline(yintercept = 0, linetype = 2) +
+        ggplot2::scale_x_continuous(breaks = dd$to) +
         ggplot2::labs(x = predictor, y = "Finite difference in fitted response") +
-        ggplot2::theme_minimal())
+        agri_theme())
     }
     dd <- agri_np_derivative(object, predictor = predictor, n = n, fixed = fixed)
     return(ggplot2::ggplot(dd, ggplot2::aes(x = x, y = derivative)) +
       ggplot2::geom_line() + ggplot2::geom_hline(yintercept = 0, linetype = 2) +
-      ggplot2::labs(x = predictor, y = "Estimated derivative") + ggplot2::theme_minimal())
+      ggplot2::labs(x = predictor, y = "Estimated derivative") + agri_theme())
   }
   if (type == "surface") {
     grid <- .np_surface_grid(object, predictors = surface_predictors, n = min(as.integer(n), 100L), fixed = fixed)
@@ -1318,24 +1625,62 @@ agri_np_plot <- function(object, type = c("fit", "residuals", "derivative", "sur
     return(ggplot2::ggplot(dd, ggplot2::aes(x = x1, y = x2, fill = fit)) +
       ggplot2::geom_raster() +
       ggplot2::geom_contour(data = dd, ggplot2::aes(x = x1, y = x2, z = fit), inherit.aes = FALSE) +
-      ggplot2::labs(x = sp[1L], y = sp[2L], fill = object$response) + ggplot2::theme_minimal())
+      ggplot2::labs(x = sp[1L], y = sp[2L], fill = object$response) + agri_theme())
   }
   if (!is.null(group)) {
     group <- as.character(group)[1L]
     if (!group %in% names(object$data)) .agri_stop("Unknown grouping variable `", group, "`.")
     lev <- if (is.factor(object$data[[group]])) levels(object$data[[group]]) else unique(as.character(object$data[[group]]))
-    grids <- lapply(lev, function(g) {
+    .one_grid <- function(g) {
       fx <- fixed; fx[[group]] <- g
       z <- .np_prediction_grid(object, predictor = predictor, n = n, fixed = fx)
+      # Keep the grouping column present and correctly typed even when the
+      # grouping variable is not itself a modeled predictor, so a resampling
+      # band can be split back into its group curves.
+      z[[group]] <- if (is.factor(object$data[[group]]))
+        factor(rep(g, nrow(z)), levels = levels(object$data[[group]])) else rep(g, nrow(z))
+      z
+    }
+    grids <- lapply(lev, .one_grid)
+    dd <- do.call(rbind, lapply(grids, function(z) {
       pp <- agri_np_predict(object, z); if (is.matrix(pp)) pp <- pp[, 1L]
-      data.frame(x = z[[predictor]], fit = as.numeric(pp), group = g, stringsAsFactors = FALSE)
-    })
-    dd <- do.call(rbind, grids)
+      data.frame(x = z[[predictor]], fit = as.numeric(pp),
+                 group = as.character(z[[group]][1L]), stringsAsFactors = FALSE)
+    }))
     raw <- data.frame(x = object$data[[predictor]], y = object$data[[object$response]], group = as.character(object$data[[group]]))
-    return(ggplot2::ggplot(raw, ggplot2::aes(x = x, y = y, group = group)) +
-      ggplot2::geom_point(ggplot2::aes(shape = group), alpha = 0.65) +
-      ggplot2::geom_line(data = dd, ggplot2::aes(x = x, y = fit, linetype = group), inherit.aes = FALSE) +
-      ggplot2::labs(x = predictor, y = object$response, shape = group, linetype = group) + ggplot2::theme_minimal())
+    pal <- .np_discrete_palette(length(lev), palette)
+    p <- ggplot2::ggplot(raw, ggplot2::aes(x = x, y = y, group = group)) +
+      ggplot2::geom_point(ggplot2::aes(shape = group, colour = group), alpha = 0.65) +
+      ggplot2::geom_line(data = dd, ggplot2::aes(x = x, y = fit, linetype = group, colour = group), inherit.aes = FALSE) +
+      ggplot2::scale_colour_manual(values = pal, name = group) +
+      ggplot2::scale_fill_manual(values = pal, name = NULL) +
+      ggplot2::guides(linetype = "none", fill = "none") +
+      ggplot2::labs(x = predictor, y = object$response, shape = group)
+    # A resampling band per group level. One bootstrap over the combined grid
+    # covers every level, which keeps the refits in a single reproducible loop.
+    if (!is.null(bootstrap) && !isFALSE(bootstrap)) {
+      if (inherits(bootstrap, "agri_np_bootstrap")) {
+        if (identical(attr(bootstrap, "target"), "coefficients"))
+          .agri_stop("A coefficient bootstrap cannot be drawn as a band around a curve. Use `target = \"curve\"`.")
+        bd <- as.data.frame(bootstrap)
+        if (!group %in% names(bd))
+          .agri_stop("A resampling band for group-specific curves must cover the grouping variable. Pass bootstrap = TRUE or a number of replications so the band is computed on the combined grid.")
+      } else {
+        grid_all <- do.call(rbind, lapply(lev, .one_grid))
+        B_use <- if (isTRUE(bootstrap)) 499L else as.integer(bootstrap)
+        bt <- agri_np_bootstrap(object, newdata = grid_all, B = B_use, seed = seed)
+        bd <- as.data.frame(bt)
+      }
+      bd$.x <- bd[[predictor]]
+      bd$.g <- as.character(bd[[group]])
+      p <- p + ggplot2::geom_ribbon(
+        data = bd,
+        ggplot2::aes(x = .x, ymin = lower, ymax = upper, group = .g, fill = .g),
+        inherit.aes = FALSE, alpha = 0.15) +
+        ggplot2::labs(fill = group) +
+        ggplot2::guides(fill = "none")
+    }
+    return(p + agri_theme())
   }
   grid <- .np_prediction_grid(object, predictor = predictor, n = n, fixed = fixed)
   pp <- if (interval) agri_np_predict(object, grid, interval = "confidence") else agri_np_predict(object, grid)
@@ -1347,13 +1692,44 @@ agri_np_plot <- function(object, type = c("fit", "residuals", "derivative", "sur
     dd$fit <- as.numeric(pp)
   }
   raw <- data.frame(x = object$data[[predictor]], y = object$data[[object$response]])
+  # An integer decision support has no meaning between admissible values, so
+  # the fitted response is drawn as steps and points instead of a line that
+  # would suggest a value at 3.5 plants per hill.
+  discrete <- !is.null(object$integer_support) && length(object$integer_support) &&
+    identical(predictor, object$integer_predictor %||% object$primary_predictor)
   p <- ggplot2::ggplot(raw, ggplot2::aes(x = x, y = y)) +
-    ggplot2::geom_point(alpha = 0.65) +
-    ggplot2::geom_line(data = dd, ggplot2::aes(x = x, y = fit), inherit.aes = FALSE) +
-    ggplot2::labs(x = predictor, y = object$response) + ggplot2::theme_minimal()
+    ggplot2::geom_point(alpha = 0.65,
+                        position = if (isTRUE(jitter))
+                          ggplot2::position_jitter(width = 0, height = 0.02, seed = 1)
+                        else "identity") +
+    ggplot2::labs(x = predictor, y = object$response) + agri_theme()
+  p <- if (discrete) {
+    p + ggplot2::geom_step(data = dd, ggplot2::aes(x = x, y = fit),
+                           inherit.aes = FALSE, direction = "mid", alpha = 0.6) +
+      ggplot2::geom_point(data = dd, ggplot2::aes(x = x, y = fit),
+                          inherit.aes = FALSE, shape = 4, size = 2.5) +
+      ggplot2::scale_x_continuous(breaks = object$integer_support)
+  } else {
+    p + ggplot2::geom_line(data = dd, ggplot2::aes(x = x, y = fit), inherit.aes = FALSE)
+  }
   if (all(c("lower", "upper") %in% names(dd))) {
     p <- p + ggplot2::geom_ribbon(data = dd, ggplot2::aes(x = x, ymin = lower, ymax = upper),
                                   inherit.aes = FALSE, alpha = 0.2)
+  }
+  # A resampling band for the engines that expose no analytic interval. Passing
+  # TRUE runs a small bootstrap; passing an agri_np_bootstrap object reuses one
+  # that was already computed, which is the reproducible route.
+  if (!is.null(bootstrap) && !isFALSE(bootstrap)) {
+    bt <- if (inherits(bootstrap, "agri_np_bootstrap")) bootstrap else
+      agri_np_bootstrap(object, predictor = predictor, n = n, fixed = fixed,
+                        B = if (isTRUE(bootstrap)) 499L else as.integer(bootstrap))
+    if (identical(attr(bt, "target"), "coefficients"))
+      .agri_stop("A coefficient bootstrap cannot be drawn as a band around a curve. Use `target = \"curve\"`.")
+    bd <- as.data.frame(bt)
+    bd$.x <- bd[[predictor]]
+    p <- p + ggplot2::geom_ribbon(data = bd,
+                                  ggplot2::aes(x = .x, ymin = lower, ymax = upper),
+                                  inherit.aes = FALSE, alpha = 0.18)
   }
   p
 }

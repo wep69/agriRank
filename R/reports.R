@@ -1,15 +1,44 @@
 # Tables and reports -------------------------------------------------------
 
+#' Format a coefficient and its confidence interval for manuscript text
+#'
+#' @description
+#' Returns a plain-text string of the form `"1.06 (0.68; 1.47)"` that can be
+#' copied directly into a manuscript sentence. This avoids the manual formatting
+#' of every reported coefficient and its interval.
+#' @param estimate Numeric estimate.
+#' @param lower Lower bound of the interval.
+#' @param upper Upper bound of the interval.
+#' @param digits Significant digits for the estimate and bounds.
+#' @param sep Separator between lower and upper.
+#' @return A character string.
+#' @examples
+#' agri_format_ci(1.056, 0.678, 1.465)
+#' agri_format_ci(0.0077, 0.0053, 0.0101, digits = 3)
+#' @export
+agri_format_ci <- function(estimate, lower, upper, digits = 2, sep = "; ") {
+  est <- format(estimate, digits = digits)
+  lo <- format(lower, digits = digits)
+  hi <- format(upper, digits = digits)
+  paste0(est, " (", lo, sep, hi, ")")
+}
+
 #' Standardized analysis tables
 #' @export
 agri_table <- function(x, what = c("omnibus", "effects", "pairs", "missing",
-                                   "metrics", "predictions", "derivative", "optimum",
-                                   "integer_predictions", "integer_optimum", "integer_efficiency"), ...) {
+                                   "metrics", "coefficients", "levels",
+                                   "predictions", "derivative", "optimum",
+                                   "integer_predictions", "integer_optimum", "integer_efficiency"),
+                       ..., format = c("auto", "data.frame", "gt", "rtf")) {
   what_missing <- missing(what)
   if (inherits(x, "agri_np_reg_fit")) {
     if (what_missing) what <- "metrics" else what <- match.arg(what)
     tab <- switch(what,
       metrics = x$metrics,
+      # Coefficients are reported with their interval, because an estimate
+      # without uncertainty invites an exactness the model does not have.
+      coefficients = stats::confint(x, ...),
+      levels = agri_np_levels(x, ...),
       predictions = {
         p <- agri_np_predict(x)
         if (is.matrix(p)) p <- p[, 1L]
@@ -20,7 +49,7 @@ agri_table <- function(x, what = c("omnibus", "effects", "pairs", "missing",
       integer_predictions = agri_integer_predict(x, ...),
       integer_optimum = agri_integer_optimum(x, ...)$optima,
       integer_efficiency = agri_integer_efficiency(x, ...),
-      .agri_stop("For regression fits, choose metrics, predictions, derivative, optimum, integer_predictions, integer_optimum, or integer_efficiency.")
+      .agri_stop("For regression fits, choose metrics, coefficients, levels, predictions, derivative, optimum, integer_predictions, integer_optimum, or integer_efficiency.")
     )
   } else if (inherits(x, "agri_multivariate_fit")) {
     tab <- x$omnibus %||% data.frame()
@@ -52,7 +81,23 @@ agri_table <- function(x, what = c("omnibus", "effects", "pairs", "missing",
       .agri_stop("For experimental-design fits, `what` must be one of omnibus, effects, pairs, or missing.")
     )
   }
-  if (requireNamespace("gt", quietly = TRUE)) return(gt::gt(tab))
+  # A manuscript table must stay editable, so a plain data frame is always
+  # reachable with format = "data.frame"; gt is the default presentation only
+  # when it is installed. RTF can be written to a file for direct import into
+  # Word or LibreOffice.
+  format <- match.arg(format)
+  if (identical(format, "data.frame")) return(as.data.frame(tab))
+  if (requireNamespace("gt", quietly = TRUE)) {
+    gt_tbl <- gt::gt(as.data.frame(tab))
+    if (identical(format, "rtf")) {
+      rtf_file <- attr(tab, "rtf_file") %||% tempfile(fileext = ".rtf")
+      gt::gtsave(gt_tbl, rtf_file)
+      return(invisible(rtf_file))
+    }
+    return(gt_tbl)
+  }
+  if (identical(format, "gt") || identical(format, "rtf"))
+    .agri_warn("Package `gt` is not installed; returning a plain data frame.")
   tab
 }
 
@@ -91,6 +136,60 @@ agri_table <- function(x, what = c("omnibus", "effects", "pairs", "missing",
   block_txt <- if (length(x$block)) paste(x$block, collapse = ", ") else "none"
   fam <- x$family$family %||% "not applicable"
   shape <- x$shape %||% "none"
+
+  # Coefficient table — every estimate reported carries its uncertainty.
+  coeff_txt <- tryCatch({
+    ci <- suppressWarnings(stats::confint(x, method = "bootstrap", B = 199L, seed = 1L))
+    capture.output(print(ci, row.names = FALSE))
+  }, error = function(e) c("(coefficients unavailable for this engine)"))
+
+  # Factor structure and level summaries.
+  fp <- x$factor_predictors %||% character()
+  factor_txt <- NULL
+  level_txt <- NULL
+  if (length(fp)) {
+    factor_txt <- c("", "## Qualitative predictors",
+      sprintf("- Qualitative predictors: %s", paste(fp, collapse = ", ")),
+      sprintf("- Levels: %s", paste(vapply(fp, function(f) sprintf("%s (%d levels)", f, nlevels(x$data[[f]])), character(1)), collapse = "; ")))
+    level_txt <- tryCatch({
+      lv <- suppressWarnings(agri_np_levels(x, B = 199L, seed = 1L))
+      c("", "## Response at each level", "```",
+        capture.output(print(lv, row.names = FALSE)), "```")
+    }, error = function(e) NULL)
+  }
+
+  # Figures — one fit plot, one forest plot (when coefficients exist) and one
+  # level plot (when factors exist). The image files are written alongside
+  # the report and referenced by relative path.
+  fig_dir <- file.path(dirname(file), "figures")
+  dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
+  fig_lines <- NULL
+  has_coef <- x$method %in% c("theil_sen", "siegel", "quantile")
+  tryCatch({
+    p_fit <- agri_np_plot(x, type = "fit")
+    fit_path <- file.path(fig_dir, "fit_curve.png")
+    ggplot2::ggsave(fit_path, p_fit, width = 12, height = 8, units = "cm", dpi = 300)
+    fig_lines <- c(fig_lines, "", "## Figures",
+                   sprintf("![Fitted curve](figures/%s)", basename(fit_path)))
+  }, error = function(e) NULL)
+  if (has_coef) {
+    tryCatch({
+      bt <- suppressWarnings(agri_np_bootstrap(x, target = "coefficients", B = 199L, seed = 1L))
+      p_forest <- agri_np_forest(x, bootstrap = bt)
+      forest_path <- file.path(fig_dir, "forest_plot.png")
+      ggplot2::ggsave(forest_path, p_forest, width = 12, height = 8, units = "cm", dpi = 300)
+      fig_lines <- c(fig_lines, sprintf("![Coefficient forest plot](figures/%s)", basename(forest_path)))
+    }, error = function(e) NULL)
+  }
+  if (length(fp)) {
+    tryCatch({
+      p_levels <- agri_np_plot(x, type = "levels", B = 199L, seed = 1L)
+      levels_path <- file.path(fig_dir, "level_plot.png")
+      ggplot2::ggsave(levels_path, p_levels, width = 12, height = 8, units = "cm", dpi = 300)
+      fig_lines <- c(fig_lines, sprintf("![Response at each level](figures/%s)", basename(levels_path)))
+    }, error = function(e) NULL)
+  }
+
   txt <- c(
     "# agriRank nonparametric regression report", "",
     "## Scientific model",
@@ -108,6 +207,10 @@ agri_table <- function(x, what = c("omnibus", "effects", "pairs", "missing",
     sprintf("- Explicitly omitted incomplete rows: %d", x$n_omitted %||% 0L),
     sprintf("- Missing-data action: %s", x$na_action %||% "fail"), "",
     "## Predictive diagnostics", "```", met, "```", "",
+    "## Coefficients with confidence intervals", "```", coeff_txt, "```", "",
+    factor_txt,
+    level_txt,
+    fig_lines,
     "## Interpretation boundary",
     "- Cross-validation and residual diagnostics evaluate predictive behavior; they do not select a confirmatory method by the smallest p-value.",
     "- A fitted maximum/minimum is descriptive unless an economic or mechanistic objective was specified independently.",
@@ -116,7 +219,13 @@ agri_table <- function(x, what = c("omnibus", "effects", "pairs", "missing",
     "## Reproducibility",
     sprintf("- R: %s", R.version.string),
     sprintf("- agriRank regression method: %s", x$method),
-    sprintf("- Backend class: %s", paste(class(x$engine), collapse = ", "))
+    sprintf("- Backend class: %s", paste(class(x$engine), collapse = ", ")),
+    "",
+    "## How to cite",
+    "```r",
+    "citation(\"agriRank\")",
+    "```",
+    "Use the output above in your reference list. Include the R version and the package version (`packageVersion(\"agriRank\")`) in the methods section of your manuscript."
   )
   writeLines(txt, file, useBytes = TRUE)
   normalizePath(file, winslash = "/", mustWork = FALSE)

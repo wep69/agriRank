@@ -18,6 +18,10 @@ inst/doc/
 # calibration output, reproducible from the scripts
 inst/calibration/results/
 
+# testthat session artifacts
+tests/testthat/_problems/
+tests/testthat/testthat-problems.rds
+
 # OS
 .DS_Store
 Thumbs.db

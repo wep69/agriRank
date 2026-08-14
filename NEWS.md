@@ -1,5 +1,47 @@
 # agriRank 0.13.0
 
+## Regression: uncertainty, explained variation and graphics
+
+* Added the standard extractors `coef()`, `confint()`, `fitted()` and `residuals()` for `agri_np_reg_fit`. Coefficients are returned for `theil_sen`, `siegel` and `quantile`; the smoothers refuse them by name, because reporting spline basis coefficients as agronomic slopes would invite a reading the model does not support.
+* `confint()` prefers the interval published by the backend and falls back to the cluster-aware bootstrap. The two usually differ, and the difference is the point: one relies on the asymptotic theory of the estimator, the other only on the legitimacy of resampling experimental units.
+* `agri_np_bootstrap()` gains `target = "coefficients"` for intervals of the coefficient vector, `band = "simultaneous"` for a sup-t band that covers the whole curve rather than each point, and `keep_replicates` for the replicate matrix, which allows a histogram of a slope or a cloud of fitted curves.
+* `agri_np_diagnostics()` reports three explained-variation indices with the effective degrees of freedom beside them: `pseudo_r2` computed on the fitted values, `cv_r2` computed out of fold and available with `cv = TRUE`, and `spearman_r2` from the ranks. They can disagree, and the disagreement is informative: a LOESS fit typically shows a larger `pseudo_r2`, a larger `effective_df` and a smaller `cv_r2` than a smoothing spline on the same data.
+* `agri_np_plot()` gains the residual diagnostics `"qq"`, `"scale_location"` and `"order"`, the integer decision figures `"efficiency"` and `"difference"`, and a `bootstrap` argument that draws a resampling band for engines with no analytic interval.
+* Added plot methods for `agri_np_bootstrap`, `agri_np_compare`, `agri_integer_bootstrap` and `agri_integer_confset`, which previously could only be printed. The integer figures show the probability mass over admissible decisions and fade, rather than remove, the decisions outside the confidence set.
+* Added `agri_np_curves()`, which overlays the fitted curves of several engines over the observed points.
+* An integer-support fit is now drawn as steps and crosses instead of a continuous line, which no longer suggests that a value exists between two admissible decisions.
+
+## Regression: qualitative factors and coefficient forest plots
+
+* `agri_np_regression()` now treats qualitative predictors explicitly: a character column is read as the factor it is, a factor needs at least two levels to enter a model, and the fitted object records its qualitative predictors. Quantile, kernel, GAM and SCAM engines keep a factor as an adjustment term; curve-only engines refuse factors by name instead of silently dropping them.
+* The coefficient bootstrap aligns replicates by term name, so a reordered or level-depleted replicate is counted as a failed refit instead of being read in the original order. Block adjustment terms are excluded from the coefficient target because they are nuisance parameters whose meaning changes with every draw of the blocks; a block-adjusted fit therefore reports intervals for the scientific coefficients of the declared formula.
+* Added `agri_np_forest()`, a forest plot of bootstrap intervals for regression coefficients. With qualitative predictors it stacks one row per factor level inside the factor's own panel and draws the reference level at zero, so every level appears in the figure instead of only the dummy contrasts. `agri_np_plot()` reaches the same figure through `type = "forest"`.
+
+## Regression: journal-oriented tables, figures and export
+
+* Added `agri_np_levels()` and `agri_np_plot(type = "levels")`: the response at every level of the qualitative predictors, with the observed sample size, median/MAD and mean/sd beside the fitted marginal response and its pointwise bootstrap interval. It is the level-oriented companion of the coefficient forest plot: coefficients state contrasts against the reference level, this summary states what the model predicts at each level itself.
+* `agri_table()` gains `"coefficients"` and `"levels"` for regression fits, so a table presented in a manuscript carries the uncertainty of every estimate it reports.
+* `agri_np_plot(type = "fit", group = ..., bootstrap = ...)` now draws one resampling band per level of the grouping variable, computed in a single bootstrap loop over the combined grid. Observed values, fitted curves and bands appear together for models with and without qualitative factors.
+* Added `agri_theme()`, the common theme of the regression graphics: no minor gridlines, drawn axis lines, readable base size and a compact legend. Figures remain plain ggplot objects, so any layer can still be added or the theme replaced.
+* Added `agri_save_figure()`, which writes a figure as TIFF (LZW), PDF, SVG, EPS or PNG at preset journal widths (one column, middle, full), keeping text and lines editable in the vector formats.
+
+## Regression: colour vision, annotation and rich reports
+
+* `agri_np_plot()` gains `palette = "color" | "grey"` for group curves, `x_unit` / `y_unit` to append SI-style units to the default axis labels, and a clean separation between the public wrapper and the internal drawing function. Grouped plots now carry colour-blind-safe Okabe-Ito colour by default, and grey tones safe for black-and-white print when requested.
+* `agri_np_forest()` gains `annotate_values` (write the interval as text to the right of each bar), `digits` for annotation and axis formatting, `order_by = "effect"` to sort rows by absolute estimate within each panel, and `ref_line` to move the vertical reference line.
+* A warning is raised once per session when `B < 999`, to remind authors that a small number of bootstrap replicates is a speed device and that final inference needs `B >= 999`. Silence with `options(agriRank.quiet_small_B = TRUE)`.
+* `agri_report()` now writes a richer markdown regression report: the coefficient table with confidence intervals, the qualitative-factor structure, the level summary, one fit, forest and level figure rendered at 300 dpi alongside the report, and a "How to cite" section with `citation("agriRank")`.
+
+## Regression: small increments
+
+* Added `agri_format_ci()` to format an estimate and its interval as `"1.06 (0.68; 1.47)"` for direct use in manuscript text.
+* `agri_np_plot()` gains `jitter = TRUE` to spread overlapping observed values in dose-response plots.
+* `agri_np_forest()` gains a `caption` parameter with a default explanation of the reference level.
+* `print.agri_np_reg_fit()` now reports the reference level of each qualitative predictor and reminds that coefficients are contrasts against it.
+* `agri_table()` gains `format = "rtf"` for direct RTF export via `gt::gtsave()` into Word or LibreOffice.
+* Added a Quarto template at `inst/templates/regression-report.qmd` for the regression report.
+* Added a brief note in vignette v16 on figure editability: every agriRank figure is a `ggplot` object; every table a data frame.
+
 ## Example data and documentation
 
 * Added three exported data sets: `agri_dose` (nitrogen rates in an RCBD, quadratic-plateau response), `agri_density` (plants per hill, an integer treatment with a unimodal response) and `agri_surface` (nitrogen by irrigation depth with a positive cross term). The generating script is in `data-raw/`.

@@ -304,6 +304,101 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
 }
 ```
 
+# Qualitative factors in regression models
+
+A quantitative gradient is frequently observed together with a qualitative factor: cultivar, soil class, irrigation system, or management practice. `agri_np_regression()` treats such predictors explicitly. A character column is read as the qualitative factor it is, and a factor needs at least two levels to enter a model, because a single level carries no contrast against the response. Engines that cannot adjust for a qualitative predictor refuse it by name; `quantile`, `kernel`, GAM and SCAM keep the factor as an adjustment term.
+
+For engines with interpretable coefficients, each non-reference level of a factor enters as one coefficient, and its bootstrap interval can be read against zero in a forest plot. The coefficient bootstrap aligns replicates by term name, and block adjustment terms are excluded as nuisance parameters, so a block-adjusted fit reports intervals for the scientific coefficients of the declared formula.
+
+```{r}
+if (requireNamespace("quantreg", quietly = TRUE)) {
+  dzc <- dose_data
+  dzc$cultivar <- factor(rep(c("Ana", "Bela"), length.out = nrow(dzc)))
+  dzc$yield <- dzc$yield + ifelse(dzc$cultivar == "Bela", 0.8, 0)
+
+  fit_qf <- agri_np_regression(
+    yield ~ dose + cultivar,
+    data = dzc,
+    method = "quantile",
+    block = block
+  )
+  coef(fit_qf)
+
+  # B = 199 keeps the vignette fast; a final analysis needs B >= 999.
+  # suppressWarnings() hides only the quantreg backend notice that the
+  # linear-program solution is nonunique at tied responses; it is a property
+  # of the estimator at this tau, not a defect of the analysis.
+  bt_coef <- suppressWarnings(
+    agri_np_bootstrap(fit_qf, target = "coefficients", B = 199, seed = 2008)
+  )
+  agri_np_forest(fit_qf, bootstrap = bt_coef)
+}
+```
+
+The figure stacks the nitrogen slope and the cultivar contrast in their own panels and draws the reference level of the factor at zero, so every level appears. Cultivar Bela shifts the whole dose-response curve upward at every nitrogen rate. The same figure is available as `agri_np_plot(fit_qf, type = "forest", bootstrap = bt_coef)`.
+
+# From fit to journal: tables, curves with bands, and export
+
+Two readings of a qualitative factor are legitimate and the package keeps them as separate outputs. The coefficient forest plot states each level as a **contrast against the reference level**. The level summary states what the model predicts **at each level itself**, which is what manuscripts usually report.
+
+```{r}
+if (exists("fit_qf")) {
+  agri_table(fit_qf, "coefficients", method = "bootstrap", B = 199, seed = 2010)
+  lv <- agri_np_levels(fit_qf, B = 199, seed = 2010)
+  lv
+}
+```
+
+`agri_np_levels()` returns the observed sample size, median/MAD and mean/sd of the response at each level, beside the fitted marginal response with a pointwise bootstrap interval at the reference values of the other covariates. The corresponding figure shows the observed values beneath the fitted response:
+
+```{r}
+if (exists("lv")) {
+  agri_np_plot(fit_qf, type = "levels", bootstrap = attr(lv, "bootstrap"))
+}
+```
+
+Fitted curves are presented with the observed values and a resampling band, with and without a qualitative factor. Without a factor, one band wraps the curve:
+
+```{r}
+b_ss <- agri_np_bootstrap(fit_ss, B = 199, n = 80, seed = 2011)
+agri_np_plot(fit_ss, type = "fit", bootstrap = b_ss)
+```
+
+With a factor, one curve and one band are drawn per level, from a single bootstrap loop over the combined grid:
+
+```{r}
+if (exists("fit_qf")) {
+  agri_np_plot(
+    fit_qf,
+    type = "fit",
+    predictor = "dose",
+    group = "cultivar",
+    bootstrap = 199,
+    seed = 2011
+  )
+}
+```
+
+`B = 199` keeps the vignette fast; a final analysis needs `B >= 999`.
+
+Every figure is a plain `ggplot` object, so units and finishing stay editable. `agri_theme()` is the common visual finish, already applied to the regression graphics, and `agri_save_figure()` writes the archival formats at journal widths:
+
+```{r}
+p_fin <- agri_np_plot(fit_ss, type = "fit", bootstrap = b_ss) +
+  ggplot2::labs(x = expression("Nitrogen rate (kg ha"^-1*")"),
+                y = expression("Yield (Mg ha"^-1*")"))
+p_fin
+
+fig <- agri_save_figure(p_fin, tempfile(fileext = ".png"), layout = "column")
+basename(fig)
+# For submission, write the same object to TIFF or a vector format, e.g.
+# agri_save_figure(p_fin, "figure1.tif", layout = "column", dpi = 600)
+```
+
+Prefer a vector format (PDF, SVG, EPS) when the journal allows it, because text and lines stay editable after export; use LZW-compressed TIFF where a raster format is required.
+
+Every figure produced by the package is a plain `ggplot` object. This means that the theme, colours, scales, labels and every visual element can be replaced or extended with ordinary ggplot2 layers. The package theme `agri_theme()` is already applied, but it can always be overridden: `agri_np_plot(fit) + ggplot2::theme_bw()` or `+ ggplot2::theme_minimal(base_size = 12)` work without restriction. Tables returned by `agri_table(..., format = "data.frame")` are plain data frames that can be passed to `knitr::kable()`, `gt::gt()` or `knitr::flextable()`.
+
 # Interactive exploration
 
 `agri_np_interactive()` converts the corresponding `ggplot2` object to Plotly without changing the statistical fit. It is intended for teaching, dashboards, and exploratory HTML reports; static figures remain preferable for archival manuscripts.

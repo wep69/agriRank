@@ -986,6 +986,8 @@ The regression module is intentionally broader than one statistical tradition. I
 
 Fits a unified agronomic response-curve object. `method = "auto"` uses design structure, response family, predictor types, and explicit shape constraints only; it never chooses a model because one method generated a smaller p-value.
 
+Qualitative predictors are handled explicitly. A character column is read as the factor it is, and a factor needs at least two levels to enter a model, because a single level carries no contrast against the response. The `quantile`, `kernel`, `gam` and `scam` engines keep a qualitative factor as an adjustment term; curve-only engines (`theil_sen`, `siegel`, `smoothing_spline`, `cobs`, `isotonic`, `unimodal_isotonic`, `loess`) refuse factors by name instead of silently dropping them. For engines with interpretable coefficients, each non-reference level of a factor enters as one coefficient, and `agri_np_forest()` displays those coefficients with bootstrap intervals, one row per level.
+
 ### Example 1: smoothing spline for a dose gradient
 
 ```r
@@ -1034,8 +1036,64 @@ The following functions use the same `agri_np_reg_fit` object and each has three
 - `agri_np_compare()`: cross-validated predictive comparison, never p-value fishing.
 - `agri_np_derivative()`: finite-difference first derivative of the fitted curve.
 - `agri_np_optimum()`: descriptive maximum/minimum of the fitted curve within a prespecified range.
-- `agri_np_bootstrap()`: row- or block/cluster-resampled pointwise percentile bands.
-- `agri_np_plot()`: raw observations plus fitted curve, residual diagnostics, or derivative plot.
+- `agri_np_bootstrap()`: row- or block/cluster-resampled pointwise percentile bands, or coefficient intervals with `target = "coefficients"`.
+- `agri_np_forest()`: forest plot of bootstrap coefficient intervals, stacking qualitative factor levels one row per level with the reference level drawn at zero.
+- `agri_np_levels()`: response summary at each level of the qualitative predictors, observed and fitted, with pointwise bootstrap intervals.
+- `agri_np_plot()`: raw observations plus fitted curve, residual diagnostics, derivative plot, level figure, or coefficient forest plot.
+- `agri_theme()` and `agri_save_figure()`: the common journal theme and archival export (TIFF/PDF/SVG/EPS) at preset journal widths.
+
+## Coefficient forest plots: `agri_np_forest()`
+
+Draws one row per regression coefficient with its bootstrap confidence interval around the zero line. The intervals come from `agri_np_bootstrap(target = "coefficients")`, which aligns replicates by term name; a replicate whose coefficient vector is reordered or depleted is counted as a failed refit rather than read in the original order. When the model contains qualitative predictors, `by_factor = TRUE` stacks the coefficients of each factor one level per row inside the factor's own panel and draws the reference level at zero, so every level appears in the figure instead of only the dummy contrasts. Block adjustment terms never enter the figure: they are nuisance parameters excluded from the coefficient bootstrap target.
+
+```r
+if (requireNamespace("quantreg", quietly = TRUE)) {
+  data(agri_dose)
+  dz <- agri_dose
+  dz$cultivar <- factor(rep(c("Ana", "Bela"), length.out = nrow(dz)))
+  dz$yield <- dz$yield + ifelse(dz$cultivar == "Bela", 0.9, 0)
+  fit <- agri_np_regression(yield ~ dose + cultivar, dz, method = "quantile")
+  # B = 19 keeps the example fast; analysis needs B >= 999.
+  bt <- agri_np_bootstrap(fit, target = "coefficients", B = 19, seed = 1)
+  agri_np_forest(fit, bootstrap = bt)
+}
+```
+
+The same figure is reachable as `agri_np_plot(fit, type = "forest", bootstrap = bt)`. A forest plot displays uncertainty in coefficients; it does not test hypotheses and must not be used to search over models for the smallest interval.
+
+## Level summaries: `agri_np_levels()`
+
+A coefficient of a qualitative factor is a contrast against the reference level. Manuscripts, however, usually report the response AT each level. `agri_np_levels()` returns, for every level of every qualitative predictor, the observed sample size, median/MAD and mean/sd of the response, and the fitted marginal response with a pointwise bootstrap interval, holding the other covariates at their reference values. The companion figure is `agri_np_plot(fit, type = "levels")`, which shows the observed values beneath the fitted response at each level. The same summary is available as `agri_table(fit, "levels")`, and the coefficient table as `agri_table(fit, "coefficients")`.
+
+```r
+if (requireNamespace("quantreg", quietly = TRUE)) {
+  data(agri_dose)
+  dz <- agri_dose
+  dz$cultivar <- factor(rep(c("Ana", "Bela"), length.out = nrow(dz)))
+  dz$yield <- dz$yield + ifelse(dz$cultivar == "Bela", 0.9, 0)
+  fit <- agri_np_regression(yield ~ dose + cultivar, dz, method = "quantile")
+  # B = 19 keeps the example fast; analysis needs B >= 999.
+  lv <- agri_np_levels(fit, B = 19, seed = 1)
+  lv
+  agri_np_plot(fit, type = "levels", bootstrap = attr(lv, "bootstrap"))
+}
+```
+
+## Journal-oriented figures: theme and export
+
+Every regression figure is a `ggplot` object and every table a data frame, so both stay editable after creation. `agri_theme()` is the common visual finish applied to the regression graphics; it can be added to any other agriRank figure or replaced with ordinary ggplot2 layers. `agri_save_figure()` writes a figure in an archival format at the dimensions journals request, with preset widths for one column, middle, and full page.
+
+```r
+data(agri_dose)
+f <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
+p <- agri_np_plot(f, type = "fit") +
+  ggplot2::labs(x = expression("Nitrogen rate (kg ha"^-1*")"),
+                y = expression("Yield (Mg ha"^-1*")"))
+# For submission prefer TIFF or a vector format such as PDF or EPS.
+agri_save_figure(p, "figure1.tif", layout = "column", dpi = 600)
+```
+
+Use a vector format when the journal allows it: text and lines stay editable in Inkscape or Illustrator. Use TIFF with LZW compression where a raster format is required, and check the target journal's required dimensions and resolution before submission.
 
 ## Interpretation boundary
 

@@ -54,8 +54,10 @@ Strictly nonparametric engines are \code{"loess"}, \code{"smoothing_spline"}, \c
 For integer-valued agronomic inputs, agriRank does not round a continuous optimum after fitting. It evaluates the fitted response directly over a declared set \eqn{\mathcal{X}_I} of admissible integers and defines the optimum as \eqn{x^* = \arg\max_{x\in\mathcal{X}_I} \hat m(x)} (or the corresponding minimum). With \code{predictor_support = "observed_integer"}, untested integer treatments are not interpolated. \code{"integer_range"} explicitly permits interpolation to every integer between the chosen bounds.
 
 The \code{"auto"} rule uses the predictor structure, family and an explicitly requested shape constraint. It does not inspect significance tests or choose the model yielding the smallest p-value. Declared blocks are retained as adjustment terms for kernel, quantile, GAM and SCAM workflows; unsupported block-method combinations fail explicitly. Regression objects created from an \code{agri_design} inherit its block and quantitative-treatment declaration. Repeated/longitudinal design objects are currently rejected because subject dependence requires a validated subject-aware regression adapter. Missing values in the modeled response, predictors, block, or weights stop the fit by default. Complete-row regression is available only through explicit \code{na_action = "complete"}; it is not an imputation procedure or a substitute for a missing-data model.
+
+Qualitative predictors such as cultivar, soil class or management system are handled explicitly. A character column is read as the factor it is, and a factor needs at least two levels to enter a model, because a single level carries no contrast against the response. Engines \code{"quantile"}, \code{"kernel"}, \code{"gam"} and \code{"scam"} keep qualitative factors as adjustment terms; curve-only engines (\code{"theil_sen"}, \code{"siegel"}, \code{"smoothing_spline"}, \code{"cobs"}, \code{"isotonic"}, \code{"unimodal_isotonic"} and \code{"loess"}) refuse them by name instead of silently dropping them. For engines with interpretable coefficients, each non-reference level of a factor enters as one coefficient, whose bootstrap interval can be displayed with \code{\link{agri_np_forest}}.
 }
-\value{An object of class \code{agri_np_reg_fit} containing the selected method, backend fit, training data, fitted values, residuals and predictive-error summaries.}
+\value{An object of class \code{agri_np_reg_fit} containing the selected method, backend fit, training data, the numeric and qualitative predictor sets, fitted values, residuals and predictive-error summaries.}
 \references{
 Hayfield, T. and Racine, J. S. (2008). Nonparametric Econometrics: The np Package. \emph{Journal of Statistical Software}, 27(5). doi:10.18637/jss.v027.i05.
 
@@ -142,6 +144,17 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
                              method = "gam", gam_structure = "tensor")
   agri_np_predict(fit9, newdata = data.frame(nitrogen = 160, water = c(0.6, 1.0)))
   # The return to 160 kg/ha of nitrogen depends on irrigation depth.
+}
+
+# Example 10: a qualitative factor alongside the nitrogen gradient
+if (requireNamespace("quantreg", quietly = TRUE)) {
+  dzc <- agri_dose
+  dzc$cultivar <- factor(rep(c("Ana", "Bela"), length.out = nrow(dzc)))
+  dzc$yield <- dzc$yield + ifelse(dzc$cultivar == "Bela", 0.9, 0)
+  fit10 <- agri_np_regression(yield ~ dose + cultivar, dzc, method = "quantile")
+  coef(fit10)
+  # Cultivar Bela adds about 0.9 Mg/ha at every nitrogen rate; the dose slope
+  # is shared by both cultivars. Plot the intervals with agri_np_forest().
 }
 
 }

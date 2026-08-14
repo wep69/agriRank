@@ -73,10 +73,12 @@ test_that("engine-specific preconditions are enforced", {
   expect_error(agri_np_regression(yield ~ dose, d, method = "cobs",
                                   shape = "increasing", tau = c(0.25, 0.75)),
                regexp = "tau")
+  # Curve-only engines refuse a qualitative predictor by name instead of
+  # silently dropping it.
   expect_error(agri_np_regression(yield ~ dose + g, d, method = "loess"),
-               regexp = "numeric")
+               regexp = "qualitative")
   expect_error(agri_np_regression(yield ~ dose + g, d, method = "smoothing_spline"),
-               regexp = "one numeric predictor")
+               regexp = "qualitative")
 })
 
 test_that("formula and data contracts are enforced", {
