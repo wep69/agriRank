@@ -275,6 +275,43 @@ Para commitar, sincronize os dois diretórios e use uma mensagem que descreva a
 razão de cada mudança. Os cinco conjuntos podem ir em um commit cada, na
 ordem 3.1, 3.2, 3.3, 3.4 e 3.5.
 
+### 3.6 Correção do adaptador umbrella (cgam), 15/08/2026
+
+Arquivos modificados:
+
+```
+ M R/regression.R            (centralização do preditor no ajuste e na predição)
+ M NEWS.md                   (entrada na seção Fixes)
+ M tests/testthat/test-integer-regression.R (teste de qualidade do ajuste)
+```
+
+**Causa raiz (investigação sistemática):** o cone do termo `umbrella` do cgam
+é **sensível à translação do preditor**. Com x todo positivo (ex.: 1..9
+plantas), a busca do modo degenera em um ajuste quase constante (RMSE 0,76,
+pseudo-R² 0,01), mesmo em dados com pico evidente. O mesmo dado com x
+centrado (x−5, intervalo −4..4) ajusta perfeitamente (RMSE 0,07). O exemplo
+oficial do cgam usa x em −2..2 (contém zero), por isso nunca falhou lá.
+`pen`/`gcv` do cgam não alteram nada nesse caminho; não há argumento de modo
+nem grid de lambda exposto na API pública.
+
+**Correção:** o adaptador centraliza o preditor (`x − mean(range(x))`) antes
+de chamar o cgam, guarda o deslocamento em `umbrella_center` e o reaplica em
+toda predição. A resposta ajustada é invariante (o termo de forma carrega o
+próprio intercepto). Resultado: RMSE 0,24, pseudo-R² 0,90, R² CV 0,84, ótimo
+{5,6} — empatado com os demais motores inteiros.
+
+**Verificado:** teste novo (pseudo-R² > 0,5 e ótimo em 5..7) falhava antes e
+passa depois; suíte completa 705/0/0; `R CMD check --as-cran` 0E/0W/2N.
+O tutorial (`tutorial-agriRank.qmd`) foi reescrito para remover a narrativa
+de "guarda-chuva ruim" e re-renderizado.
+
+**Commitado em 15/08/2026:** o pacote completo (3.1 a 3.6, com a correção do
+umbrella e os ajustes de documentação `agri_format_ci.Rd`, `jitter` e largura
+de linha) e o tutorial em português foram commitados e enviados ao GitHub. O
+tutorial vive em `cheatsheet/agriRank_Tutorial_PT.qmd` (fonte Quarto) e
+`cheatsheet/agriRank_Tutorial_PT.html` (HTML autocontido para visualização),
+junto aos cheatsheets PDF.
+
 ## 4. Ferramentas
 
 | Ferramenta | Versão | Onde |
@@ -294,6 +331,34 @@ Os 27 backends opcionais de `Suggests` estão todos instalados. Versões exatas 
 PATH, define `RSTUDIO_PANDOC` e `_R_CHECK_FORCE_SUGGESTS_`. Carregue com
 `. D:\agriRank-validation\env.ps1` antes de qualquer comando. No PowerShell,
 `R` sozinho é apelido de `Invoke-History`, use sempre `R.exe` e `Rscript.exe`.
+
+**Atenção à ACL de `D:/RLibrary` (descoberto em 15/08/2026).** A ACL da
+biblioteca dá ao usuário comum apenas leitura sobre arquivos existentes
+(`Usuários: RX` nos arquivos; AD/WD só em diretórios). Consequência: uma
+instalação **não elevada** consegue criar arquivos novos mas **não consegue
+substituir nem apagar os antigos** — o `R CMD INSTALL` falha parcialmente em
+silêncio e deixa um pacote misturado (funções novas ao lado de internas
+antigas). O sintoma é uma função existente com assinatura antiga mesmo com o
+código-fonte novo. Instale sempre **como Administrador** (terminal elevado ou
+RStudio elevado). Há um script pronto: `D:\agriRank-validation\install_admin.bat`
+(remove e reinstala elevado, log em `logs\install_admin.log`). Para validações
+rápidas sem elevar, instale numa biblioteca isolada:
+`R.exe CMD INSTALL --library=D:\agriRank-validation\lib-tutorial <pkg>` e
+aponte `R_LIBS` para ela.
+
+**Tutorial integrado.** O tutorial didático em Quarto está em
+`tutorial-agriRank.qmd` (raiz deste diretório), cobre os fluxos qualitativo
+(DIC/DBC/fatorial/split-plot), quantitativo (regressão), quali+quanti (níveis
+com IC) e inteiro ordinal (modelos, ótimo, conjunto de confiança), com
+exercícios e soluções. Renderize com `quarto render tutorial-agriRank.qmd`
+(gera `tutorial-agriRank.html`, `figuras/` e `relatorios/`).
+
+**Convenção de estilo do tutorial (preferência do autor, 15/08/2026).**
+NÃO usar travessão (—, U+2014) no texto: substituir por dois-pontos ao
+introduzir explicação ("subdivididas: análise tipo ANOVA") e por vírgula em
+apostos/continuações ("a regressão, mas sem impor um polinômio"). Hífens
+comuns (dose-resposta, split-plot) seguem permitidos. Aplicar a todo material
+didático e de divulgação do pacote.
 
 Scripts de apoio, todos em `D:\agriRank-validation`:
 

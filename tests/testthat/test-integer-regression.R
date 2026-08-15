@@ -131,6 +131,22 @@ test_that("umbrella regression preserves block as a parametric adjustment", {
   expect_true(all(agri_integer_predict(fit)$plants %in% 1:8))
 })
 
+test_that("umbrella regression recovers the increase-then-decrease peak", {
+  skip_if_not_installed("cgam")
+  # The cgam umbrella cone is translation-sensitive: with an all-positive
+  # predictor its mode search degenerates into a nearly constant fit and the
+  # peak that the method exists to describe disappears. This test pins the
+  # fix that centers the predictor before fitting and on prediction.
+  d <- simulate_agri("integer_density", seed = 31, n = 4)
+  fit <- agri_np_regression(yield ~ plants, d, method = "umbrella",
+                            predictor_support = "observed_integer")
+  # The fitted curve must explain the data...
+  expect_gt(agri_np_diagnostics(fit)$r2$pseudo_r2, 0.5)
+  # ...and the optimum must sit near the generating peak (5 to 7 plants).
+  op <- agri_integer_optimum(fit)
+  expect_true(any(op$optima$plants %in% 5:7))
+})
+
 test_that("integer efficiency remains on the declared support", {
   d <- data.frame(plants = rep(1:7, each = 5))
   d$yield <- 10 + 6*d$plants - .45*d$plants^2 + rnorm(nrow(d), 0, .5)

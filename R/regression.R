@@ -286,13 +286,18 @@
                                     f = 0, rule = 2, ties = "ordered")$y))
   }
   if (method == "umbrella") {
+    # The fit used a centered predictor (see the umbrella branch of
+    # agri_np_regression); prediction grids must be shifted the same way.
+    nd <- newdata
+    if (!is.null(object$umbrella_center))
+      nd[[primary]] <- nd[[primary]] - object$umbrella_center
     # cgam renamed the prediction data argument from `newData` to `newdata`;
     # dispatch on whichever formal the installed version exposes.
     cgam_int <- if (se.fit) "confidence" else "none"
     z <- tryCatch(
-      stats::predict(eng, newdata = newdata, interval = cgam_int, level = level),
+      stats::predict(eng, newdata = nd, interval = cgam_int, level = level),
       error = function(e)
-        stats::predict(eng, newData = newdata, interval = cgam_int, level = level)
+        stats::predict(eng, newData = nd, interval = cgam_int, level = level)
     )
     if (is.list(z) && !is.null(z$fit)) {
       if (!se.fit) return(as.numeric(z$fit))
@@ -600,12 +605,23 @@ agri_np_regression <- function(formula, data = NULL,
     extra$aggregated_integer_data <- agg
   } else if (method == "umbrella") {
     .require_pkg("cgam", "umbrella-order constrained regression")
+    # The cgam umbrella cone construction is translation-sensitive: with an
+    # all-positive (or all-negative) predictor its mode search degenerates
+    # into a nearly constant fit, even on data with a clear peak. Centering
+    # the predictor so that its range straddles zero is invisible to the
+    # fitted response, because the shape term carries its own intercept, and
+    # it restores the increase-then-decrease shape. The shift is stored and
+    # re-applied to every prediction grid.
     formula_used <- .np_umbrella_formula(formula, primary = primary, block = block_nm)
+    umb_center <- mean(range(dat[[primary]], na.rm = TRUE))
+    model_dat <- dat
+    model_dat[[primary]] <- model_dat[[primary]] - umb_center
+    extra$umbrella_center <- umb_center
     cgam_env <- new.env(parent = asNamespace("cgam"))
-    assign("dat", dat, envir = cgam_env)
+    assign("dat", model_dat, envir = cgam_env)
     assign("weights", weights, envir = cgam_env)
     environment(formula_used) <- cgam_env
-    engine <- cgam::cgam(formula_used, data = dat, family = fam, weights = weights, ...)
+    engine <- cgam::cgam(formula_used, data = model_dat, family = fam, weights = weights, ...)
   } else if (method == "integer_grid") {
     base <- agri_np_regression(
       formula, data = dat, method = integer_base_method, tau = tau, family = fam,

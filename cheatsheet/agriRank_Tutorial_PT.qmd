@@ -1,0 +1,782 @@
+---
+title: "agriRank na prática"
+subtitle: "Do delineamento experimental à figura publicável: um tutorial integrado"
+author: "Walter Esfrain Pereira"
+date: last-modified
+lang: pt-BR
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: show
+    code-tools: true
+    embed-resources: true
+    theme: cosmo
+execute:
+  echo: true
+  warning: false
+  message: false
+  freeze: auto
+---
+
+```{r setup}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+```{r library}
+#| label: library
+suppressPackageStartupMessages(library(agriRank))
+packageVersion("agriRank")
+```
+
+# Introdução
+
+::: {.callout-note}
+## O que é o agriRank?
+
+O `agriRank` é um pacote R para **inferência estatística consciente do delineamento** em experimentos agrícolas. Ele representa a estrutura de randomização explicitamente (DIC, DBC, fatorial, parcelas subdivididas, medidas repetidas etc.) e conecta essa declaração a análises baseadas em postos, permutação, efeitos relativos e reamostragem: sem jamais trocar o delineamento por uma análise de observações "independentes" quando elas não são.
+:::
+
+::: {.callout-important}
+## A regra de ouro do pacote
+
+**O delineamento é declarado antes dos dados serem analisados.** O agriRank recusa silenciosamente qualquer rota que descarte a estrutura de randomização. Por exemplo: não se aplica Kruskal-Wallis a um DBC, porque os blocos deixariam de existir na análise. Essa é a diferença entre "rodar um teste" e "fazer inferência sobre o experimento que realmente foi conduzido".
+:::
+
+Este tutorial percorre quatro perguntas científicas típicas da experimentação agrícola:
+
+1. **Fator qualitativo** (cultivares, manejos): DIC, DBC, fatorial e parcelas subdivididas: análise tipo ANOVA, comparações múltiplas com letras (CLD) e figuras;
+2. **Fator quantitativo** (dose, salinidade, lâmina): regressão não paramétrica: ajuste, figuras com incerteza, derivada e ótimo;
+3. **Qualitativo + quantitativo** (dose × cultivar): níveis do fator qualitativo comparados com intervalo de confiança;
+4. **Fator inteiro ordinal** (plantas por cova, número de irrigações): todos os modelos inteiros, ótimo e decisões.
+
+Todos os dados são gerados por `simulate_agri()`, que reproduz cenários agronômicos realistas com semente fixa: o tutorial inteiro é reproduzível.
+
+```{r simulacao}
+#| label: simulacao
+#| fig-cap: "Três tipos de fator experimental: qualitativo (cultivares), quantitativo contínuo (dose de N) e inteiro ordinal (plantas por cova)."
+#| fig-alt: "Três painéis em largura total mostrando resposta em função de fator qualitativo, dose contínua e densidade inteira."
+#| fig-width: 10
+#| fig-height: 3.8
+
+qual <- simulate_agri("crd", seed = 1)
+quant <- simulate_agri("dose_response", seed = 1, n = 6)
+inteiro <- simulate_agri("integer_density", seed = 1, n = 4)
+
+ggplot2::ggplot(qual, ggplot2::aes(treatment, yield)) +
+  ggplot2::geom_boxplot() + ggplot2::labs(x = "Tratamento", y = "Rendimento (Mg/ha)") +
+  ggplot2::ggtitle("Qualitativo") + agri_theme()
+ggplot2::ggplot(quant, ggplot2::aes(dose, yield)) +
+  ggplot2::geom_point(alpha = .5) + ggplot2::labs(x = "Dose de N (kg/ha)", y = NULL) +
+  ggplot2::ggtitle("Quantitativo") + agri_theme()
+ggplot2::ggplot(inteiro, ggplot2::aes(plants, yield)) +
+  ggplot2::geom_point(alpha = .5) +
+  ggplot2::scale_x_continuous(breaks = unique(inteiro$plants)) +
+  ggplot2::labs(x = "Plantas/cova", y = NULL) +
+  ggplot2::ggtitle("Inteiro") + agri_theme()
+```
+
+::: {.callout-tip}
+## Dica de estudo
+
+Antes de qualquer análise, **olhe para os dados**. As figuras acima já respondem três perguntas: os grupos se separam? a resposta sobe e depois estabiliza? existe um pico intermediário? A estatística vai quantificar o que o olho sugere, e não substituir o olho.
+:::
+
+# Parte I: Fatores qualitativos {#sec-parte-i}
+
+Um fator qualitativo tem **níveis sem ordem intrínseca**: cultivares, genótipos, sistemas de manejo. A pergunta é "os níveis diferem?" e, em seguida, "quais diferem de quais?". O agriRank responde com testes de postos conscientes do delineamento e comparações múltiplas com letras.
+
+::: {.callout-important}
+## Por que não paramétrico?
+
+Dados de produção agrícola são tipicamente **positivos, assimétricos à direita e com variância que cresce com a média**: os dados simulados deste tutorial vêm de distribuições gama e log-normal, exatamente por isso. Nessas condições:
+
+- o teste F clássico depende de normalidade e homocedasticidade que raramente se sustentam;
+- testes baseados em **postos** usam apenas a ordem das observações: são invariantes a transformações monótonas, robustos a valores extremos e não dependem da forma da distribuição;
+- a hipótese testada (efeito relativo / separação estocástica) é diretamente interpretável no campo: "qual cultivar tende a produzir mais?".
+
+A figura abaixo mostra a assimetria dos dados simulados: compare com o formato de sino que a ANOVA clássica assumiria.
+
+```{r skew}
+#| label: skew
+#| fig-cap: "Assimetria típica de dados de rendimento: positivos e com cauda à direita."
+#| fig-alt: "Histograma do rendimento mostrando cauda longa à direita."
+d_skew <- simulate_agri("crd", seed = 40)
+ggplot2::ggplot(d_skew, ggplot2::aes(yield)) +
+  ggplot2::geom_histogram(bins = 15, fill = "#0072B2", alpha = .8, colour = "white") +
+  ggplot2::labs(x = "Rendimento (Mg/ha)", y = "Frequência") +
+  ggplot2::ggtitle("Rendimento simulado (gama, assimétrico)") + agri_theme()
+```
+:::
+
+## I.1 Delineamento inteiramente casualizado (DIC) {#sec-dic}
+
+**Pergunta agronômica:** quatro cultivares de feijão diferem em rendimento de grãos, quando cada parcela recebe uma cultivar sorteada ao acaso?
+
+```{r dic-dados}
+#| label: dic-dados
+d1 <- simulate_agri("crd", seed = 40)   # semente com efeitos reais: as letras vão diferir
+levels(d1$treatment) <- c("Ana", "Bela", "Cida", "Dora")   # nomes de cultivar
+head(d1, 8)
+```
+
+```{r dic-design}
+#| label: dic-design
+des1 <- agri_design(yield ~ treatment, d1, design = "crd")
+design_summary(des1)
+```
+
+::: {.callout-note}
+## Conceito-chave: o que é declarado
+
+`agri_design()` registra fórmula, delineamento e estrutura de randomização. No DIC, os tratamentos são **intercambiáveis entre unidades experimentais**: não há restrição de sorteio. Toda análise posterior herda essa declaração.
+:::
+
+```{r dic-figura}
+#| label: dic-figura
+#| fig-cap: "Dados do DIC: distribuição do rendimento por cultivar."
+#| fig-alt: "Violinos e pontos mostrando o rendimento das quatro cultivares."
+agri_plot(des1, type = "data") + ggplot2::labs(y = "Rendimento (Mg/ha)") + agri_theme()
+```
+
+### Análise
+
+```{r dic-analise}
+#| label: dic-analise
+fit1 <- agri_rank(des1, method = "auto")   # auto: um fator, sem bloco -> Kruskal-Wallis
+fit1
+agri_table(fit1, "omnibus", format = "data.frame")
+```
+
+::: {.callout-tip}
+## Como ler a tabela omnibus
+
+A tabela traz a estatística do teste, os graus de liberdade e o **p-valor do teste global**. Um p-valor pequeno diz "há diferença em algum lugar", mas não diz onde. A próxima etapa localiza a diferença.
+:::
+
+### Efeitos relativos com intervalo
+
+```{r dic-efeitos}
+#| label: dic-efeitos
+agri_effects(fit1, ci = TRUE, B = 1000, seed = 41)
+```
+
+O **efeito relativo** de um tratamento é a probabilidade de uma observação dele superar uma observação do conjunto combinado: 0,5 = "tipicamente na mediana geral"; acima de 0,5 = "tende a produzir mais". É a leitura baseada em postos, coerente com o teste global.
+
+### Comparações múltiplas com letras (CLD)
+
+```{r dic-clt}
+#| label: dic-clt
+cc1 <- agri_conover(fit1, cld = TRUE, adjust = "holm")
+cc1
+agri_cld(cc1)
+```
+
+```{r dic-figura-efeitos}
+#| label: dic-figura-efeitos
+#| fig-cap: "Efeitos relativos por cultivar no DIC, com a linha 0,5 de referência."
+#| fig-alt: "Pontos de efeito relativo por cultivar com linha horizontal em 0,5."
+agri_plot(fit1, type = "effects") + ggplot2::labs(y = "Efeito relativo") + agri_theme()
+```
+
+::: {.callout-warning}
+## Erro comum
+
+Letras iguais significam "não houve evidência de diferença **a 5%**", e não "as médias são idênticas". Além disso, letras só comparam tratamentos **dentro do mesmo estrato**: nunca compare letras de estratos diferentes.
+:::
+
+## I.2 Delineamento em blocos casualizados (DBC) {#sec-dbc}
+
+**Pergunta agronômica:** as mesmas quatro cultivares, agora em um campo com gradiente de fertilidade. Cada bloco contém todas as cultivares uma única vez: o sorteio é restrito dentro do bloco.
+
+```{r dbc-design}
+#| label: dbc-design
+d2 <- simulate_agri("rcbd", seed = 2, n = 6)
+levels(d2$treatment) <- c("Ana", "Bela", "Cida", "Dora")
+des2 <- agri_design(yield ~ treatment, d2, design = "rcbd", block = block)
+fit2 <- agri_rank(des2, method = "auto")   # auto: um fator + bloco -> Friedman
+fit2
+```
+
+::: {.callout-important}
+## Por que não Kruskal-Wallis?
+
+Aplicar Kruskal-Wallis aqui trataria as parcelas como independentes e **jogaria fora a informação de bloco**. O agriRank bloqueia essa rota: com bloco declarado, o método automático seleciona Friedman (postos dentro de blocos). A estrutura de randomização do experimento é parte da inferência.
+:::
+
+```{r dbc-conover}
+#| label: dbc-conover
+cc2 <- agri_conover(fit2, cld = TRUE, adjust = "holm")
+agri_cld(cc2)
+```
+
+```{r dbc-figura}
+#| label: dbc-figura
+#| fig-cap: "Dados do DBC: distribuição por cultivar, com blocos presentes na análise."
+#| fig-alt: "Violinos e pontos do rendimento por cultivar no experimento em blocos."
+agri_plot(fit2, type = "data") + ggplot2::labs(y = "Rendimento (Mg/ha)") + agri_theme()
+```
+
+## I.3 Fatorial: dois fatores e a interação {#sec-fatorial}
+
+**Pergunta agronômica:** dois genótipos sob três níveis de adubação nitrogenada. O ganho da adubação é o mesmo nos dois genótipos, ou existe **interação**?
+
+```{r fat-design}
+#| label: fat-design
+d3 <- simulate_agri("factorial", seed = 54, n = 6)   # semente com interação G x N real
+levels(d3$A) <- c("G1", "G2"); levels(d3$B) <- c("N1", "N2", "N3")
+des3 <- agri_design(yield ~ A * B, d3, design = "factorial")
+fit3 <- agri_rank(des3, method = "auto")   # auto: dois fatores, sem bloco -> rankFD
+fit3
+agri_table(fit3, "omnibus", format = "data.frame")
+```
+
+::: {.callout-note}
+## Conceito-chave: interação
+
+A interação G×N pergunta se o **efeito de um fator depende do nível do outro**. Nos dados acima ela é significativa (p = 0,012): o efeito do genótipo muda conforme a adubação. Quando isso ocorre, comparar médias marginais (genótipos ignorando adubação) pode esconder a resposta real. O caminho correto é o **desdobramento** (efeitos simples).
+:::
+
+```{r fat-interacao}
+#| label: fat-interacao
+#| fig-cap: "Gráfico de interação: mediana por combinação genótipo x adubação."
+#| fig-alt: "Linhas conectando medianas de genótipos em função da adubação."
+agri_plot(fit3, type = "interaction") +
+  ggplot2::labs(y = "Mediana do rendimento (Mg/ha)") + agri_theme()
+```
+
+### Efeitos simples com letras dentro de cada estrato
+
+```{r fat-simples}
+#| label: fat-simples
+pr3 <- agri_pairs(fit3, by = "B", cld = TRUE, adjust = "holm")  # compara genótipos dentro de cada adubação
+agri_cld(pr3)
+```
+
+::: {.callout-tip}
+## Como ler o desdobramento
+
+As letras **diferem apenas dentro de N3** (G1 = a, G2 = b): a diferença entre genótipos só aparece na adubação mais alta. Em N1 e N2, não há evidência de diferença. É exatamente essa leitura (efeito que depende do nível do outro fator) que define a interação na prática.
+:::
+
+::: {.callout-warning}
+## Erro comum
+
+No desdobramento, as letras são calculadas **dentro de cada nível de adubação**. O genótipo G1 em N1 nunca foi comparado com G2 em N2, então as letras não atravessam estratos. O agriRank calcula a CLD por estrato justamente para impedir essa leitura.
+:::
+
+## I.4 Parcelas subdivididas (split-plot) {#sec-split}
+
+**Pergunta agronômica:** a resposta de três cultivares à irrigação (baixa/alta): a irrigação é sorteada na **parcela** e a cultivar na **subparcela**, porque é mais fácil irrigar faixas do que parcelas isoladas.
+
+```{r split-design}
+#| label: split-design
+d4 <- simulate_agri("split_plot", seed = 18, n = 8)   # semente com efeitos reais de irrigação e cultivar
+des4 <- agri_design(yield ~ irrigation * cultivar, d4, design = "split_plot",
+                    block = block, whole_plot = irrigation, subplot = cultivar)
+fit4 <- agri_rank(des4, method = "ART")   # Aligned Rank Transform
+agri_table(fit4, "omnibus", format = "data.frame")
+```
+
+::: {.callout-note}
+## Conceito-chave: dois erros experimentais
+
+A parcela subdividida tem **duas estruturas de randomização**: a da parcela (irrigação) e a da subparcela (cultivar). Testar tudo com um único erro inflacionaria o teste da parcela. O ART transforma postos por estrato e respeita a hierarquia do delineamento. Na tabela acima, irrigação (p = 0,004) e cultivar (p = 0,034) são significativos, e a interação não é: o efeito é aditivo: a figura mostra linhas aproximadamente paralelas.
+:::
+
+```{r split-figura}
+#| label: split-figura
+#| fig-cap: "Parcelas subdivididas: rendimento por combinação irrigação x cultivar."
+#| fig-alt: "Violinos do rendimento por combinação de irrigação e cultivar."
+agri_plot(fit4, type = "interaction") +
+  ggplot2::labs(y = "Mediana do rendimento (Mg/ha)") + agri_theme()
+```
+
+```{r split-simples}
+#| label: split-simples
+# dentro de cada cultivar: a irrigação muda o rendimento?
+pr4 <- agri_pairs(fit4, by = "cultivar", factor = "irrigation", adjust = "holm")
+pr4
+```
+
+::: {.callout-tip}
+## Como ler o desdobramento
+
+Com dois níveis de irrigação, o desdobramento repete o efeito principal, e as comparações individuais ajustadas são conservadoras para ART multifatorial (o pacote avisa e recomenda o procedimento ART-C para contrastes). O desdobramento rende mais com fatores de três ou mais níveis, como no fatorial da seção anterior. O essencial aqui já está na tabela omnibus: os dois efeitos principais atuam de forma aditiva.
+:::
+
+::: {.callout-tip}
+## Dica de estudo
+
+Compare os três delineamentos: DIC (sem restrição), DBC (restrição em blocos) e split-plot (duas hierarquias). O teste muda, as tabelas mudam, mas o **fluxo** é idêntico: declarar o delineamento, ajustar, tabela omnibus, efeitos, comparações com letras e figura. É essa uniformidade que o agriRank oferece.
+:::
+
+# Parte II: Fator quantitativo: regressão {#sec-parte-ii}
+
+Quando o fator é uma **dose**, tratá-lo como fator qualitativo desperdiça a ordem (0 < 40 < 80 ...) e produz uma explosão de comparações. A alternativa é a regressão, mas **sem impor um polinômio** sem justificativa científica. O agriRank separa suavizadores estritamente não paramétricos, regressão robusta por postos e modelos semiparamétricos sob uma única interface.
+
+## II.1 Curva dose-resposta sem impor forma {#sec-doseresp}
+
+**Pergunta agronômica:** como o rendimento responde à dose de nitrogênio, sem assumir que a relação é linear ou quadrática?
+
+```{r reg-dados}
+#| label: reg-dados
+d_dose <- simulate_agri("dose_response", seed = 11, n = 6)
+head(d_dose, 6)
+```
+
+```{r reg-fit}
+#| label: reg-fit
+fit_ss <- agri_np_regression(yield ~ dose, d_dose, method = "smoothing_spline")
+fit_ss
+agri_table(fit_ss, "metrics", format = "data.frame")
+```
+
+```{r reg-figura}
+#| label: reg-figura
+#| fig-cap: "Rendimento em função da dose de N: observações, curva suavizada e banda bootstrap."
+#| fig-alt: "Pontos observados, curva suavizada crescente com platô e banda de confiança."
+# B = 1000 é o valor de inferência; abaixo disso o pacote emite um aviso.
+b_ss <- agri_np_bootstrap(fit_ss, B = 1000, n = 80, seed = 12)
+agri_np_plot(fit_ss, type = "fit", bootstrap = b_ss,
+             x_unit = "kg ha-1", y_unit = "Mg ha-1")
+```
+
+::: {.callout-note}
+## Como ler a figura
+
+A banda cobre a curva, não os pontos: é incerteza da **curva média**, não da observação individual. O platô acima de ~200 kg/ha sugere que doses maiores não pagam, mas isso é descritivo; o custo do fertilizante decide o ótimo econômico.
+:::
+
+### Diagnóstico e derivada
+
+```{r reg-diag}
+#| label: reg-diag
+agri_np_diagnostics(fit_ss, cv = TRUE, kfold = 5, seed = 12)
+```
+
+```{r reg-derivada}
+#| label: reg-derivada
+#| fig-cap: "Derivada da curva: ganho marginal por kg/ha de nitrogênio."
+#| fig-alt: "Derivada decrescente cruzando zero próximo ao platô."
+agri_np_derivative(fit_ss)
+agri_np_plot(fit_ss, type = "derivative",
+             x_unit = "kg ha-1", y_unit = "Mg ha-1 por kg ha-1")
+```
+
+```{r reg-otimo}
+#| label: reg-otimo
+agri_np_optimum(fit_ss)
+```
+
+::: {.callout-warning}
+## Erro comum
+
+O ótimo retornado é **descritivo** (máximo da curva suavizada no intervalo observado), não um ótimo econômico. O ótimo econômico exige preços, custos e uma função objetivo declarada antes da análise.
+:::
+
+## II.2 Comparando engines sem pescar p-valor {#sec-compare}
+
+```{r reg-compare}
+#| label: reg-compare
+agri_np_compare(yield ~ dose, d_dose,
+                methods = c("smoothing_spline", "loess"), kfold = 5, seed = 12)
+agri_np_curves(yield ~ dose, d_dose, methods = c("smoothing_spline", "loess")) +
+  ggplot2::labs(x = "Dose de N (kg/ha)", y = "Rendimento (Mg/ha)")
+```
+
+::: {.callout-important}
+## A regra do pacote
+
+`agri_np_compare()` compara **erro preditivo fora da amostra**: nunca usa o p-valor para escolher o modelo. O motor é escolhido pela **declaração científica** (forma esperada, restrição, família), não pelo menor p.
+:::
+
+### Seleção automática determinística
+
+```{r reg-auto}
+#| label: reg-auto
+f_auto1 <- agri_np_regression(yield ~ dose, d_dose, method = "auto")
+f_auto2 <- agri_np_regression(yield ~ dose, d_dose, method = "auto", block = block)
+data.frame(
+  declaracao = c("um preditor numérico, sem bloco", "um preditor numérico, com bloco"),
+  engine_selecionado = c(f_auto1$method, f_auto2$method)
+)
+```
+
+Com bloco declarado, o `auto` migra para o GAM, que acomoda o ajuste por bloco; o suavizador univariado seria rejeitado por descartar o delineamento.
+
+## II.3 Do ajuste à figura publicável {#sec-publicar}
+
+```{r reg-publicar}
+#| label: reg-publicar
+dir.create("figuras", showWarnings = FALSE)
+dir.create("relatorios", showWarnings = FALSE)
+
+p_final <- agri_np_plot(fit_ss, type = "fit", bootstrap = b_ss,
+                        x_unit = "kg ha-1", y_unit = "Mg ha-1") + agri_theme()
+agri_save_figure(p_final, "figuras/dose-resposta.png", layout = "column")
+
+rep_path <- agri_report(fit_ss, file = "relatorios/relatorio-dose.md", format = "md")
+basename(rep_path)
+```
+
+::: {.callout-tip}
+## Dica de publicação
+
+`agri_save_figure()` grava TIFF/PDF/SVG nas larguras de coluna de periódico, e `agri_report()` gera o relatório com métricas, tabela de coeficientes e figuras. Como toda figura é um `ggplot` editável, nada fica "congelado": unidades, fonte e tema podem ser alterados depois.
+:::
+
+# Parte III: Qualitativo + quantitativo {#sec-parte-iii}
+
+**Pergunta agronômica:** duas cultivares respondem à dose de nitrogênio de formas diferentes, ou a diferença entre elas é apenas um deslocamento constante (mesma curva, outro nível)?
+
+## III.1 Um modelo com cultivar e dose {#sec-qualiquant}
+
+```{r qq-dados}
+#| label: qq-dados
+dz <- simulate_agri("dose_response", seed = 21, n = 6)
+dz$cultivar <- factor(rep(c("Ana", "Bela"), length.out = nrow(dz)))
+dz$yield <- dz$yield + ifelse(dz$cultivar == "Bela", 0.8, 0)   # Bela desloca a curva
+fit_q <- agri_np_regression(yield ~ dose + cultivar, dz, method = "quantile", block = block)
+fit_q
+```
+
+```{r qq-coef}
+#| label: qq-coef
+coef(fit_q)
+```
+
+::: {.callout-note}
+## Conceito-chave: contraste contra referência
+
+O coeficiente `cultivarBela` é o **contraste** da Bela contra a cultivar de referência (Ana): quanto a Bela desloca a curva na mesma dose. O intercepto e os termos de bloco são parâmetros de localização/nuisance: a floresta abaixo os exclui do alvo por padrão.
+:::
+
+```{r qq-forest}
+#| label: qq-forest
+#| fig-cap: "Floresta de coeficientes: inclinação da dose e contraste da cultivar, com IC bootstrap."
+#| fig-alt: "Forest plot com intervalo da inclinação e do contraste da cultivar Bela."
+bt <- agri_np_bootstrap(fit_q, target = "coefficients", B = 1000, seed = 22)
+agri_np_forest(fit_q, bootstrap = bt, annotate_values = TRUE, digits = 3)
+```
+
+## III.2 Os níveis do fator com intervalo de confiança {#sec-niveis}
+
+A floresta mostra o **contraste**; o manuscrito normalmente quer a resposta **em cada nível**:
+
+```{r qq-niveis}
+#| label: qq-niveis
+lv <- agri_np_levels(fit_q, B = 1000, seed = 23)
+lv
+agri_table(fit_q, "levels", B = 1000, seed = 23, format = "data.frame")
+```
+
+```{r qq-figura-niveis}
+#| label: qq-figura-niveis
+#| fig-cap: "Resposta ajustada em cada cultivar, com observações e IC bootstrap."
+#| fig-alt: "Pontos observados sob a estimativa com intervalo para Ana e Bela."
+agri_np_plot(fit_q, type = "levels", bootstrap = attr(lv, "bootstrap"), y_unit = "Mg ha-1")
+```
+
+## III.3 Curvas por nível, com banda {#sec-curvas}
+
+```{r qq-curvas}
+#| label: qq-curvas
+#| fig-cap: "Curvas dose-resposta por cultivar, com banda bootstrap por nível (paleta daltônica)."
+#| fig-alt: "Duas curvas paralelas com bandas, uma por cultivar."
+agri_np_plot(fit_q, type = "fit", predictor = "dose", group = "cultivar",
+             bootstrap = 1000, seed = 24,
+             x_unit = "kg ha-1", y_unit = "Mg ha-1")
+```
+
+```{r qq-curvas-grey}
+#| label: qq-curvas-grey
+#| fig-cap: "A mesma figura na paleta cinza, para impressão em preto e branco."
+#| fig-alt: "Mesmas curvas por cultivar em tons de cinza."
+agri_np_plot(fit_q, type = "fit", predictor = "dose", group = "cultivar",
+             bootstrap = 1000, seed = 24, palette = "grey",
+             x_unit = "kg ha-1", y_unit = "Mg ha-1")
+```
+
+::: {.callout-tip}
+## Dica de estudo
+
+As curvas são paralelas: o modelo sem interação impõe a mesma inclinação às duas cultivares, com deslocamento fixo. Se o deslocamento não for razoável, a etapa seguinte é uma interação dose × cultivar, declarada explicitamente, nunca escolhida pela figura.
+:::
+
+# Parte IV: Fator inteiro ordinal {#sec-parte-iv}
+
+## IV.1 Por que "inteiro" é diferente {#sec-inteiro}
+
+**Pergunta agronômica:** quantas plantas por cova maximizam o rendimento? O tratamento é inteiro (1, 2, ..., 9 plantas): **não existe 4,37 plantas por cova**.
+
+::: {.callout-note}
+## Conceito-chave: suporte de decisão inteiro
+
+Um modelo contínuo produziria um "ótimo" em 5,2 plantas/cova: uma decisão impossível no campo. O agriRank restringe todo ajuste, predição e decisão ao **suporte de inteiros admissíveis** (`predictor_support = "observed_integer"`): só os valores realmente testados existem.
+:::
+
+```{r int-dados}
+#| label: int-dados
+dd <- simulate_agri("integer_density", seed = 31, n = 4)
+ggplot2::ggplot(dd, ggplot2::aes(plants, yield)) +
+  ggplot2::geom_point(alpha = .4) +
+  ggplot2::scale_x_continuous(breaks = unique(dd$plants)) +
+  ggplot2::labs(x = "Plantas por cova", y = "Rendimento (Mg/ha)") +
+  ggplot2::ggtitle("Dados observados: há um pico entre 4 e 6?") + agri_theme()
+```
+
+## IV.2 Quatro modelos para o mesmo suporte {#sec-modelos-int}
+
+```{r int-grid}
+#| label: int-grid
+fit_ig <- agri_np_regression(yield ~ plants, dd, method = "integer_grid",
+                             integer_base_method = "smoothing_spline",
+                             predictor_support = "observed_integer")
+fit_ig
+agri_integer_predict(fit_ig)
+```
+
+```{r int-dk}
+#| label: int-dk
+if (requireNamespace("np", quietly = TRUE)) {
+  fit_dk <- agri_np_regression(yield ~ plants, dd, method = "discrete_kernel",
+                               predictor_support = "observed_integer")
+  agri_integer_predict(fit_dk)
+}
+```
+
+```{r int-ui}
+#| label: int-ui
+if (requireNamespace("Iso", quietly = TRUE)) {
+  fit_ui <- agri_np_regression(yield ~ plants, dd, method = "unimodal_isotonic",
+                               predictor_support = "observed_integer")
+  agri_integer_optimum(fit_ui)
+}
+```
+
+```{r int-umb}
+#| label: int-umb
+if (requireNamespace("cgam", quietly = TRUE)) {
+  fit_umb <- agri_np_regression(yield ~ plants, dd, method = "umbrella",
+                                predictor_support = "observed_integer")
+  agri_integer_optimum(fit_umb)
+}
+```
+
+::: {.callout-note}
+## Os quatro motores inteiros
+
+- `integer_grid`: um modelo contínuo flexível (aqui, spline) **projetado** no suporte inteiro: toda decisão sai em valores admissíveis;
+- `discrete_kernel`: kernel para dados ordenados-discretos (`np`);
+- `unimodal_isotonic`: impõe cresce-depois-decresce sem assumir forma paramétrica;
+- `umbrella`: regressão com ordem guarda-chuva (aumenta até um pico e cai).
+:::
+
+A figura abaixo coloca os quatro motores lado a lado, sobre os mesmos dados. Nenhum deles emite um valor entre dois inteiros: cada ajuste vive no suporte admissível.
+
+```{r int-comparacao}
+#| label: int-comparacao
+#| fig-cap: "Os quatro motores inteiros sobre os mesmos dados, todos restritos ao suporte admissível."
+#| fig-alt: "Quatro painéis com pontos observados e o ajuste de cada motor inteiro em plantas por cova."
+#| fig-width: 9
+#| fig-height: 7
+
+modelos <- list(
+  "Projeção contínua (integer_grid)" = fit_ig,
+  "Kernel discreto (discrete_kernel)" = if (exists("fit_dk")) fit_dk else NULL,
+  "Isotônico unimodal (unimodal_isotonic)" = if (exists("fit_ui")) fit_ui else NULL,
+  "Guarda-chuva (umbrella)" = if (exists("fit_umb")) fit_umb else NULL
+)
+modelos <- modelos[!vapply(modelos, is.null, logical(1))]
+
+pred <- do.call(rbind, lapply(names(modelos), function(nm) {
+  pr <- agri_integer_predict(modelos[[nm]])
+  data.frame(modelo = nm, plants = pr[[1]], fit = pr$fit)
+}))
+pred$modelo <- factor(pred$modelo, levels = names(modelos))
+
+ggplot2::ggplot(dd, ggplot2::aes(plants, yield)) +
+  ggplot2::geom_point(alpha = .35, colour = "grey45") +
+  ggplot2::geom_step(data = pred, ggplot2::aes(plants, fit),
+                     direction = "mid", colour = "#0072B2", linewidth = 1) +
+  ggplot2::geom_point(data = pred, ggplot2::aes(plants, fit),
+                      colour = "#0072B2", size = 2.2) +
+  ggplot2::facet_wrap(~ modelo) +
+  ggplot2::scale_x_continuous(breaks = unique(dd$plants)) +
+  ggplot2::labs(x = "Plantas por cova", y = "Rendimento (Mg/ha)") +
+  agri_theme()
+```
+
+::: {.callout-tip}
+## Como ler a comparação
+
+Os quatro motores concordam no pico (entre 5 e 7 plantas/cova), mas diferem no detalhe: o kernel discreto suaviza mais, o isotônico unimodal entrega degraus puros, a projeção contínua conserva a curvatura do spline, e o guarda-chuva impõe explicitamente subir-depois-descer. A concordância entre motores **de famílias diferentes** é a melhor evidência de que o pico não é artefato de um único método; a discordância mandaria o analista de volta ao diagnóstico, como a tabela de métricas abaixo mostraria.
+:::
+
+### Qualidade de ajuste: R², RMSE, MAE e MAD {#sec-metricas-int}
+
+Nenhuma figura substitui números. Para cada motor, o agriRank calcula o erro preditivo (RMSE, MAE, mediana do erro absoluto e MAD dos resíduos) e três índices de variação explicada, análogos ao R²: o **R² pseudo** (sobre os valores ajustados, que recompensam flexibilidade), o **R² de Spearman** (baseado em postos, coerente com a filosofia do pacote) e o **R² CV** (fora da amostra, o índice honesto para comparar motores).
+
+```{r int-metricas}
+#| label: int-metricas
+#| tbl-cap: "Qualidade de ajuste dos quatro motores inteiros. RMSE, MAE, MedAE e MAD em Mg/ha."
+metr <- do.call(rbind, lapply(names(modelos), function(nm) {
+  dg <- agri_np_diagnostics(modelos[[nm]], cv = TRUE, kfold = 5, seed = 33)
+  data.frame(Modelo = nm,
+             RMSE = dg$metrics$RMSE,
+             MAE = dg$metrics$MAE,
+             MedAE = dg$metrics$MedAE,
+             MAD_res = dg$residual_MAD,
+             R2_pseudo = dg$r2$pseudo_r2,
+             R2_spearman = dg$r2$spearman_r2,
+             R2_cv = dg$r2$cv_r2)
+}))
+knitr::kable(metr, digits = 3,
+             col.names = c("Modelo", "RMSE (Mg/ha)", "MAE", "MedAE",
+                           "MAD res.", "R² pseudo", "R² Spearman", "R² CV"))
+```
+
+::: {.callout-important}
+## Como ler a tabela
+
+- **Menor RMSE/MAE** = menor erro típico de predição (em Mg/ha);
+- **R² pseudo alto** recompensa também a flexibilidade: leia-o sempre ao lado dos graus de liberdade efetivos de `agri_np_diagnostics()`;
+- **R² CV** é o índice decisivo: predição fora da amostra não melhora por suavizar demais;
+- aqui os quatro motores empatam em qualidade (R² CV entre 0,83 e 0,85): a escolha final se apoia na **declaração científica** (existe justificativa para impor subir-depois-descer?), não numa diferença numérica de terceira casa decimal. E se um motor destoasse, seriam exatamente essas métricas que o denunciariam, enviando o analista de volta ao diagnóstico em vez de reportar um modelo que os dados rejeitam.
+:::
+
+```{r int-figura}
+#| label: int-figura
+#| fig-cap: "Ajuste inteiro desenhado em degraus: não existe valor entre dois inteiros admissíveis."
+#| fig-alt: "Degraus e cruzes sobre o suporte inteiro de plantas por cova."
+agri_np_plot(fit_ig, type = "fit", x_unit = "plantas cova-1", y_unit = "Mg ha-1")
+```
+
+## IV.3 Decisões no suporte inteiro {#sec-decisoes}
+
+```{r int-decisoes}
+#| label: int-decisoes
+agri_integer_optimum(fit_ig)
+agri_integer_difference(fit_ig, order = 1)          # ganho ao passar de k para k+1 plantas
+agri_integer_threshold(fit_ig, criterion = "fraction_of_maximum", value = 0.95)
+agri_integer_threshold(fit_ig, criterion = "gain_from_baseline", value = 0.5, baseline = 1)
+```
+
+```{r int-eficiencia}
+#| label: int-eficiencia
+#| fig-cap: "Eficiência relativa ao máximo ajustado em cada densidade."
+#| fig-alt: "Barras de eficiência relativa por plantas por cova."
+agri_np_plot(fit_ig, type = "efficiency")
+```
+
+::: {.callout-warning}
+## Erro comum
+
+"Nunca arredonde um ótimo contínuo para inteiro", pois o agriRank sequer permite: o ótimo é **buscado no suporte inteiro** desde o ajuste. Um limiar como "95% do máximo" retorna a menor densidade inteira que já atinge o critério, pronta para virar recomendação.
+:::
+
+## IV.4 A incerteza do ótimo inteiro {#sec-incerteza-int}
+
+```{r int-boot}
+#| label: int-boot
+bi <- agri_integer_bootstrap(fit_ig, B = 1000, seed = 32)   # reamostra e re-otimiza
+bi
+```
+
+```{r int-confset}
+#| label: int-confset
+#| fig-cap: "Distribuição bootstrap do ótimo e conjunto de confiança a 90%."
+#| fig-alt: "Colunas de probabilidade por densidade, com destaque do conjunto de confiança."
+cs <- agri_integer_confset(bi, level = 0.9)
+cs
+plot(cs)
+```
+
+::: {.callout-tip}
+## Como ler o conjunto de confiança
+
+Cada reamostra elege um ótimo: a tabela acima é a frequência com que cada densidade venceu em 1000 reajustes (as probabilidades somam 100%). Em vez de "o ótimo é 6 plantas/cova", a resposta honesta é: a(s) densidade(s) `r paste(cs$values, collapse = " e ")` concentra(m) `r round(100 * cs$probability_mass)`% da probabilidade de ser(em) ótima(s), e forma(m) o conjunto de confiança a `r round(100 * cs$level)`%. É um **conjunto de decisões admissíveis**, não um intervalo contínuo que sugeriria frações de planta.
+:::
+
+# Encerramento {#sec-fim}
+
+## O fluxo completo em uma figura
+
+```{mermaid}
+flowchart TD
+    A[Pergunta agronômica] --> B{Tipo do fator?}
+    B -->|qualitativo| C[agri_design<br>DIC DBC fatorial split]
+    B -->|quantitativo| D[agri_np_regression<br>curva dose-resposta]
+    B -->|quali + quanti| E[regressão com fator<br>níveis + floresta]
+    B -->|inteiro ordinal| F[modelos inteiros<br>suporte admissível]
+    C --> G[agri_rank + omnibus]
+    G --> H[efeitos + CLD por estrato]
+    D --> I[diagnóstico derivada ótimo]
+    E --> J[níveis com IC<br>curvas por grupo]
+    F --> K[ótimo inteiro<br>conjunto de confiança]
+    H --> L[figuras editáveis]
+    I --> L
+    J --> L
+    K --> L
+    L --> M[agri_save_figure + agri_report]
+```
+
+## Boas práticas {#sec-boas}
+
+::: {.callout-important}
+## As quatro regras deste tutorial
+
+1. **Declare antes de analisar**: delineamento, forma esperada e restrições vêm da ciência, não do p-valor;
+2. **`B = 1000` em todas as reamostragens**: abaixo de 999 o pacote avisa que é apenas recurso de velocidade; para trabalho final, considere valores maiores;
+3. **Letras e intervalos têm estratos**: nunca compare o que não foi comparado;
+4. **Figura é ggplot, tabela é data.frame**: tudo permanece editável até a submissão.
+:::
+
+## Exercícios {#sec-exercicios}
+
+::: {.callout-caution collapse="true"}
+## Exercício 1: Identificar (nível 1)
+
+Um pesquisador sorteia 5 cultivares em um viveiro com 4 bancadas; cada bancada recebe todas as cultivares uma vez. Qual delineamento? Qual função o declara? Qual teste o `method = "auto"` seleciona?
+
+**Solução:** DBC (as bancadas são blocos). `agri_design(yield ~ cultivar, dados, design = "rcbd", block = bancada)`; com um fator e bloco, o automático escolhe Friedman.
+:::
+
+::: {.callout-caution collapse="true"}
+## Exercício 2: Aplicar (nível 2)
+
+Gere `simulate_agri("crd", seed = 7)`, renomeie os tratamentos como você quiser e reproduza o fluxo completo do DIC: declaração, análise, letras e figura de efeitos.
+
+**Solução:** o código da @sec-dic com outra semente; a interpretação das letras é o único passo que muda.
+:::
+
+::: {.callout-caution collapse="true"}
+## Exercício 3: Interpretar (nível 3)
+
+No fatorial da @sec-fatorial, suponha que o desdobramento mostre: dentro de N3, G1 e G2 diferem; dentro de N1 e N2, não. Como você escreveria isso em um artigo, e o que NÃO se pode concluir?
+
+**Solução:** "O efeito do genótipo manifestou-se apenas na adubação mais alta (N3; p ajustado < 0,05)". Não se pode concluir que os genótipos são iguais em N1/N2: apenas que não houve evidência de diferença a 5% (ausência de evidência não é evidência de ausência).
+:::
+
+::: {.callout-caution collapse="true"}
+## Exercício 4: Criar (nível 4)
+
+Seu próprio experimento: 3 híbridos de milho sob 4 densidades de plantio (inteiro), em 4 blocos. Descreva o delineamento, os dois módulos do agriRank que você usaria e a sequência de decisões até a recomendação final.
+
+**Solução (esboço):** parcelas subdivididas (densidade na parcela, híbrido na subparcela) para a parte qualitativa; para a parte inteira, `agri_np_regression(..., method = "integer_grid", predictor_support = "integer_range")` e depois `agri_integer_optimum`, `agri_integer_threshold` e `agri_integer_bootstrap` para reportar o conjunto de confiança do ótimo. A recomendação combina o efeito do híbrido (letras/efeitos) com o ótimo de densidade (inteiro), sem arredondar ótimos contínuos.
+:::
+
+## Como citar {#sec-citar}
+
+```{r citar}
+#| label: citar
+citation("agriRank")
+packageVersion("agriRank")
+R.version.string
+```
+
+Inclua a citação acima na lista de referências e declare as versões do R e do pacote na seção de Material e Métodos.

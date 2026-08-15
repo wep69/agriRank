@@ -16,7 +16,7 @@ agri_np_forest(
   digits = 2,
   order_by = c("model", "effect"),
   ref_line = 0,
-  caption = "Reference level drawn at zero; intervals show where the zero line is excluded."
+  caption = "Reference level at zero; intervals show where the zero line is excluded."
 )
 }
 \arguments{

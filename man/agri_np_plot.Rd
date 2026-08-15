@@ -18,7 +18,8 @@ agri_np_plot(
   palette = c("color", "grey"),
   x_unit = NULL,
   y_unit = NULL,
-  ...
+  ...,
+  jitter = FALSE
 )
 }
 \arguments{
@@ -34,6 +35,7 @@ agri_np_plot(
   \item{seed}{Seed used when a resampling band must be computed on the spot.}
   \item{palette}{Discrete colour palette: \code{"color"} uses the colour-blind-safe Okabe-Ito palette; \code{"grey"} uses grey tones safe for black-and-white print. Applied when \code{group} is supplied.}
   \item{x_unit, y_unit}{Plain-text unit string appended in parentheses to the default axis labels, e.g. \code{"kg ha^-1"} or \code{"kg/ha"}.}
+  \item{jitter}{If \code{TRUE}, spreads overlapping observed values vertically in the fitted-response figure.}
   \item{...}{Passed to the specialized drawing function (\code{\link{agri_np_forest}} or \code{\link{agri_np_levels}}).}
 }
 \description{Returns editable \pkg{ggplot2} objects displaying observed agronomic data with fitted smooths, residuals, derivatives, response surfaces and integer decision summaries.}

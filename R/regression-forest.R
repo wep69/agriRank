@@ -90,7 +90,7 @@ agri_np_forest <- function(object, bootstrap = NULL, B = 499L, level = 0.95, see
                            palette = c("color", "grey"),
                            annotate_values = FALSE, digits = 2,
                            order_by = c("model", "effect"), ref_line = 0,
-                           caption = "Reference level drawn at zero; intervals show where the zero line is excluded.") {
+                           caption = "Reference level at zero; intervals show where the zero line is excluded.") {
   if (!inherits(object, "agri_np_reg_fit")) .agri_stop("`object` must be an agri_np_reg_fit.")
   palette <- match.arg(palette)
   order_by <- match.arg(order_by)

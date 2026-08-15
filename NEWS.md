@@ -61,6 +61,7 @@
 * The rankFD adapter populates the standardized omnibus table, which had been empty and silently disabled `agri_table()`, `agri_sensitivity()` and `agri_batch()` on that route.
 * Replaced the deprecated `ggplot2::aes_string()` in the interaction plot.
 * Interactive Plotly widgets are no longer auto-printed in examples and vignettes, which avoids a headless-browser dependency and removed about 4 MB from the installed size.
+* The `umbrella` adapter now centers the focal predictor before fitting with `cgam`: the umbrella cone construction in `cgam` is translation-sensitive, and with an all-positive covariate its mode search degenerates into a nearly constant fit that loses the increase-then-decrease peak, even on data with an unmistakable one. Centering makes the covariate range straddle zero and restores the intended shape; the shift is stored and re-applied to every prediction grid. The fitted response is unchanged by construction, because the shape term carries its own intercept.
 
 # agriRank 0.12.0.9000
 
