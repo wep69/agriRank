@@ -7,6 +7,11 @@
 Este documento existe para que qualquer pessoa, inclusive você mesmo daqui a
 seis meses, consiga retomar o trabalho sem reconstruir o contexto.
 
+**Guia complementar:** o `GUIA_COMPLEMENTAR.md` (mesma pasta) detalha o
+procedimento operacional: ambiente e instalação elevada, validação local,
+win-builder/macbuilder, commits e o roteiro completo de elaboração de
+tutoriais PT/EN (com a versão EN como vinheta em destaque do pacote).
+
 ---
 
 ## 1. Onde está cada coisa
@@ -312,6 +317,16 @@ tutorial vive em `cheatsheet/agriRank_Tutorial_PT.qmd` (fonte Quarto) e
 `cheatsheet/agriRank_Tutorial_PT.html` (HTML autocontido para visualização),
 junto aos cheatsheets PDF.
 
+**Tutorial EN e vinheta v18 (16/08/2026):** a versão em inglês foi criada com
+os mesmos chunks, sementes e números da versão PT, renderizada sem erros e
+publicada em `cheatsheet/agriRank_Tutorial_EN.qmd` + `.html`. A versão EN
+também entrou no pacote como **vinheta em destaque**
+`vignettes/v18-integrated-tutorial.Rmd` (VignetteIndexEntry "Integrated
+agriRank Tutorial"), com os callouts convertidos para blockquotes e os
+exercícios para `<details>` (compatíveis com rmarkdown) e o fluxo final em
+lista em vez de mermaid. A vinheta é reconstruída pelo `R CMD check` e usa
+`B = 1000`, o que eleva o check para cerca de 20 minutos.
+
 ## 4. Ferramentas
 
 | Ferramenta | Versão | Onde |
@@ -347,11 +362,14 @@ rápidas sem elevar, instale numa biblioteca isolada:
 aponte `R_LIBS` para ela.
 
 **Tutorial integrado.** O tutorial didático em Quarto está em
-`tutorial-agriRank.qmd` (raiz deste diretório), cobre os fluxos qualitativo
-(DIC/DBC/fatorial/split-plot), quantitativo (regressão), quali+quanti (níveis
-com IC) e inteiro ordinal (modelos, ótimo, conjunto de confiança), com
-exercícios e soluções. Renderize com `quarto render tutorial-agriRank.qmd`
-(gera `tutorial-agriRank.html`, `figuras/` e `relatorios/`).
+`tutorial-agriRank.qmd` (PT) e `tutorial-agriRank-EN.qmd` (EN) na raiz deste
+diretório. Cobre os fluxos qualitativo (DIC/DBC/fatorial/split-plot),
+quantitativo (regressão), quali+quanti (níveis com IC) e inteiro ordinal
+(modelos, ótimo, conjunto de confiança), com exercícios e soluções. Renderize
+com `quarto render <arquivo>.qmd`. As versões publicadas ficam em
+`cheatsheet/agriRank_Tutorial_PT.{qmd,html}` e
+`cheatsheet/agriRank_Tutorial_EN.{qmd,html}` no repositório; a versão EN é
+também a vinheta em destaque `v18-integrated-tutorial` do pacote.
 
 **Convenção de estilo do tutorial (preferência do autor, 15/08/2026).**
 NÃO usar travessão (—, U+2014) no texto: substituir por dois-pontos ao

@@ -42,6 +42,12 @@
 * Added a Quarto template at `inst/templates/regression-report.qmd` for the regression report.
 * Added a brief note in vignette v16 on figure editability: every agriRank figure is a `ggplot` object; every table a data frame.
 
+## Integrated tutorial (English and Portuguese)
+
+* Added vignette `v18-integrated-tutorial`, the English version of the integrated tutorial: qualitative designs (CRD, RCBD, factorial, split-plot with CLD and figures), quantitative regression (fit, bootstrap bands, diagnostics, derivative, optimum, engine comparison), qualitative + quantitative (levels with confidence intervals, forest and grouped curves), and integer ordinal factors (the four integer engines, fit-quality metrics with R-squared/RMSE/MAE/MAD, optimum, thresholds and the bootstrap confidence set of the optimum).
+* The Portuguese version ships as a standalone Quarto document in the repository's `cheatsheet/` directory (`agriRank_Tutorial_PT.qmd` and a self-contained HTML rendering), beside the English one (`agriRank_Tutorial_EN.qmd` and HTML) and the existing cheatsheets.
+* The tutorial uses `simulate_agri()` throughout with fixed seeds chosen so the effects are real (the CLD letters differ), `B = 1000` in every resampling, integer-only axis breaks for the density factor, and fit-quality tables whose numbers are read from the fitted objects.
+
 ## Example data and documentation
 
 * Added three exported data sets: `agri_dose` (nitrogen rates in an RCBD, quadratic-plateau response), `agri_density` (plants per hill, an integer treatment with a unimodal response) and `agri_surface` (nitrogen by irrigation depth with a positive cross term). The generating script is in `data-raw/`.
