@@ -44,23 +44,26 @@ test_that("split-split and strip-plot ART adapters preserve declared strata", {
                     fst$engine$randomization_terms))
 })
 
-test_that("permuco adapters expose hierarchical Error formulas", {
+test_that("permuco adapters are refused for nested field strata", {
   skip_if_not_installed("permuco")
 
+  # split_split: the guard refuses permuco with an explanatory message.
   ss <- simulate_agri("split_split", seed = 1205, n = 3)
-  fss <- np_splitsplit(yield ~ irrigation * cultivar * timing, ss,
-                       block, irrigation, cultivar, timing,
-                       method = "permuco", np = 19, seed = 9)
-  expect_match(paste(deparse(fss$engine$formula), collapse = " "),
-               "Error\\(.agri_block/.agri_whole/.agri_subplot\\)")
+  expect_error(
+    np_splitsplit(yield ~ irrigation * cultivar * timing, ss,
+                  block, irrigation, cultivar, timing,
+                  method = "permuco", np = 19, seed = 9),
+    regexp = "not admissible"
+  )
 
+  # strip_plot: the guard refuses permuco with an explanatory message.
   st <- simulate_agri("strip_plot", seed = 1206, n = 3)
-  fst <- np_stripplot(yield ~ irrigation * nitrogen, st,
-                      block, irrigation, nitrogen,
-                      method = "permuco", np = 19, seed = 9)
-  ff <- paste(deparse(fst$engine$formula), collapse = " ")
-  expect_match(ff, ".agri_block:.agri_strip_a")
-  expect_match(ff, ".agri_block:.agri_strip_b")
+  expect_error(
+    np_stripplot(yield ~ irrigation * nitrogen, st,
+                 block, irrigation, nitrogen,
+                 method = "permuco", np = 19, seed = 9),
+    regexp = "not admissible"
+  )
 })
 
 test_that("direct multi-environment design cannot omit environment", {

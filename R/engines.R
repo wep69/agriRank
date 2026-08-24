@@ -103,13 +103,30 @@
 
 .engine_permuco <- function(design, response = NULL, np = 4999, seed = 1, rank_response = TRUE, ...) {
   .require_pkg("permuco", "permutation ANOVA/ANCOVA")
+  # Nested field strata are not admissible: aovperm implements Error(subject/within),
+  # not Error(block/whole_plot/subplot). On data with a true sub-plot effect,
+  # aov returned p = 0.030 while permuco returned p = 0.713 on identical ranks.
+  # See PERMUCO_ISOLAMENTO.md for the full investigation.
+  if (design$design %in% c("split_plot", "split_split", "strip_plot")) {
+    .agri_stop(sprintf(
+      paste0("Method `permuco` is not admissible for the `%s` design in agriRank. ",
+             "permuco::aovperm implements the repeated-measures Error() form, in which each ",
+             "subject contributes one observation per within-cell. A field split-plot carries ",
+             "several sub-units inside every whole plot, so the sub-plot stratum is never built ",
+             "and every term is tested against an inflated whole-plot mean square. On data with ",
+             "a true sub-plot effect, base aov returned p = 0.030 while permuco returned ",
+             "p = 0.713 on the identical ranks. Use `method = \"ART\"`, which reproduces the ",
+             "correct strata, or the native wild-bootstrap engine."),
+      design$design))
+  }
   response <- response %||% design$response[1L]
   dat <- design$data
+  # Only the block copy survives. The whole-plot, sub-plot and strip copies used
+  # to feed Error() branches for the nested field designs, which are refused
+  # above; they were removed in 0.14.0 and must not be reinstated. Naming them
+  # differently from the fixed-effects terms was itself part of the defect, since
+  # aovperm could then match no term to any stratum at all.
   if (length(design$block)) dat$.agri_block <- .safe_factor(dat[[design$block[1L]]])
-  if (length(design$whole_plot)) dat$.agri_whole <- .safe_factor(dat[[design$whole_plot[1L]]])
-  if (length(design$subplot)) dat$.agri_subplot <- .safe_factor(dat[[design$subplot[1L]]])
-  if (length(design$strip_a)) dat$.agri_strip_a <- .safe_factor(dat[[design$strip_a[1L]]])
-  if (length(design$strip_b)) dat$.agri_strip_b <- .safe_factor(dat[[design$strip_b[1L]]])
   yname <- response
   if (rank_response) {
     yname <- ".agri_rank_y"
@@ -130,16 +147,13 @@
   if (design$design %in% c("repeated", "longitudinal") && length(design$subject) && length(design$within)) {
     dat$.agri_subject <- .subject_namespace(dat, design)
     rhs <- paste0(rhs, " + Error(.agri_subject/(", paste(design$within, collapse = "*"), "))")
-  } else if (design$design == "split_plot") {
-    rhs <- paste0(rhs, " + Error(.agri_block/.agri_whole)")
-  } else if (design$design == "split_split") {
-    rhs <- paste0(rhs, " + Error(.agri_block/.agri_whole/.agri_subplot)")
-  } else if (design$design == "strip_plot") {
-    # Classical strip-plot strata: block, block:strip-A, block:strip-B;
-    # the strip-A by strip-B intersection is evaluated in the remaining stratum.
-    err <- ".agri_block + .agri_block:.agri_strip_a + .agri_block:.agri_strip_b"
-    rhs <- paste0(rhs, " + Error(", err, ")")
   }
+  # The only Error() this engine builds is the repeated-measures form above, which
+  # is what aovperm actually implements. Nested field strata are refused by the
+  # guard at the top of THIS function, not by fit.R: fit.R only changed which
+  # engine automatic mode selects, so removing the guard here would reopen the
+  # defect for anyone passing method = "permuco" explicitly. See
+  # PERMUCO_ISOLAMENTO.md.
   f <- stats::as.formula(paste(yname, "~", rhs))
   z <- .seed_eval(seed, permuco::aovperm(f, data = dat, np = np, ...))
   tab <- tryCatch(as.data.frame(z$table), error = function(e) NULL)

@@ -3,7 +3,8 @@
 .np_method_choices <- c(
   "auto", "theil_sen", "siegel", "quantile", "loess",
   "smoothing_spline", "kernel", "gam", "scam", "cobs", "isotonic",
-  "discrete_kernel", "unimodal_isotonic", "umbrella", "integer_grid"
+  "discrete_kernel", "unimodal_isotonic", "umbrella", "integer_grid",
+  "smooth_quantile"
 )
 
 
@@ -49,7 +50,12 @@
   vals <- support %||% object$integer_support
   if (!all(vals %in% object$integer_support))
     .agri_stop("Requested prediction values must belong to the fitted integer support.")
-  vars <- unique(c(object$predictors, object$block %||% character()))
+  # Field coordinates are nuisance terms, not predictors, but they are in the
+  # model formula, so a prediction grid must carry them or the backend fails on
+  # an unresolved symbol. They are held at their reference value, which means
+  # the curve is reported for a plot of average position.
+  vars <- unique(c(object$predictors, object$block %||% character(),
+                   object$coords %||% character()))
   n <- length(vals)
   out <- as.data.frame(setNames(lapply(vars, function(v) rep(.np_reference_value(object$data[[v]]), n)), vars),
                        stringsAsFactors = FALSE)
@@ -131,13 +137,125 @@
   stats::as.formula(paste(lhs, "~", paste(c(rhs0, add), collapse = " + ")), env = environment(formula))
 }
 
-.np_auto_gam_formula <- function(formula, data, block = NULL, k = 10L, structure = c("additive", "tensor")) {
+# How the declared block enters the linear predictor.
+#
+# "fixed" estimates one free effect per block. That is the classical choice and
+# it assumes nothing about how blocks relate to each other, but the effects are
+# only defined for the blocks that were observed, so nothing can be predicted
+# for a new field or a new year.
+#
+# "shrunk" replaces those free effects by a penalized term. Block effects are
+# pulled towards their common mean by an amount the data choose, which is what
+# makes prediction into an unobserved block possible at all. The price is a
+# working assumption about how blocks vary. It is a nuisance-structure choice,
+# not a parametric claim about the response curve, and the curve itself remains
+# nonparametric. Inference for the curve should still come from the package's
+# resampling and conformal tools rather than from the mixed-model asymptotics.
+.np_block_term <- function(block, effect = "fixed") {
+  if (is.null(block) || !length(block)) return(NULL)
+  if (identical(effect, "fixed")) return(block)
+  sprintf("s(%s, bs=\"re\")", block)
+}
+
+# Nuisance terms for field position.
+#
+# Blocking is a coarse instrument. It was invented for a field whose fertility
+# varies in patches the size of a block, and it does nothing about a gradient
+# that runs continuously across the trial, which is the common case: a slope, an
+# old road, a drainage line. The residual then carries structure that the block
+# cannot absorb, precision is lost, and treatment comparisons that happen to lie
+# along the gradient are biased.
+#
+# Two devices, both nuisance rather than scientific terms, and both estimated
+# jointly with the response curve rather than in a first pass:
+#
+#   smooth_xy  a two-dimensional thin-plate smooth of the coordinates,
+#              s(row, col). It absorbs a continuous trend of any orientation and
+#              costs the effective degrees of freedom that mgcv selects for it.
+#   row_col    additive row and column factors. Cheaper, discrete, and the right
+#              choice when the layout is a lattice and the trend is thought to
+#              follow it.
+#
+# The basis dimension of the smooth is capped by the number of distinct
+# positions, because a trial with six rows cannot support a rich surface.
+.np_spatial_terms <- function(spatial, coords, data, k = 10L) {
+  if (is.null(spatial) || identical(spatial, "none")) return(NULL)
+  if (length(coords) != 2L)
+    .agri_stop("`coords` must name exactly two position variables, the row and ",
+               "the column of the plot in the field layout.")
+  .check_vars(coords, data)
+  if (identical(spatial, "row_col")) {
+    return(vapply(coords, function(v) {
+      if (is.factor(data[[v]])) v else sprintf("factor(%s)", v)
+    }, character(1), USE.NAMES = FALSE))
+  }
+  # smooth_xy
+  bad <- coords[!vapply(data[coords], is.numeric, logical(1))]
+  if (length(bad))
+    .agri_stop("`spatial = \"smooth_xy\"` needs numeric coordinates; `",
+               paste(bad, collapse = "`, `"),
+               "` is not numeric. Either supply the position as a number or ",
+               "use `spatial = \"row_col\"`, which treats the layout as a ",
+               "lattice of factors.")
+  nu <- prod(vapply(coords, function(v)
+    length(unique(data[[v]][is.finite(data[[v]])])), integer(1)))
+  kk <- min(as.integer(k) * 3L, max(3L, nu - 1L))
+  if (kk < 5L)
+    .agri_stop("A two-dimensional field trend needs more distinct positions ",
+               "than this layout has (", nu, " combinations of `",
+               coords[1L], "` and `", coords[2L], "`). Use ",
+               "`spatial = \"row_col\"`, or rely on the block alone.")
+  sprintf("s(%s, %s, k=%d)", coords[1L], coords[2L], kk)
+}
+
+.np_auto_gam_formula <- function(formula, data, block = NULL, k = 10L,
+                                 structure = c("additive", "tensor", "varying")) {
   structure <- match.arg(structure)
   if (!.np_simple_formula(formula)) return(.np_append_terms(formula, block %||% character()))
   response <- .response_names(formula)[1L]
   predictors <- .predictor_names(formula)
   nums <- predictors[vapply(data[predictors], is.numeric, logical(1))]
   cats <- setdiff(predictors, nums)
+  if (identical(structure, "varying")) {
+    # One smooth per level of the qualitative predictor, so the *shape* of the
+    # response may differ between cultivars, seasons or sites, not merely its
+    # height. An additive adjustment cannot express that: it forces parallel
+    # curves and therefore a single common optimum.
+    if (!length(nums))
+      .agri_stop("`gam_structure = \"varying\"` needs a numeric predictor ",
+                 "whose curve is allowed to vary.")
+    if (!length(cats))
+      .agri_stop("`gam_structure = \"varying\"` needs a qualitative predictor ",
+                 "across whose levels the curve is allowed to vary.")
+    if (length(cats) > 1L)
+      .agri_stop("`gam_structure = \"varying\"` currently supports one ",
+                 "qualitative predictor. Combine the factors into a single ",
+                 "one if the intention is a curve per combination.")
+    f <- cats[1L]
+    fac <- data[[f]]
+    if (!is.factor(fac))
+      .agri_stop("`", f, "` must be a factor for a curve to be fitted per level.")
+    # The basis dimension is limited by the level with the fewest distinct
+    # predictor values, not by the whole data set.
+    kmin <- min(vapply(split(data[[nums[1L]]], fac), function(v)
+      length(unique(v[is.finite(v)])), integer(1)))
+    kv <- min(as.integer(k), kmin - 1L)
+    if (kv < 3L)
+      .agri_stop("At least four distinct values of `", nums[1L], "` are needed ",
+                 "within every level of `", f, "` to fit a separate curve. ",
+                 "The sparsest level has ", kmin, ".")
+    parts <- c(f,
+               sprintf("s(%s, by=%s, k=%d)", nums[1L], f, kv),
+               if (length(nums) > 1L)
+                 vapply(nums[-1L], function(v) {
+                   kk <- min(as.integer(k),
+                             length(unique(data[[v]][is.finite(data[[v]])])) - 1L)
+                   if (kk < 3L) v else sprintf("s(%s, k=%d)", v, kk)
+                 }, character(1)) else character())
+    parts <- unique(c(parts, block %||% character()))
+    return(stats::as.formula(paste(response, "~", paste(parts, collapse = " + ")),
+                             env = environment(formula)))
+  }
   if (identical(structure, "tensor") && length(nums) >= 2L) {
     kt <- max(3L, min(as.integer(k), floor(sqrt(max(9, nrow(data) / 2)))))
     kk <- paste(rep(kt, 2L), collapse = ",")
@@ -227,7 +345,12 @@
   }
   xr <- range %||% base::range(dat[[predictor]], na.rm = TRUE)
   if (length(xr) != 2L || !all(is.finite(xr))) .agri_stop("Cannot determine a finite predictor range.")
-  vars <- unique(c(object$predictors, object$block %||% character()))
+  # Field coordinates are nuisance terms, not predictors, but they are in the
+  # model formula, so a prediction grid must carry them or the backend fails on
+  # an unresolved symbol. They are held at their reference value, which means
+  # the curve is reported for a plot of average position.
+  vars <- unique(c(object$predictors, object$block %||% character(),
+                   object$coords %||% character()))
   out <- as.data.frame(setNames(lapply(vars, function(v) rep(.np_reference_value(dat[[v]]), n)), vars), stringsAsFactors = FALSE)
   for (v in vars) {
     if (is.factor(dat[[v]])) out[[v]] <- factor(out[[v]], levels = levels(dat[[v]]))
@@ -310,7 +433,7 @@
   if (method == "integer_grid") {
     return(.np_engine_predict(object$base_fit, newdata, se.fit = se.fit, level = level))
   }
-  if (method %in% c("gam", "scam")) {
+  if (method %in% c("gam", "scam", "smooth_quantile")) {
     if (!se.fit) return(as.numeric(stats::predict(eng, newdata = newdata, type = "response")))
     pp <- stats::predict(eng, newdata = newdata, type = "link", se.fit = TRUE)
     crit <- stats::qnorm(1 - (1 - level) / 2)
@@ -358,12 +481,32 @@
 #' @param shape Optional shape constraint.
 #' @param block Optional agronomic block variable. It is retained as an
 #'   adjustment factor for engines that support multivariable adjustment.
+#' @param block_effect How the declared block enters the model. `"fixed"`, the
+#'   default, estimates one free effect per block and assumes nothing about how
+#'   blocks relate to each other, but those effects exist only for the blocks
+#'   that were observed. `"shrunk"` replaces them by a penalized term whose
+#'   effects are pulled towards their common mean by an amount the data choose,
+#'   which is what makes prediction into an unobserved field or year possible.
+#'   Available for `method = "gam"` and `method = "scam"`. The response curve
+#'   stays nonparametric either way; this argument concerns only the nuisance
+#'   structure. See [agri_np_block_effects()] for the comparison, and
+#'   [agri_np_conformal()] with `scope = "new_block"` for the assumption-free
+#'   route to the same prediction.
 #' @param weights Optional numeric observation weights.
 #' @param na_action Missing-data handling for response, modeled predictors, block, and weights. The default `fail` prevents silent row deletion; `complete` explicitly uses complete rows and records the omission count.
 #' @param span LOESS span.
 #' @param degree LOESS or COBS polynomial degree where applicable.
 #' @param k Basis dimension for GAM/SCAM automatic smooths.
-#' @param gam_structure For automatically generated GAMs, use separate additive smooths or a tensor-product smooth for the first two numeric predictors.
+#' @param gam_structure Shape of the automatically generated GAM formula.
+#'   `"additive"` fits one smooth per numeric predictor and adjusts additively
+#'   for qualitative ones, which forces the curves of different levels to be
+#'   parallel. `"tensor"` fits a tensor-product smooth over the first two
+#'   numeric predictors, for a response surface. `"varying"` fits one smooth of
+#'   the focal numeric predictor per level of a single qualitative predictor, so
+#'   the *shape* of the response may differ between cultivars, seasons or sites
+#'   and each level can have its own optimum. Use `"varying"` before comparing
+#'   optima with [agri_np_optimum_test()], because parallel curves share one
+#'   optimum by construction.
 #' @param kernel_regtype Local-linear (`ll`) or local-constant (`lc`) kernel regression for the `np` engine.
 #' @param bwmethod Bandwidth-selection method passed to `np::npregbw()`.
 #' @param predictor_support Decision support for integer-predictor methods. `observed_integer`
@@ -380,16 +523,20 @@
 agri_np_regression <- function(formula, data = NULL,
                                method = c("auto", "theil_sen", "siegel", "quantile", "loess",
                                           "smoothing_spline", "kernel", "gam", "scam", "cobs", "isotonic",
-                                          "discrete_kernel", "unimodal_isotonic", "umbrella", "integer_grid"),
+                                          "discrete_kernel", "unimodal_isotonic", "umbrella", "integer_grid",
+                                          "smooth_quantile"),
                                tau = 0.5,
                                family = stats::gaussian(),
                                shape = c("none", "increasing", "decreasing", "convex", "concave",
                                          "increasing_convex", "increasing_concave",
                                          "decreasing_convex", "decreasing_concave"),
-                               block = NULL, weights = NULL,
+                               block = NULL, block_effect = c("fixed", "shrunk"),
+                               spatial = c("none", "smooth_xy", "row_col"),
+                               coords = NULL,
+                               weights = NULL,
                                na_action = c("fail", "complete"),
                                span = 0.75, degree = 2L, k = 10L,
-                               gam_structure = c("additive", "tensor"),
+                               gam_structure = c("additive", "tensor", "varying"),
                                kernel_regtype = c("ll", "lc"),
                                bwmethod = "cv.aic",
                                predictor_support = c("continuous", "observed_integer", "integer_range", "custom_integer"),
@@ -419,6 +566,14 @@ agri_np_regression <- function(formula, data = NULL,
   shape <- match.arg(shape)
   na_action <- match.arg(na_action)
   gam_structure <- match.arg(gam_structure)
+  block_effect <- match.arg(block_effect)
+  if (identical(block_effect, "shrunk") &&
+      !method %in% c("auto", "gam", "scam", "smooth_quantile", "integer_grid"))
+    .agri_stop("`block_effect = \"shrunk\"` needs an engine that can carry a ",
+               "penalized term, which here means `method = \"gam\"` or ",
+               "`method = \"scam\"`. The engine requested was \"", method,
+               "\". Either change the engine or keep the block fixed, which is ",
+               "the classical and assumption-free choice.")
   kernel_regtype <- match.arg(kernel_regtype)
   predictor_support <- match.arg(predictor_support)
   integer_kernel <- match.arg(integer_kernel)
@@ -438,9 +593,37 @@ agri_np_regression <- function(formula, data = NULL,
               else .capture_names(bexpr, names(data))
   if (!length(block_nm)) block_nm <- NULL
   if (length(block_nm) > 1L) .agri_stop("The regression module currently accepts at most one agronomic block variable.")
-  .check_vars(unique(c(response, predictors, block_nm)), data)
+
+  spatial <- match.arg(spatial)
+  cexpr_sp <- substitute(coords)
+  cval_sp <- tryCatch(coords, error = function(e) NULL)
+  coord_nm <- if (identical(cexpr_sp, quote(NULL)) || is.null(cval_sp)) NULL
+              else if (is.character(cval_sp)) cval_sp
+              else .capture_names(cexpr_sp, names(data))
+  if (!identical(spatial, "none") && !length(coord_nm))
+    .agri_stop("`spatial = \"", spatial, "\"` needs `coords`, the two ",
+               "variables giving the position of each plot in the field ",
+               "layout, for example `coords = c(\"row\", \"col\")`.")
+  if (identical(spatial, "none") && length(coord_nm))
+    .agri_warn("`coords` was supplied but `spatial = \"none\"`, so field ",
+               "position is not in the model. Set `spatial` to use it.")
+
+  # Only the penalised additive engines can carry a field-trend term. Silently
+  # dropping it elsewhere would leave the user believing the trend was removed
+  # when it was not, which is worse than refusing.
+  if (!identical(spatial, "none") &&
+      !method %in% c("auto", "gam", "scam", "smooth_quantile"))
+    .agri_stop("`spatial = \"", spatial, "\"` is available for the penalised ",
+               "additive engines, `gam`, `scam` and `smooth_quantile`, which ",
+               "estimate the field trend jointly with the response curve. ",
+               "`", method, "` has no term to carry it, and dropping it ",
+               "silently would leave the trend in the residual while the ",
+               "output suggested otherwise.")
+
+  .check_vars(unique(c(response, predictors, block_nm, coord_nm)), data)
   dat <- data
-  fit_vars <- unique(c(response, predictors, block_nm))
+  fit_vars <- unique(c(response, predictors, block_nm,
+                       if (!identical(spatial, "none")) coord_nm))
   cc <- stats::complete.cases(dat[, fit_vars, drop = FALSE])
   if (!is.null(weights)) {
     if (length(weights) != nrow(dat)) .agri_stop("`weights` must have one value per input row.")
@@ -636,12 +819,41 @@ agri_np_regression <- function(formula, data = NULL,
     extra$base_method <- integer_base_method
   } else if (method == "gam") {
     .require_pkg("mgcv", "generalized additive regression")
-    formula_used <- .np_auto_gam_formula(formula, dat, block = block_nm, k = k, structure = gam_structure)
+    formula_used <- .np_auto_gam_formula(formula, dat, k = k, structure = gam_structure,
+                                         block = c(.np_block_term(block_nm, block_effect),
+                                                   .np_spatial_terms(spatial, coord_nm, dat, k)))
     engine <- mgcv::gam(formula_used, data = dat, family = fam, weights = weights, method = "REML", ...)
+  } else if (method == "smooth_quantile") {
+    # A smooth of a conditional quantile, not of the mean. The agronomic point
+    # is that a fertilizer can lift the good plots without lifting the poor
+    # ones; the median answers "the typical plot", a low quantile answers "the
+    # plot a grower is exposed to in a bad year". The fit is calibrated by the
+    # pinball loss, so nothing is assumed about the shape of the response
+    # distribution, only about the smoothness of the curve.
+    .require_pkg("qgam", "smooth quantile regression")
+    if (length(tau) != 1L)
+      .agri_stop("`method = \"smooth_quantile\"` fits one quantile at a time. ",
+                 "Give a single `tau`, or use `agri_np_quantile_curves()` for ",
+                 "a set of quantiles.")
+    if (!is.finite(tau) || tau <= 0 || tau >= 1)
+      .agri_stop("`tau` must lie strictly between 0 and 1.")
+    formula_used <- .np_auto_gam_formula(formula, dat, k = k, structure = gam_structure,
+                                         block = c(.np_block_term(block_nm, block_effect),
+                                                   .np_spatial_terms(spatial, coord_nm, dat, k)))
+    # qgam prints a dot per loss evaluation while it calibrates the learning
+    # rate. That is progress reporting, not a message the reader needs, and it
+    # would flood a vignette or an example.
+    engine <- utils::capture.output(
+      eng_q <- qgam::qgam(formula_used, data = dat, qu = tau,
+                          argGam = list(weights = weights),
+                          control = list(progress = FALSE), ...))
+    engine <- eng_q
   } else if (method == "scam") {
     .require_pkg("scam", "shape-constrained additive regression")
     if (is.null(primary)) .agri_stop("SCAM requires at least one numeric predictor to constrain.")
-    formula_used <- .np_scam_formula(formula, dat, primary = primary, shape = shape, block = block_nm, k = k)
+    formula_used <- .np_scam_formula(formula, dat, primary = primary, shape = shape, k = k,
+                                     block = c(.np_block_term(block_nm, block_effect),
+                                               .np_spatial_terms(spatial, coord_nm, dat, k)))
     engine <- scam::scam(formula_used, data = dat, family = fam, weights = weights, ...)
   } else if (method == "cobs") {
     .require_pkg("cobs", "constrained quantile B-spline regression")
@@ -664,7 +876,9 @@ agri_np_regression <- function(formula, data = NULL,
     data = dat, response = response, predictors = predictors,
     numeric_predictors = numeric_predictors, factor_predictors = factor_predictors,
     primary_predictor = primary,
-    block = block_nm, design = design_object, method = method, tau = tau, family = fam, shape = shape,
+    block = block_nm, block_effect = block_effect,
+    spatial = spatial, coords = if (identical(spatial, "none")) NULL else coord_nm,
+    design = design_object, method = method, tau = tau, family = fam, shape = shape,
     engine = engine, weights = weights,
     integer_predictor = if (!is.null(integer_info)) primary else NULL,
     predictor_support = if (!is.null(integer_info)) integer_info$mode else "continuous",
@@ -672,6 +886,9 @@ agri_np_regression <- function(formula, data = NULL,
     integer_observed = if (!is.null(integer_info)) integer_info$observed else NULL,
     n_original = n_original, n_omitted = n_omitted, na_action = na_action,
     settings = list(span = span, degree = degree, k = k, gam_structure = gam_structure,
+                    block_effect = block_effect,
+                    spatial = spatial,
+                    coords = if (identical(spatial, "none")) NULL else coord_nm,
                     kernel_regtype = kernel_regtype, bwmethod = bwmethod, na_action = na_action,
                     predictor_support = if (!is.null(integer_info)) integer_info$mode else "continuous",
                     integer_range = integer_range, integer_values = integer_values,
@@ -736,14 +953,42 @@ print.summary.agri_np_reg_fit <- function(x, ...) {
 #' Predict from a nonparametric regression fit
 #' @param object agri_np_reg_fit.
 #' @param newdata New data frame. Defaults to training data.
-#' @param interval `none` or `confidence`. Analytic confidence intervals are
-#'   returned only for engines that expose defensible model-based uncertainty;
-#'   otherwise use `agri_np_bootstrap()`.
+#' @param interval One of `"none"`, `"confidence"` or `"prediction"`.
+#'
+#'   A **confidence** interval covers the mean response at a covariate setting.
+#'   Analytic ones are returned only for engines that expose defensible
+#'   model-based uncertainty; otherwise use [agri_np_bootstrap()].
+#'
+#'   A **prediction** interval covers the next individual plot, which is what a
+#'   recommendation actually needs, and is always wider. It is produced by split
+#'   conformal prediction through [agri_np_conformal()], so it carries a
+#'   finite-sample marginal coverage guarantee rather than a distributional
+#'   assumption, and it requires `scope`.
 #' @param level Confidence level.
+#' @param scope Required when `interval = "prediction"` and the fit declares a
+#'   block. `"within_block"` covers a new plot in a block already observed;
+#'   `"new_block"` covers a plot in a block not seen before, and is wider. The
+#'   two answer different questions and the choice is not a default worth
+#'   guessing on the user's behalf.
+#' @param extrapolation One of `"warn"`, `"error"` or `"allow"`. A smoother says
+#'   nothing about the response outside the range of the data it saw: beyond the
+#'   support the returned value is an artefact of the chosen basis, not an
+#'   estimate. With `"warn"` the prediction is returned with a warning and an
+#'   `extrapolated` column; with `"error"` a request that leaves the observed
+#'   envelope by more than `extrapolation_tol` of its width is refused.
+#' @param extrapolation_tol Fraction of the observed range of a numeric
+#'   predictor that a request may fall outside before `"error"` refuses it.
+#'   Defaults to 0.1.
+#' @param ... Passed to [agri_np_conformal()] when `interval = "prediction"`.
 #' @export
-agri_np_predict <- function(object, newdata = NULL, interval = c("none", "confidence"), level = 0.95) {
+agri_np_predict <- function(object, newdata = NULL,
+                            interval = c("none", "confidence", "prediction"),
+                            level = 0.95, scope = NULL,
+                            extrapolation = c("warn", "error", "allow"),
+                            extrapolation_tol = 0.1, ...) {
   if (!inherits(object, "agri_np_reg_fit")) .agri_stop("`object` must be an agri_np_reg_fit.")
   interval <- match.arg(interval)
+  extrapolation <- match.arg(extrapolation)
   supplied <- !is.null(newdata)
   newdata <- newdata %||% object$data
   newdata <- .integer_validate_newdata(object, newdata)
@@ -752,25 +997,197 @@ agri_np_predict <- function(object, newdata = NULL, interval = c("none", "confid
   # with the variable name is clearer than letting the backend report an
   # unresolved symbol.
   if (supplied) {
-    need <- unique(c(object$predictors, object$block %||% character()))
+    need <- unique(c(object$predictors, object$block %||% character(),
+                     object$coords %||% character()))
     miss <- setdiff(need, names(as.data.frame(newdata)))
     if (length(miss))
       .agri_stop("`newdata` is missing the variable(s) used by the fitted model: ",
                  paste(miss, collapse = ", "),
                  ". Supply a value for each, for example the block level at which the prediction is intended.")
   }
+  if (isTRUE(.agri_np_internal$quiet_support)) extrapolation <- "allow"
+  ex <- .np_extrapolation_flag(object, newdata)
+  if (!identical(extrapolation, "allow") && any(ex$flag)) {
+    msg <- paste0(
+      "`newdata` leaves the range of the data the smoother was fitted to: ",
+      paste(sprintf("%s outside [%s, %s]", ex$detail$predictor,
+                    format(ex$detail$lower, digits = 4),
+                    format(ex$detail$upper, digits = 4)), collapse = "; "),
+      ". A nonparametric fit carries no information beyond its support, so a ",
+      "value returned there describes the basis rather than the experiment.")
+    if (identical(extrapolation, "error") && any(ex$detail$excess > extrapolation_tol))
+      .agri_stop(msg, " The request exceeds `extrapolation_tol` = ",
+                 format(extrapolation_tol),
+                 ". Use `extrapolation = \"warn\"` to obtain it anyway, and do ",
+                 "not report it as an estimate.")
+    .agri_warn(msg)
+  }
+
+  if (identical(interval, "prediction")) {
+    out <- .np_predict_conformal(object, newdata, level = level, scope = scope, ...)
+    if (any(ex$flag)) out$extrapolated <- ex$flag
+    return(out)
+  }
+
   want_se <- identical(interval, "confidence")
-  supported <- object$method %in% c("gam", "scam", "cobs", "umbrella") ||
+  supported <- object$method %in% c("gam", "scam", "cobs", "umbrella", "smooth_quantile") ||
     (identical(object$method, "integer_grid") && object$base_method %in% c("gam", "scam", "cobs"))
   if (want_se && !supported) {
     .agri_warn("Analytic confidence intervals are not standardized for this engine. Returning fitted values only; use agri_np_bootstrap() for resampling-based intervals.")
     want_se <- FALSE
   }
-  .np_engine_predict(object, newdata, se.fit = want_se, level = level)
+  out <- .np_engine_predict(object, newdata, se.fit = want_se, level = level)
+  # Engines return either a data frame or a bare numeric vector, so the flag is
+  # attached in whichever way the return admits. Losing it on the vector path
+  # would mean the warning fires and the evidence for it disappears.
+  if (any(ex$flag)) {
+    if (is.data.frame(out)) out$extrapolated <- ex$flag
+    else attr(out, "extrapolated") <- ex$flag
+  }
+  out
+}
+
+# The support guard is meant for the person asking a question, not for the
+# package asking itself. Cross-validation predicts held-out rows from a fit
+# trained on the remaining folds, and a bootstrap replicate predicts a fixed
+# grid from a resample that may omit an extreme: both leave the training range
+# by construction and legitimately so, and warning there would emit the notice
+# once per fold or once per replicate.
+#
+# Detecting this by walking the call stack was tried and rejected. It broke
+# under `tryCatch()` and `withCallingHandlers()`, which is exactly how users
+# wrap calls in scripts and how testthat wraps them in tests, so the guard fell
+# silent in the situations where it most needed to fire. An explicit flag set by
+# the internal loops is duller and correct.
+.agri_np_internal <- new.env(parent = emptyenv())
+.agri_np_internal$quiet_support <- FALSE
+
+.np_quiet_support <- function(expr) {
+  old <- .agri_np_internal$quiet_support
+  .agri_np_internal$quiet_support <- TRUE
+  on.exit(.agri_np_internal$quiet_support <- old, add = TRUE)
+  expr
+}
+
+# Which rows of newdata leave the observed envelope, and by how much relative to
+# the observed width. Only numeric predictors are checked by distance; a factor
+# level that was never observed is a harder failure and the backends already
+# refuse it.
+.np_extrapolation_flag <- function(object, newdata) {
+  nd <- as.data.frame(newdata)
+  flag <- rep(FALSE, nrow(nd))
+  det <- list()
+  for (v in object$predictors) {
+    if (!v %in% names(nd)) next
+    tr <- object$data[[v]]
+    if (!is.numeric(tr) || !is.numeric(nd[[v]])) next
+    rg <- range(tr, na.rm = TRUE)
+    w <- diff(rg)
+    if (!is.finite(w) || w <= 0) next
+    below <- (rg[1L] - nd[[v]]) / w
+    above <- (nd[[v]] - rg[2L]) / w
+    out <- pmax(below, above, 0, na.rm = TRUE)
+    if (any(out > 0, na.rm = TRUE)) {
+      flag <- flag | (out > 0 & !is.na(out))
+      det[[length(det) + 1L]] <- data.frame(
+        predictor = v, lower = rg[1L], upper = rg[2L],
+        excess = max(out, na.rm = TRUE),
+        rows = sum(out > 0, na.rm = TRUE),
+        row.names = NULL, stringsAsFactors = FALSE)
+    }
+  }
+  list(flag = flag,
+       detail = if (length(det)) do.call(rbind, det) else
+         data.frame(predictor = character(), lower = numeric(),
+                    upper = numeric(), excess = numeric(), rows = integer()))
+}
+
+# Prediction intervals come from split conformal prediction, which is already
+# implemented and block-aware. Routing them through predict() means the user
+# does not have to know that conformal prediction exists in order to obtain the
+# quantity a recommendation needs.
+.np_predict_conformal <- function(object, newdata, level, scope, ...) {
+  if (is.null(scope)) {
+    if (length(object$block)) {
+      .agri_stop(
+        "`interval = \"prediction\"` needs `scope`, because this fit declares ",
+        "the block `", object$block[1L], "`. Use scope = \"within_block\" for a ",
+        "new plot inside a block already observed, or scope = \"new_block\" for ",
+        "a plot in a block not seen before. The second is wider, and using the ",
+        "first where the second was meant understates the interval.")
+    }
+    scope <- "within_block"
+  }
+  scope <- match.arg(scope, c("within_block", "new_block"))
+  # agri_np_conformal() returns a data frame carrying its own class and the
+  # attributes that document the split, the calibration size and the achieved
+  # quantile. Those are exactly what a reader needs in order to judge the
+  # interval, so the object is returned intact rather than reduced to columns.
+  cf <- agri_np_conformal(object, newdata = newdata, level = level,
+                          scope = scope, ...)
+  if (!is.data.frame(cf))
+    .agri_stop("The conformal backend did not return a prediction table.")
+  attr(cf, "interval") <- "prediction"
+  cf
 }
 
 #' @export
 predict.agri_np_reg_fit <- function(object, newdata = NULL, ...) agri_np_predict(object, newdata = newdata, ...)
+
+#' Refit a nonparametric regression changing only what is named
+#'
+#' @description
+#' Refits the model with the arguments given in `...` replacing the ones used
+#' originally, leaving everything else as it was. Comparing two engines or
+#' trying a shape constraint otherwise means retyping the whole call, which is
+#' where a predictor or a block quietly goes missing between the two versions
+#' being compared.
+#'
+#' The refit uses the data stored in the fit, that is, the data after the
+#' declared `na_action` was applied. This is deliberate: it guarantees that the
+#' two models are fitted to the same rows, which is the point of comparing them.
+#' If the original data frame has since changed, refit from it explicitly rather
+#' than through this method.
+#' @param object An `agri_np_reg_fit`.
+#' @param formula Optional replacement formula.
+#' @param ... Arguments of [agri_np_regression()] to change, for example
+#'   `method`, `shape`, `k`, `span`, `block_effect` or `gam_structure`.
+#' @return A new `agri_np_reg_fit`.
+#' @export
+update.agri_np_reg_fit <- function(object, formula = NULL, ...) {
+  if (!inherits(object, "agri_np_reg_fit")) .agri_stop("`object` must be an agri_np_reg_fit.")
+  s <- object$settings %||% list()
+  args <- list(
+    formula = formula %||% object$formula,
+    data = object$data,
+    method = object$method,
+    tau = object$tau,
+    family = object$family,
+    shape = object$shape,
+    block = object$block %||% NULL,
+    block_effect = object$block_effect %||% s$block_effect %||% "fixed",
+    spatial = object$spatial %||% s$spatial %||% "none",
+    coords = object$coords %||% s$coords,
+    na_action = "fail",
+    span = s$span, degree = s$degree, k = s$k,
+    gam_structure = s$gam_structure %||% "additive",
+    kernel_regtype = s$kernel_regtype %||% "ll",
+    bwmethod = s$bwmethod,
+    predictor_support = s$predictor_support %||% "continuous",
+    integer_predictor = s$integer_predictor,
+    integer_range = s$integer_range,
+    integer_values = s$integer_values,
+    integer_kernel = s$integer_kernel %||% "wangvanryzin",
+    integer_base_method = s$integer_base_method %||% "gam")
+  new <- list(...)
+  bad <- setdiff(names(new), names(formals(agri_np_regression)))
+  if (length(bad))
+    .agri_stop("Not an argument of agri_np_regression(): ",
+               paste(bad, collapse = ", "), ".")
+  args[names(new)] <- new
+  args <- args[!vapply(args, is.null, logical(1))]
+  do.call(agri_np_regression, args)
+}
 
 # Effective degrees of freedom, when the engine exposes them. Reported next to
 # any R-squared so that a high value obtained through flexibility is visible.
@@ -792,24 +1209,33 @@ predict.agri_np_reg_fit <- function(object, newdata = NULL, ...) agri_np_predict
 
 # Out-of-fold coefficient of determination. Unlike the fitted pseudo-R2, this
 # one does not improve by making the smoother more flexible.
-.np_cv_r2 <- function(object, kfold = 5L, seed = 1) {
+.np_cv_r2 <- function(object, kfold = 5L, seed = 1, cv_scope = "within_block") {
   d <- object$data
   n <- nrow(d)
   kfold <- max(2L, min(as.integer(kfold), n))
   y <- d[[object$response]]
   pred <- rep(NA_real_, n)
-  .seed_eval(seed, {
-    folds <- sample(rep(seq_len(kfold), length.out = n))
+  # Same fold rule as agri_np_compare(). Before 0.14.0 this function assigned
+  # rows at random even when a block was declared, so the two cross-validation
+  # routines of the package answered the same question differently.
+  folds <- .np_cv_folds(d, object$block %||% character(), kfold, seed, cv_scope)
+  kfold <- length(unique(folds))
+  # See agri_np_compare(): a held-out block has no estimable effect, so under
+  # new_block the term is dropped and the error refers to an average block.
+  fold_block <- if (identical(cv_scope, "new_block")) NULL else object$block
+  .np_quiet_support({
     for (k in seq_len(kfold)) {
       tr <- d[folds != k, , drop = FALSE]
       te <- d[folds == k, , drop = FALSE]
       fitk <- tryCatch(
         agri_np_regression(object$formula, tr, method = object$method, tau = object$tau,
                            family = object$family, shape = object$shape,
-                           block = object$block, na_action = "fail",
+                           block = fold_block, na_action = "fail",
+                           spatial = object$settings$spatial %||% "none",
+                           coords = object$settings$coords,
                            span = object$settings$span, degree = object$settings$degree,
                            k = object$settings$k,
-                           gam_structure = object$settings$gam_structure %||% "additive",
+                           gam_structure = object$settings$gam_structure, block_effect = object$settings$block_effect %||% "fixed" %||% "additive",
                            kernel_regtype = object$settings$kernel_regtype %||% "ll",
                            bwmethod = object$settings$bwmethod,
                            predictor_support = if (!is.null(object$integer_support)) "custom_integer" else "continuous",
@@ -833,9 +1259,17 @@ predict.agri_np_reg_fit <- function(object, newdata = NULL, ...) agri_np_predict
 }
 
 #' Regression diagnostics and predictive-error summaries
+#' @param cv_scope With a declared block, which question `cv_r2` answers.
+#'   `"within_block"` stratifies the folds and reports the error of predicting
+#'   another plot in a block already observed; `"new_block"` holds out whole
+#'   blocks and reports the error of predicting a block never seen. Identical in
+#'   meaning and in wording to the argument of [agri_np_compare()], so that the
+#'   two cross-validation routines of the package answer the same question.
 #' @export
-agri_np_diagnostics <- function(object, cv = FALSE, kfold = 5L, seed = 1) {
+agri_np_diagnostics <- function(object, cv = FALSE, kfold = 5L, seed = 1,
+                                cv_scope = c("within_block", "new_block")) {
   if (!inherits(object, "agri_np_reg_fit")) .agri_stop("`object` must be an agri_np_reg_fit.")
+  cv_scope <- match.arg(cv_scope)
   res <- object$residuals
   fit <- object$fitted
   ok <- is.finite(res) & is.finite(fit)
@@ -861,7 +1295,8 @@ agri_np_diagnostics <- function(object, cv = FALSE, kfold = 5L, seed = 1) {
     suppressWarnings(stats::cor(y[oky], fit[oky], method = "spearman"))^2 else NA_real_
   edf <- .np_effective_df(object)
   cv_r2 <- NA_real_
-  if (isTRUE(cv)) cv_r2 <- .np_cv_r2(object, kfold = kfold, seed = seed)
+  if (isTRUE(cv)) cv_r2 <- .np_cv_r2(object, kfold = kfold, seed = seed,
+                                     cv_scope = cv_scope)
 
   r2 <- data.frame(
     pseudo_r2 = pseudo_r2,
@@ -870,7 +1305,15 @@ agri_np_diagnostics <- function(object, cv = FALSE, kfold = 5L, seed = 1) {
     effective_df = edf,
     n = sum(oky)
   )
-  attr(r2, "note") <- "pseudo_r2 = 1 - SSE/SST on the fitted values; it rewards flexibility and must be read next to effective_df. cv_r2 uses out-of-fold predictions and is the honest one for comparing engines. spearman_r2 is the squared rank correlation between observed and fitted, coherent with the rank-based estimands of the package. None of them is the least-squares R-squared of a linear model."
+  attr(r2, "cv_scope") <- if (isTRUE(cv) && length(object$block)) cv_scope else NA_character_
+  attr(r2, "note") <- paste0(
+    "pseudo_r2 = 1 - SSE/SST on the fitted values; it rewards flexibility and must be read next to effective_df. cv_r2 uses out-of-fold predictions and is the honest one for comparing engines. spearman_r2 is the squared rank correlation between observed and fitted, coherent with the rank-based estimands of the package. None of them is the least-squares R-squared of a linear model.",
+    if (isTRUE(cv) && length(object$block))
+      paste0(" cv_r2 was computed with cv_scope = \"", cv_scope, "\"", 
+             if (identical(cv_scope, "within_block"))
+               "; it therefore refers to another plot in a block already observed, which is the more flattering of the two questions." else
+               "; whole blocks were held out.")
+    else "")
 
   list(
     method = object$method,
@@ -887,18 +1330,78 @@ agri_np_diagnostics <- function(object, cv = FALSE, kfold = 5L, seed = 1) {
   )
 }
 
+# Fold assignment, shared by agri_np_compare() and .np_cv_r2() so that the two
+# cross-validation routines of the package cannot drift apart. Before 0.14.0
+# they did: agri_np_compare() stratified within blocks while .np_cv_r2()
+# assigned rows at random, so the same model reported two different validated
+# errors depending on which function was asked.
+#
+# The two scopes answer different questions, and neither is wrong:
+#
+#   within_block  folds are stratified, every block appears in training. This
+#                 estimates the error of predicting another plot in a block
+#                 already observed. It is the optimistic answer, because plot
+#                 mates sit on both sides of the split.
+#   new_block     folds are grouped, whole blocks are held out. This estimates
+#                 the error of predicting a plot in a block never seen, which
+#                 is the question a recommendation actually poses.
+#
+# This is the same distinction that agri_np_conformal() exposes through its own
+# `scope`, and the wording is deliberately identical.
+.np_cv_folds <- function(data, block_nm, kfold, seed, scope = "within_block") {
+  n <- nrow(data)
+  if (!length(block_nm)) {
+    if (identical(scope, "new_block"))
+      .agri_stop("`cv_scope = \"new_block\"` needs a declared block; without one ",
+                 "there are no groups to hold out.")
+    return(.seed_eval(seed, sample(rep(seq_len(kfold), length.out = n))))
+  }
+  b <- as.character(data[[block_nm]])
+  if (identical(scope, "new_block")) {
+    lv <- unique(b)
+    if (length(lv) < 2L)
+      .agri_stop("Holding out whole blocks needs at least two blocks; this ",
+                 "design has ", length(lv), ".")
+    k <- min(kfold, length(lv))
+    assign_lv <- .seed_eval(seed, sample(rep(seq_len(k), length.out = length(lv))))
+    return(assign_lv[match(b, lv)])
+  }
+  folds <- integer(n)
+  .seed_eval(seed, {
+    for (lv in unique(b)) {
+      ii <- which(b == lv)
+      folds[ii] <- sample(rep(seq_len(kfold), length.out = length(ii)))
+    }
+    folds
+  })
+}
+
 #' Compare regression engines by cross-validation
 #'
 #' @description
 #' Compares predictive performance without using the comparison to choose the
-#' smallest inferential p-value. If `block` is supplied, folds are stratified
-#' within blocks so all block levels remain represented in training data.
+#' smallest inferential p-value.
+#' @param cv_scope With a declared block, which question the validated error
+#'   answers. `"within_block"` stratifies the folds, so every block appears in
+#'   training and the estimate refers to another plot in a block already
+#'   observed. `"new_block"` holds out whole blocks, which is the error of
+#'   predicting where nothing was measured, and is the relevant one for a
+#'   recommendation. The two differ, often substantially, and the first is
+#'   always the more flattering.
+#'
+#'   Under `"new_block"` the block term is dropped from the fold models. A block
+#'   that was held out has no estimated effect, so a model carrying it could
+#'   return only `NA` for every held-out row. Dropping it makes the validated
+#'   error refer to a block of average fertility, which is the only thing an
+#'   unobserved block can mean.
 #' @export
 agri_np_compare <- function(formula, data,
                             methods = c("smoothing_spline", "loess", "kernel", "gam"),
                             block = NULL, kfold = 5L, seed = 1,
-                            metric = c("RMSE", "MAE", "MedAE"), ...) {
+                            metric = c("RMSE", "MAE", "MedAE"),
+                            cv_scope = c("within_block", "new_block"), ...) {
   metric <- match.arg(metric)
+  cv_scope <- match.arg(cv_scope)
   bexpr <- substitute(block)
   bval <- tryCatch(block, error = function(e) NULL)
   block_nm <- if (identical(bexpr, quote(NULL))) character() else if (is.character(bval)) bval else .capture_names(bexpr, names(data))
@@ -907,23 +1410,21 @@ agri_np_compare <- function(formula, data,
   n <- nrow(data)
   if (n < 6L) .agri_stop("Cross-validation requires at least six observations.")
   kfold <- max(2L, min(as.integer(kfold), n))
-  folds <- integer(n)
-  .seed_eval(seed, {
-    if (length(block_nm)) {
-      for (b in unique(data[[block_nm]])) {
-        ii <- which(data[[block_nm]] == b)
-        folds[ii] <- sample(rep(seq_len(kfold), length.out = length(ii)))
-      }
-    } else folds <- sample(rep(seq_len(kfold), length.out = n))
-    folds
-  }) -> folds
+  folds <- .np_cv_folds(data, block_nm, kfold, seed, cv_scope)
+  kfold <- length(unique(folds))
+  # Holding out a whole block leaves the fold model with no estimate for that
+  # block, so it cannot predict for it: the term is dropped and the validated
+  # error refers to an average block, which is the only thing an unobserved
+  # block can mean. Keeping the block here would return NA for every held-out
+  # row and report a silent NA as if it were a result.
+  fold_block <- if (identical(cv_scope, "new_block")) character() else block_nm
 
-  out <- lapply(methods, function(m) {
+  out <- .np_quiet_support(lapply(methods, function(m) {
     pred <- rep(NA_real_, n); errs <- character()
     for (f in seq_len(kfold)) {
       tr <- data[folds != f, , drop = FALSE]; te <- data[folds == f, , drop = FALSE]
       z <- tryCatch(
-        agri_np_regression(formula, tr, method = m, block = block_nm, ...),
+        agri_np_regression(formula, tr, method = m, block = fold_block, ...),
         error = function(e) e
       )
       if (inherits(z, "error")) { errs <- c(errs, conditionMessage(z)); next }
@@ -935,12 +1436,20 @@ agri_np_compare <- function(formula, data,
     met <- .np_metrics(data[[.response_names(formula)[1L]]], pred)
     data.frame(method = m, met, selected_metric = met[[metric]],
                failures = length(unique(errs)), stringsAsFactors = FALSE)
-  })
+  }))
   ans <- do.call(rbind, out)
   ans <- ans[order(ans$selected_metric), , drop = FALSE]
   rownames(ans) <- NULL
   attr(ans, "metric") <- metric
-  attr(ans, "note") <- "Cross-validation ranks predictive error only; it does not select an inferential method by p-value."
+  attr(ans, "cv_scope") <- if (length(block_nm)) cv_scope else "no_block"
+  attr(ans, "kfold") <- kfold
+  attr(ans, "note") <- paste0(
+    "Cross-validation ranks predictive error only; it does not select an ",
+    "inferential method by p-value.",
+    if (length(block_nm) && identical(cv_scope, "within_block"))
+      " Folds are stratified within blocks, so this is the error of predicting another plot in an observed block. For the error of predicting a new block, use cv_scope = \"new_block\"."
+    else if (length(block_nm)) " Whole blocks are held out, so this is the error of predicting a block never observed."
+    else "")
   class(ans) <- c("agri_np_compare", class(ans))
   ans
 }
@@ -1063,13 +1572,23 @@ agri_np_optimum <- function(object, predictor = NULL, objective = c("max", "min"
 }
 
 #' Cluster-aware bootstrap confidence bands for a regression curve
+#' @param parallel Distribute the replicates over a `future` plan. Defaults to
+#'   `FALSE`, and the default should stay `FALSE` for small problems: starting
+#'   workers and shipping the data costs more than it saves below a few hundred
+#'   replicates. It requires the `future.apply` package and a plan set by the
+#'   user, for example `future::plan(future::multisession)`.
+#'
+#'   The result does not depend on it. Each replicate is drawn from its own
+#'   L'Ecuyer-CMRG substream, so replicate `b` is the same object whichever
+#'   worker computes it and in whatever order, and a run with four cores gives
+#'   the same interval as a run with one.
 #' @export
 agri_np_bootstrap <- function(object, newdata = NULL, predictor = NULL,
                               B = 499L, level = 0.95, seed = 1,
                               cluster = NULL, n = 200L, fixed = list(),
                               target = c("curve", "coefficients"),
                               band = c("pointwise", "simultaneous"),
-                              keep_replicates = FALSE) {
+                              keep_replicates = FALSE, parallel = FALSE) {
   if (!inherits(object, "agri_np_reg_fit")) .agri_stop("`object` must be an agri_np_reg_fit.")
   target <- match.arg(target)
   band <- match.arg(band)
@@ -1098,18 +1617,24 @@ agri_np_bootstrap <- function(object, newdata = NULL, predictor = NULL,
   }
   boot <- matrix(NA_real_, length(original), B)
   failures <- 0L
-  .seed_eval(seed, {
-    for (b in seq_len(B)) {
+  # One independent substream per replicate, so that replicate b is the same
+  # whether the loop ran in order, out of order, or split across workers. That
+  # is what makes the parallel branch below safe.
+  streams <- .agri_substreams(seed, B)
+  one_replicate <- function(b) {
       # Cluster labels are kept intact because the cluster may itself be a
       # modeled adjustment factor whose terms and predictions must stay
       # defined and comparable in every replicate.
-      db <- .bootstrap_sample(object$data, cluster = cluster_nm, relabel = FALSE)
+      db <- .agri_on_stream(streams[[b]],
+              .bootstrap_sample(object$data, cluster = cluster_nm, relabel = FALSE))
       z <- tryCatch(
         agri_np_regression(object$formula, db, method = object$method, tau = object$tau,
                            family = object$family, shape = object$shape,
-                           block = object$block, na_action = object$settings$na_action %||% "fail", span = object$settings$span,
+                           block = object$block, na_action = object$settings$na_action %||% "fail",
+                           spatial = object$settings$spatial %||% "none",
+                           coords = object$settings$coords, span = object$settings$span,
                            degree = object$settings$degree, k = object$settings$k,
-                           gam_structure = object$settings$gam_structure %||% "additive",
+                           gam_structure = object$settings$gam_structure, block_effect = object$settings$block_effect %||% "fixed" %||% "additive",
                            kernel_regtype = object$settings$kernel_regtype %||% "ll",
                            bwmethod = object$settings$bwmethod,
                            predictor_support = if (!is.null(object$integer_support)) "custom_integer" else "continuous",
@@ -1119,21 +1644,26 @@ agri_np_bootstrap <- function(object, newdata = NULL, predictor = NULL,
                            integer_base_method = object$base_method %||% object$settings$integer_base_method %||% "gam"),
         error = function(e) NULL
       )
-      if (is.null(z)) { failures <- failures + 1L; next }
+      if (is.null(z)) return(NULL)
       pp <- tryCatch(
         if (identical(target, "coefficients")) stats::coef(z) else agri_np_predict(z, newdata),
         error = function(e) NULL)
-      if (is.null(pp)) { failures <- failures + 1L; next }
+      if (is.null(pp)) return(NULL)
       if (is.matrix(pp)) pp <- pp[, 1L]
       if (identical(target, "coefficients")) {
         if (length(block_terms) && !is.null(names(pp)))
           pp <- pp[setdiff(names(pp), block_terms)]
         pp <- .np_align_coefficients(original, pp)
-        if (is.null(pp)) { failures <- failures + 1L; next }
-      } else if (length(pp) != length(original)) { failures <- failures + 1L; next }
-      boot[, b] <- as.numeric(pp)
-    }
-  })
+        if (is.null(pp)) return(NULL)
+      } else if (length(pp) != length(original)) return(NULL)
+      as.numeric(pp)
+  }
+  res <- .np_quiet_support(.seed_eval(seed,
+    .agri_lapply(seq_len(B), one_replicate, parallel = parallel)))
+  for (b in seq_len(B)) {
+    if (is.null(res[[b]])) { failures <- failures + 1L; next }
+    boot[, b] <- res[[b]]
+  }
   alpha <- 1 - level
   lower <- apply(boot, 1L, stats::quantile, probs = alpha/2, na.rm = TRUE, names = FALSE)
   upper <- apply(boot, 1L, stats::quantile, probs = 1-alpha/2, na.rm = TRUE, names = FALSE)
@@ -1429,7 +1959,7 @@ agri_integer_bootstrap <- function(object, objective = c("max", "min"),
           object$formula, data = db, method = object$method, tau = object$tau,
           family = object$family, shape = object$shape, block = object$block,
           na_action = "fail", span = object$settings$span, degree = object$settings$degree,
-          k = object$settings$k, gam_structure = object$settings$gam_structure %||% "additive",
+          k = object$settings$k, gam_structure = object$settings$gam_structure, block_effect = object$settings$block_effect %||% "fixed" %||% "additive",
           kernel_regtype = object$settings$kernel_regtype %||% "ll",
           bwmethod = object$settings$bwmethod,
           predictor_support = "custom_integer", integer_predictor = predictor,
@@ -1840,7 +2370,33 @@ agri_np_significance <- function(object, variables = NULL, joint = FALSE,
     "This is a model-based bootstrap significance test for kernel regression;",
     "it is not a randomization test derived from the field-experiment allocation scheme."
   )
+  # The limitation above was recorded as an attribute only, and an attribute is
+  # not printed. A reader comparing this p-value with an interval from
+  # agri_np_bootstrap() would have no way of seeing that the two treat the
+  # declared randomization differently, so the class below puts it on screen.
+  class(z) <- c("agri_np_significance", class(z))
   z
+}
+
+#' @export
+print.agri_np_significance <- function(x, ...) {
+  y <- x
+  class(y) <- setdiff(class(y), "agri_np_significance")
+  print(y, ...)
+  bl <- attr(x, "agriRank_block_adjustment")
+  cat("\nHow this p-value treats the design\n")
+  cat("  The bootstrap here resamples rows. It is a model-based test of the\n",
+      "  kernel fit, not a randomization test derived from how the treatments\n",
+      "  were allocated in the field.\n", sep = "")
+  if (length(bl)) {
+    cat("  This fit adjusts for the block `", bl[1L], "`, and the block is in\n",
+        "  the model, but whole blocks are not kept together when resampling.\n",
+        "  The intervals from agri_np_bootstrap(), agri_np_levels() and\n",
+        "  agri_np_optimum_test() do keep them together, so they and this\n",
+        "  p-value do not rest on the same assumption. Report the difference.\n",
+        sep = "")
+  }
+  invisible(x)
 }
 
 #' Nonparametric specification test for a prespecified Gaussian regression

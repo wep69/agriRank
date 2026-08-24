@@ -37,10 +37,11 @@ agri_rank <- function(design, method = "auto", response = NULL,
       else selected <- "incomplete_wild"
     } else if (design$design == "crd" && length(design$predictors) == 1L) selected <- "kruskal"
     else if (design$design == "rcbd" && length(design$predictors) == 1L && !miss) selected <- "friedman"
-    else if (design$design %in% c("split_plot", "split_split")) {
-      selected <- if (requireNamespace("permuco", quietly = TRUE)) "permuco" else if (requireNamespace("ARTool", quietly = TRUE)) "ART" else .agri_stop("Split-plot/split-split inference requires `permuco` or `ARTool`.")
-    } else if (design$design == "strip_plot") {
-      selected <- if (requireNamespace("ARTool", quietly = TRUE)) "ART" else if (requireNamespace("permuco", quietly = TRUE)) "permuco" else .agri_stop("Strip-plot inference requires `ARTool` or `permuco`.")
+    else if (design$design %in% c("split_plot", "split_split", "strip_plot")) {
+      # permuco is deliberately excluded here: aovperm implements the repeated-measures
+      # Error() form and does not build the sub-plot stratum of a field split-plot, so
+      # every term would be tested against an inflated whole-plot mean square.
+      selected <- if (requireNamespace("ARTool", quietly = TRUE)) "ART" else .agri_stop(sprintf("Inference for the `%s` design requires `ARTool`; `permuco` is not admissible for nested field strata in agriRank.", design$design))
     } else if (design$design == "multienv") {
       env <- design$environment[1L]
       has_env_interaction <- any(vapply(.term_labels(design$formula), function(tt) {

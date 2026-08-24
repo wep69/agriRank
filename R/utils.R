@@ -92,6 +92,98 @@
   force(expr)
 }
 
+# Independent random number substreams, one per resampling replicate.
+#
+# A loop that draws from one stream produces replicate b only after replicates
+# 1 to b-1 have drawn theirs, so its content depends on the order in which the
+# loop ran. That is fine while everything is serial and stops being fine the
+# moment any part of the loop is distributed, reordered or resumed: the same
+# seed then yields different replicates, and a published interval becomes
+# irreproducible for a reason the reader cannot see.
+#
+# L'Ecuyer's combined multiple recursive generator provides streams that are far
+# apart in the cycle, so replicate b can be given its own and drawn in any
+# order. This is the same device the calibration study under inst/calibration
+# already uses; the exported functions now use it too.
+#
+# Returns a list of `.Random.seed` vectors, one per replicate.
+.agri_substreams <- function(seed, n) {
+  if (is.null(seed) || !n) return(NULL)
+  had <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  if (had) old <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  old_kind <- RNGkind()
+  on.exit({
+    do.call(RNGkind, as.list(old_kind))
+    if (had) assign(".Random.seed", old, envir = .GlobalEnv)
+    else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
+      rm(".Random.seed", envir = .GlobalEnv)
+  }, add = TRUE)
+  RNGkind("L'Ecuyer-CMRG")
+  set.seed(seed)
+  s <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  out <- vector("list", n)
+  for (i in seq_len(n)) {
+    out[[i]] <- s
+    s <- parallel::nextRNGStream(s)
+  }
+  out
+}
+
+# Evaluate `expr` on a given substream, leaving the caller's RNG state and kind
+# untouched afterwards.
+.agri_on_stream <- function(state, expr) {
+  if (is.null(state)) return(force(expr))
+  had <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  if (had) old <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  old_kind <- RNGkind()
+  on.exit({
+    do.call(RNGkind, as.list(old_kind))
+    if (had) assign(".Random.seed", old, envir = .GlobalEnv)
+    else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
+      rm(".Random.seed", envir = .GlobalEnv)
+  }, add = TRUE)
+  RNGkind("L'Ecuyer-CMRG")
+  assign(".Random.seed", state, envir = .GlobalEnv)
+  force(expr)
+}
+
+# Apply a function over resampling replicates, in parallel when the user has
+# asked for it and sequentially otherwise.
+#
+# The default is sequential and stays sequential. Parallelism is opt-in for two
+# reasons. It changes nothing statistically, so it should never be imposed; and
+# on a small problem the cost of starting workers and shipping the data exceeds
+# what it saves, so a silent default would make short examples slower.
+#
+# Correctness rests on the substreams introduced alongside this: replicate b is
+# drawn from its own stream, so it is the same object whichever worker computes
+# it and in whatever order. Without that, parallelising would have quietly made
+# results depend on the number of cores.
+#
+# The backend is future.apply, declared in Suggests. If the user has set a
+# future plan and the package is installed, that plan is honoured; otherwise
+# lapply() is used and nothing is lost but time.
+.agri_lapply <- function(X, FUN, parallel = FALSE, ...) {
+  if (!isTRUE(parallel)) return(lapply(X, FUN, ...))
+  if (!requireNamespace("future.apply", quietly = TRUE)) {
+    .agri_warn("`parallel = TRUE` needs the future.apply package, which is not ",
+               "installed. Running sequentially. Install future.apply and set a ",
+               "plan, for example future::plan(future::multisession), to use it.")
+    return(lapply(X, FUN, ...))
+  }
+  # The seeds are carried by the substreams, so future's own RNG guard has
+  # nothing left to protect and would only warn about a risk that is already
+  # handled.
+  future.apply::future_lapply(X, FUN, ..., future.seed = NULL)
+}
+
+# Is a parallel plan actually in force? Used only to report it, so that a run
+# that the user believes was parallel but was not is visible in the output.
+.agri_parallel_workers <- function() {
+  if (!requireNamespace("future", quietly = TRUE)) return(NA_integer_)
+  tryCatch(as.integer(future::nbrOfWorkers()), error = function(e) NA_integer_)
+}
+
 .mc_p <- function(stat_boot, stat_obs, correction = TRUE) {
   stat_boot <- stat_boot[is.finite(stat_boot)]
   if (!length(stat_boot)) return(NA_real_)

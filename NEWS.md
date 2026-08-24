@@ -1,4 +1,279 @@
-# agriRank 0.13.0
+# agriRank 0.14.0
+
+## Regression: making the model justify itself
+
+Two tests, one device. Both refit under the null and then build replicate
+responses from the null fitted values plus the residuals multiplied by random
+signs drawn **once per block** rather than once per plot. Signing plots
+independently would treat the plots of a block as independent, which is the
+error the rest of this package exists to prevent.
+
+* Added `agri_np_effect_test()`. Until now the only significance test in the
+  regression module was `agri_np_significance()`, which works for two of the
+  sixteen engines and resamples rows, ignoring the declared randomization, while
+  **every interval in the module resampled whole blocks**. A p-value and an
+  interval from the same fit therefore rested on different assumptions. This
+  test works for all sixteen engines, because it looks only at fitted values and
+  residuals rather than inside the engine, and it respects the block.
+* `agri_np_effect_test()` reports the limit the design places on the test. With
+  `G` blocks there are only `2^G` distinct sign vectors, so with five blocks no
+  p-value below about 0.03 can be produced however large `B` is. That is a limit
+  of the design, not of the resampling, and raising `B` does not fix it. The
+  printed output says so, because a p-value of 0.08 from five blocks is easily
+  misread as weak evidence when the test had almost no room to produce anything
+  smaller. The statistic is reported alongside for the same reason: it separated
+  a real predictor from pure noise by three orders of magnitude in a case where
+  the p-values were 0.08 and 0.11.
+* Added `agri_np_shape_test()`. `shape = "increasing"` buys precision when the
+  response really is increasing and biases the curve when it is not, and nothing
+  checked which case applied. The null is that the constraint holds, so the
+  replicate responses come from the **constrained** fit. A large p-value does
+  not prove the shape; the printed note says this, and points to
+  `agri_np_sizer()` for the statement that can actually be made about where the
+  free fit changes direction.
+
+## Regression: data the cross-sectional module could not hold
+
+* Added `agri_np_longitudinal()` for a gradient measured repeatedly on the same
+  plots. Four harvests on twelve plots are 36 rows and twelve units, and fitting
+  them as 36 independent observations inflates the replication threefold. The
+  implementation opens no new modelling framework: the subject becomes the
+  block, entered as a penalised random effect, and therefore becomes the
+  resampling unit for every bootstrap, conformal split and cross-validation fold
+  downstream, without a single change to any of them. `time_effect = "varying"`
+  lets the shape of the response differ between occasions rather than only its
+  level.
+* `agri_np_longitudinal()` is **not** a GAMM with a modelled within-subject
+  correlation. Nothing estimates an autocorrelation over time. The dependence is
+  handled by resampling whole subjects, which assumes nothing about its form
+  and, in exchange, is conservative when the occasions are many and closely
+  spaced. The documentation and the print method both say so.
+* Added `agri_np_multiresponse()` for several responses to one gradient, with
+  **one shared bootstrap**. Every response is refitted on the same resampled
+  blocks within a replicate. Calling `agri_np_optimum_test()` twice would give
+  each response its own resampled experiment and destroy exactly the dependence
+  the joint question turns on. What that buys is the row separate analyses
+  cannot produce: the distance between the two optima, with its own interval and
+  p-value, which is what a joint recommendation actually faces. `objective`
+  takes one entry per response, since yield is maximised and lodging minimised.
+* A joint region is **not** a compromise rate. Choosing one rate for two
+  responses is a decision about their relative value, not a statistical
+  question, and the function deliberately does not make it.
+* Added `agri_np_impute()`. **This is the one place in the package that assumes
+  a missingness mechanism.** Multiple imputation is valid when the data are
+  missing at random given the observed variables, and that is an assumption
+  about why the plots were lost, not a property the data can confirm. The
+  function therefore never returns only the imputed answer: it always fits the
+  complete-case model too, prints them side by side, and reports the gap between
+  the two optima as a percentage of the tested range. If they agree the
+  missingness is not driving the conclusion; if they disagree, that disagreement
+  is the finding. Pooling follows Rubin, and the block survives into the
+  within-imputation variance because that part uses the package's own cluster
+  bootstrap. `mice` is in Suggests.
+
+## Vignettes
+
+* Added *From a Curve to a Decision*, which covers the prediction interval and
+  its scope, the extrapolation guard, the two cross-validation scopes, the
+  economic optimum and its sensitivity to price, the joint optimum of two rates
+  and why the rectangle of two marginal intervals is not its confidence region,
+  and the field-position term.
+* Added *Testing What a Model Assumes, and Data That Resist*, which covers the
+  two tests above, the `2^G` limit, and the three kinds of data the module could
+  not previously hold.
+
+## Regression: from a curve to a decision
+
+Three additions that close the distance between what the module fitted and what
+an agronomist has to decide.
+
+* Added `agri_np_optimum_economic()`. `agri_np_optimum()` returns the top of the
+  curve, and that is almost never the rate to apply, because the last increments
+  of input buy less produce than they cost. The economic optimum solves
+  `dy/dx = price_input / price_output`, always lies below the agronomic optimum
+  on a concave response, and the gap between the two is frequently the whole
+  margin of the field. Everything the calculation needed already existed here,
+  the derivative and the cluster bootstrap of a location rather than a height;
+  this joins them. With `price_ratio = 0` it must reproduce `agri_np_optimum()`,
+  and a test checks that it does.
+* `agri_np_optimum_economic()` accepts a **vector** of price ratios and reports
+  one row per ratio, because the ratio is treated as known and is not: prices
+  move the recommendation further than the resampling interval does, and reading
+  the table as a sensitivity analysis is the honest use. `p_boundary` and
+  `identified` carry the same meaning as in `agri_np_optimum_test()`, so a price
+  at which the response never stops paying inside the tested range is reported
+  as unidentified rather than as a rate.
+* Added `agri_np_optimum_surface()` for the joint optimum of two rates.
+  `agri_np_optimum()` optimises one predictor with the others held fixed, and
+  applied twice that is not the top of the surface unless the two inputs act
+  additively, which is precisely what a factorial rate trial exists to test. A
+  fit the model has forced to be additive is refused, in the same spirit as the
+  parallel-curve guard.
+* **The confidence region reported by `agri_np_optimum_surface()` is not the
+  rectangle of the two marginal intervals.** The rectangle is given too, as
+  `box_lower` and `box_upper`, because it is what a reader expects, and it is
+  labelled so it is not mistaken for the region. When the surface has a ridge
+  the two differ sharply: the cloud of resampled optima lies along a diagonal,
+  more of one input compensating for less of the other, and the rectangle admits
+  corners no replicate ever visited. `$region` holds the convex hull of the
+  retained replicates and the rank correlation between the two coordinates is
+  printed for the same reason.
+* Added `spatial` and `coords` to `agri_np_regression()`. Blocking is a coarse
+  instrument: it was invented for a field whose fertility varies in patches the
+  size of a block, and it does nothing about a gradient running continuously
+  across the trial, which is the common case. `"smooth_xy"` adds `s(row, col)`,
+  a two-dimensional smooth that absorbs a trend of any orientation;
+  `"row_col"` adds additive row and column factors. Both are nuisance terms
+  estimated jointly with the response curve rather than in a first pass, and
+  both are available only for the penalised additive engines. Asked of an engine
+  with no term to carry it, the request is refused, because dropping it silently
+  would leave the trend in the residual while the output suggested otherwise.
+
+## Regression: speed and interoperability
+
+* `agri_np_bootstrap()`, `agri_np_optimum_test()`, `agri_np_optimum_economic()`
+  and `agri_np_optimum_surface()` accept `parallel = TRUE`, which distributes
+  the replicates over a `future` plan through `future.apply`, both in Suggests.
+  The default is and stays sequential: below a few hundred replicates, starting
+  workers and shipping the data costs more than it saves.
+  **The answer does not depend on it.** Each replicate is drawn from its own
+  L'Ecuyer-CMRG substream, introduced for exactly this purpose, so a run on four
+  cores returns the same interval as a run on one. A test asserts it against
+  real workers, not just against the sequential fallback.
+* Added `agri_tidy()`, `agri_glance()` and `agri_augment()`, and the
+  corresponding broom methods registered at load time when broom is installed.
+  broom stays a suggestion rather than becoming a dependency in all but name.
+* `agri_tidy()` on a regression fit returns the **fitted curve**, one row per
+  grid point, not an invented coefficient table: most of the sixteen engines
+  have no coefficients, and those that do have them for a spline basis rather
+  than for any quantity worth reporting. There is no `p.value` column, because
+  no test was performed. The rank side does return one row per term with a
+  p-value, because there one was.
+
+## Regression: four places where the package disagreed with itself
+
+These are not new features. They are corrections found by reading the regression
+source rather than its documentation, looking for four patterns: `p.adjust`,
+`fold`, `cluster` and `extrapolat`. The same kind of sweep is what uncovered the
+permuco problem recorded below.
+
+* **The two cross-validation routines answered the same question differently.**
+  `agri_np_compare()` stratified its folds within blocks while the routine
+  behind `agri_np_diagnostics(cv = TRUE)` assigned rows at random, so the same
+  model reported two validated errors depending on which function was asked.
+  Both now share one fold rule and one argument, `cv_scope`.
+* `cv_scope` makes the choice explicit rather than implicit.
+  `"within_block"` stratifies, and estimates the error of predicting another
+  plot in a block already observed. `"new_block"` holds out whole blocks, and
+  estimates the error of predicting where nothing was measured, which is the
+  question a recommendation actually poses. The first is always the more
+  flattering. This is the same distinction `agri_np_conformal()` has always
+  exposed through its own `scope`, and the wording is now identical.
+  Under `"new_block"` the block term is dropped from the fold models, because a
+  block that was held out has no estimated effect and a model carrying it could
+  only return `NA` for every held-out row.
+* **`agri_np_optimum_test(by = )` reported unadjusted p-values.** With `k`
+  levels it performs `k(k-1)/2` comparisons. The rank-based side of the package
+  has offered multiplicity adjustment since the first release; the regression
+  side did not, for the same kind of all-pairs comparison. There is now an
+  `adjust` argument, defaulting to Holm, a `p_adjusted` column, and a printed
+  note when the resampling floor of `2/(B+1)` has been reached, since a p-value
+  sitting on that floor is a statement about `B` rather than about the levels.
+* **Nothing stopped a prediction from leaving the range of the data.**
+  A smoother carries no information beyond its support: outside it the returned
+  value describes the chosen basis, not the experiment. `agri_np_predict()` now
+  takes `extrapolation = c("warn", "error", "allow")`, marks the offending rows
+  with an `extrapolated` flag, and refuses under `"error"` when the request
+  leaves the observed envelope by more than `extrapolation_tol`, default 10% of
+  its width. Cross-validation and bootstrap loops are exempt, because held-out
+  folds and resampled replicates leave the training range by construction.
+* **`agri_np_significance()` recorded its limitation where nobody would see
+  it.** The test delegates to `np::npsigtest()`, which resamples rows, while
+  `agri_np_bootstrap()`, `agri_np_levels()`, `agri_np_forest()` and
+  `agri_np_optimum_test()` all resample whole blocks. The discrepancy was stored
+  in an attribute, and attributes are not printed. It is now printed.
+
+## Regression: three additions of convenience
+
+* `agri_np_predict()` accepts `interval = "prediction"`, delegating to
+  `agri_np_conformal()`. A confidence interval covers the mean response; a
+  prediction interval covers the next individual plot, which is what a
+  recommendation needs, and is always wider. Routing it through `predict()`
+  means the user no longer has to know that conformal prediction exists in order
+  to obtain the right quantity. `scope` is required when a block is declared,
+  because `"within_block"` and `"new_block"` answer different questions and
+  guessing on the user's behalf would understate the interval.
+* Added `update()` for `agri_np_reg_fit`. Comparing two engines or trying a
+  shape constraint no longer means retyping the whole call, which is where a
+  predictor or a block quietly goes missing between the two versions being
+  compared. The refit uses the rows stored in the fit, so the two models are
+  fitted to the same data.
+* Resampling now draws each replicate from its own L'Ecuyer-CMRG substream. A
+  loop drawing from a single stream produces replicate `b` only after replicates
+  `1` to `b-1` have drawn theirs, so its content depends on the order the loop
+  ran. That is harmless while everything is serial and stops being harmless the
+  moment any part is distributed or resumed, at which point the same seed yields
+  different replicates and a published interval becomes irreproducible for a
+  reason the reader cannot see. `parallel` is now imported for
+  `nextRNGStream()`.
+
+## Correction: permuco is not admissible for split-plot, split-split and strip-plot
+
+`permuco::aovperm` implements the repeated-measures `Error(subject/within)` form, in which each subject contributes one observation per within-cell. It does not implement the hierarchical field strata of a split-plot experiment, where every whole plot carries several sub-units. Applied to `split_plot`, `split_split` or `strip_plot`, it silently collapses the strata: the sub-plot stratum is never built, and the terms that belong to it are tested against the whole-plot mean square, which is ten to thirteen times larger than the correct one.
+
+**The resulting error is a false negative, not a false positive.** The p-values are conservative, not anticonservative. This is a small consolation, because the failure does not invent effects, it erases them. Anyone re-examining an earlier analysis should re-examine the terms that came out **non-significant**, not the ones that came out significant. In a simulation with a true sub-plot effect, base `aov` returned p = 0.030 while permuco returned p = 0.713 on identical ranks.
+
+`agri_rank()` and the shortcut wrappers now refuse permuco for these three designs with an explicit error message directing the user to ART, which reproduces the correct strata. The automatic routing for `split_plot`, `split_split` and `strip_plot` now always selects ARTool. Note that permuco was previously the **first** automatic choice for split-plot and split-split, so the default path was affected, not only explicit calls. This correction may invalidate previously published permuco-based analyses of these designs.
+
+Verification: 300 calibration replicas under a true null. The permuco path did not reject the sub-plot or sub-sub-plot factor **once** at either the 5% or the 10% level, and the smallest p-value observed for the sub-sub-plot factor across 300 experiments was 0.18, so no dataset in that design could have produced a claim of significance. Kolmogorov-Smirnov against the uniform gave D = 0.54 and D = 0.49. ART is calibrated on all three terms, with one honest caveat: the whole-plot factor rejects at 0.023 against a nominal 0.05, slightly conservative, which is expected with only three residual degrees of freedom in that stratum and is improved by more blocks rather than by another engine. See `PERMUCO_ISOLAMENTO.md` and `PERMUCO_PENDENCIAS.md`.
+
+The defect survived two releases because no test compared the residual degrees of freedom of each stratum against `aov`. That test now exists, in `tests/testthat/test-strata-df.R`.
+
+## Experiments whose datum is not a measurement
+
+Every other module in the package analyses a measurement. These two cover the
+agronomic experiments that do not produce one, and in both cases the usual
+practice reports a quantity the data do not contain.
+
+* Added `agri_np_timetoevent()` for germination, emergence and flowering trials. Such data are counted inside intervals: a seed that germinated between two inspections is known only to have done so somewhere inside that interval, and a seed that never germinates is not a missing value but an observation censored at the end of the trial. The common route, fitting a curve to cumulative germination percentages, assumes at once that the event time was observed, that successive cumulative values are independent when each contains all the earlier ones, and that the lot eventually reaches 100%. The nonparametric maximum likelihood estimator used here does none of those: it treats the intervals as intervals, assumes no functional form, and leaves probability mass on "never". Parametric germination models are deliberately not offered.
+* `agri_np_timetoevent()` separates the two properties of a seed lot that a single number cannot carry. **Capacity** is `responded`, the share of the lot that responds at all. **Speed** is the quantiles, reported twice: `*_responders` among the subjects that did respond, which always exists, and `*_lot` on the whole lot, which is `NA` when the lot never reaches that share. A lot in which 32% of seeds germinate has no median germination time, and the `NA` is the result rather than a failure. Omitting the censored rows is detected and warned about, because the difference between "did not germinate" and "was not recorded" is the whole finding.
+* The comparison of curves is a permutation test on rank scores, with `units =` naming the dish, tray or plot. Seeds sharing a dish share its water, temperature and handling, so permuting individual seeds would treat 100 seeds as 100 independent replicates. The function warns when `units` is omitted rather than quietly returning the anticonservative p-value.
+* Added `agri_rankings()`, the bridge to on-farm and tricot trials, and a window onto the ranks that Friedman and Conover already compute internally. It accepts a measured blocked experiment or rankings supplied directly, and reports mean rank, rank sum, wins, and the pairwise record of which item was placed above which, with a sign test on the blocks that separated each pair.
+* `agri_rankings()` makes **completeness** decide what is admissible. A classical blocked trial is complete, so rank sums are comparable and the Friedman-type machinery applies. An on-farm trial is usually incomplete, each farmer ranking three varieties out of many, and then an item allocated to favourable farms collects flattering ranks for a reason that has nothing to do with the item. The function detects this, reports it, withholds `rank_sum` and cautions about `mean_rank`. What survives is the pairwise record, because each comparison is made inside one block; its `blocks` column shows when a comparison rests on one or two farms.
+* Plackett-Luce worth is offered as a clearly labelled model-based companion when the `PlackettLuce` package is installed, and its absence changes nothing else. It is a likelihood model for rankings rather than a distribution-free summary, and that assumption is what allows incomplete rankings to be combined onto a single scale; where it and the pairwise record disagree, the assumption is doing the work.
+* Added the vignette *Time-to-Event and Ranking Data*, which owns this block.
+* Added drcte to Suggests. `PlackettLuce` is used only if present and is not declared, because its own dependency chain currently requires a Rust toolchain.
+
+## Regression: what to recommend, for whom, and how the block enters
+
+Three additions that sit between a fitted curve and an agronomic
+recommendation. All are nonparametric: no response function is assumed, no
+plateau model is fitted, and no distribution is claimed for the response.
+
+* Added `agri_np_optimum_test()`. `agri_np_optimum()` returns a point, and a point is not a recommendation. This function resamples the **location** of the optimum rather than the height of the curve, which is a different and harder quantity: a curve can be estimated precisely while the position of its maximum wanders widely, and a plateau is exactly the shape that makes that happen. The resampling is the package's own cluster bootstrap, so whole blocks are resampled and the declared randomization is respected. `p_boundary` reports the share of replicates whose optimum lands on an end of the searched range, and `identified` turns `FALSE` when that share reaches one half, at which point the function says there is no rate to report and points to `agri_np_significant_slope()` instead. With `by =`, every pair of levels is compared through the bootstrap distribution of the difference between their optima, computed inside the same resampling loop so that both optima of a replicate come from the same resampled experiment; the p-value carries the Davison and Hinkley correction, so its smallest attainable value is `2/(B+1)` rather than a misleading zero. When `npregfast` is installed, `npregfast::critical()` is reported alongside as an independent check, flagged as a comparison because it resamples rows and ignores the block.
+* `agri_np_optimum_test()` refuses to compare optima across curves that the model has forced to be parallel. A qualitative predictor entering additively shifts one curve above another without changing its shape, so the levels share one optimum by construction and a comparison would report a difference of exactly zero with a p-value of one, describing the model rather than the experiment. The condition is detected from the fitted curves themselves, so it works for every engine.
+* Added `gam_structure = "varying"` to `agri_np_regression()`, which fits one smooth of the focal numeric predictor per level of a qualitative predictor. The **shape** of the response may then differ between cultivars, seasons or sites, and each level can have its own optimum. The basis dimension is limited by the level with the fewest distinct predictor values, not by the whole data set, and the function refuses rather than overfits when a level is too sparse.
+* Added `method = "smooth_quantile"`, a calibrated additive quantile regression through `qgam`. Every other curve in the package describes a central tendency, which is a strong restriction on the agronomic question it can answer: a treatment can lift the good plots without lifting the poor ones, the mean rises either way, and a recommendation built on it disappoints exactly the growers whose fields resemble the poor plots. The fit is defined by the pinball loss, so nothing is assumed about the shape of the response distribution. Analytic intervals from this engine are now recognized by `agri_np_predict(interval = "confidence")`.
+* Added `agri_np_quantile_curves()`, a fan of smooth conditional quantiles with its own table and two figures. The low quantile is the exposure curve, what a grower meets in a bad year; the distance between the outer quantiles is the risk, and a treatment that widens it is buying its average gain with variability. `coverage` and `deviation` check each curve against the share of plots that actually fall below it, and `tracking` flags a quantile the experiment cannot resolve. Curves are fitted independently, so crossings are counted and reported rather than silently repaired, because a crossing is evidence that the quantiles are not separately identified there. A quantile too far into the tail for the replication available is refused.
+* Added `block_effect = c("fixed", "shrunk")` to `agri_np_regression()`, for `gam`, `scam` and `smooth_quantile`. Fixed, the default, estimates one free effect per block and assumes nothing about how blocks relate to each other, but those effects exist only for the blocks that were observed. Shrunk replaces them by a penalized term whose effects are pulled towards their common mean by an amount the data choose, which is what makes prediction into an unobserved field or year possible at all. The response curve stays nonparametric under both; the argument concerns only the nuisance structure. An engine that cannot carry a penalized term says so instead of ignoring the request.
+* Added `agri_np_block_effects()`, which reports every block effect as estimated both ways, with the raw block mean beside them and the proportional `shrinkage` between. Effects are computed on the response scale by predicting at one common covariate setting and varying only the block, so the result is engine-agnostic and does not depend on reading basis coefficients. The accompanying figure shows how far each block travels, which is the amount of between-block variation the data attribute to noise.
+* Added the vignette *Optima, Quantiles, and How the Block Enters the Model*, which owns this block. It pairs the shrunk block term, the model-based route to a new field, with `agri_np_conformal(scope = "new_block")`, the assumption-free route, and argues that both should be reported: when they disagree, the assumption is doing work the data do not support.
+* Added npregfast and qgam to Suggests. Both are optional.
+
+## Regression: distribution-free uncertainty and model checking
+
+This release adds the three tools that the regression module was missing to
+support an agronomic recommendation rather than merely produce one. All three
+are distribution free, all three return tables and ggplot figures, and all three
+refuse to answer questions the data cannot support instead of returning a number
+anyway.
+
+* Added `agri_np_sizer()` and `agri_np_significant_slope()`, an adapter to the SiZer map of Chaudhuri and Marron (1999). The derivative of the fitted curve is classified as significantly increasing, significantly decreasing, indistinguishable from flat, or sparse, at every position of the gradient and across a column of bandwidths. `agri_np_significant_slope()` converts the map into the sentence a manuscript can carry: the interval over which the response is still rising, at a stated level of agreement across bandwidths. This is the honest alternative to `agri_np_optimum()` when the fitted maximum lands on the boundary of the tested range, which happens whenever a response plateaus. Bandwidths are reported on the scale of the predictor so they can be judged agronomically. An integer-support fit is refused by name, pointing to `agri_integer_difference()`, because a derivative is not an admissible quantity on a discrete support.
+* Added `agri_np_conformal()` and `agri_np_coverage()`, a native split-conformal predictor. The returned interval covers a **future plot**, not the fitted curve, with finite-sample marginal coverage under exchangeability alone, for any engine and any response distribution. The finite-sample correction is applied explicitly. Two scopes are offered because they answer different questions: `scope = "within_block"` splits inside blocks and keeps the block term, for a future plot in an observed block; `scope = "new_block"` holds out whole blocks and refits without the block term, for a future plot in a field or year that was not observed. The second is a stronger claim and yields a wider interval. `normalize = TRUE` redistributes the width along the gradient, wider where the response is noisier, without changing what is guaranteed. `agri_np_coverage()` reports empirical coverage overall and per block.
+* Added `agri_np_simdiag()`, simulation-based quantile residuals in the sense of Dunn and Smyth (1996). Simulations come from agriRank's own residual resampling, which keeps the reference distribution empirical; when DHARMa is installed its scaling machinery is applied to those simulations. Three checks are reported with the question each answers: overall uniformity, systematic location error along the gradient, and change of dispersion along the gradient. The location check uses a binned Kruskal-Wallis comparison rather than a rank correlation, because misfit from a wrong shape is typically non-monotone and a rank correlation has no power against it.
+* Added the vignette *Distribution-Free Uncertainty and Model Checking for Agronomic Regression*, which owns this block. It contrasts the three kinds of interval the package can produce, demonstrates that the marginal uniformity check does not distinguish a plateau-following fit from a straight line while the location check does, and repeats the whole workflow on a real precision-agriculture maize trial from `agridat`, where the tools correctly report that no nitrogen rate is supported.
+* Fixed a ties warning in the normalized conformal interval: the local dispersion smooth is now de-duplicated before interpolation, through a single shared helper used by both the calibration and the prediction side.
+* Added SiZer, DHARMa and agridat to Suggests. All three are optional; every function degrades to a named message rather than an error when its backend is absent.
 
 ## Regression: uncertainty, explained variation and graphics
 

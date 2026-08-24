@@ -137,7 +137,7 @@ agri_table <- function(x, what = c("omnibus", "effects", "pairs", "missing",
   fam <- x$family$family %||% "not applicable"
   shape <- x$shape %||% "none"
 
-  # Coefficient table — every estimate reported carries its uncertainty.
+  # Coefficient table, every estimate reported carries its uncertainty.
   coeff_txt <- tryCatch({
     ci <- suppressWarnings(stats::confint(x, method = "bootstrap", B = 199L, seed = 1L))
     capture.output(print(ci, row.names = FALSE))
@@ -158,7 +158,7 @@ agri_table <- function(x, what = c("omnibus", "effects", "pairs", "missing",
     }, error = function(e) NULL)
   }
 
-  # Figures — one fit plot, one forest plot (when coefficients exist) and one
+  # Figures: one fit plot, one forest plot (when coefficients exist) and one
   # level plot (when factors exist). The image files are written alongside
   # the report and referenced by relative path.
   fig_dir <- file.path(dirname(file), "figures")

@@ -1,7 +1,7 @@
 Package: agriRank
 Type: Package
 Title: Design-Aware Rank-Based, Permutation and Robust Inference for Agricultural Experiments
-Version: 0.13.0
+Version: 0.14.0
 Authors@R: c(
     person(given = c("Walter", "Esfrain"), family = "Pereira",
            email = "walterufpb@yahoo.com.br", role = c("aut", "cre", "cph"),
@@ -29,8 +29,21 @@ RoxygenNote: 7.3.2
 Depends: R (>= 4.1.0)
 Imports:
     utils,
+    parallel,
+    grDevices,
     ggplot2
 Suggests:
+    broom,
+    mice,
+    future,
+    future.apply,
+    SiZer,
+    DHARMa,
+    agridat,
+    npregfast,
+    qgam,
+    drcte,
+    PlackettLuce,
     ARTool,
     coin,
     emmeans,

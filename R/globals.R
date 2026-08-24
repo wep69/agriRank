@@ -8,5 +8,11 @@ utils::globalVariables(c(
   "contrast", "derivative", "difference", "estimate", "fit", "fitted",
   "lower", "median", "missing_rate", "n", "occasion", "residual", "status",
   "relative_marginal_effect",
-  "to", "upper", "x", "x1", "x2", "y"
+  "to", "upper", "x", "x1", "x2", "y",
+  # SiZer map and stability figures
+  "bandwidth", "share", "state",
+  # optimum-test figures
+  "g", "xend", "yend",
+  # ranking figures
+  "a", "b"
 ))
