@@ -5,14 +5,17 @@
 agri_np_regression(formula, data = NULL, method = c("auto", 
     "theil_sen", "siegel", "quantile", "loess", "smoothing_spline", 
     "kernel", "gam", "scam", "cobs", "isotonic", "discrete_kernel", 
-    "unimodal_isotonic", "umbrella", "integer_grid"), 
+    "unimodal_isotonic", "umbrella", "integer_grid", 
+    "smooth_quantile"), 
     tau = 0.5, family = stats::gaussian(), shape = c("none", 
         "increasing", "decreasing", "convex", "concave", 
         "increasing_convex", "increasing_concave", 
         "decreasing_convex", "decreasing_concave"), 
-    block = NULL, weights = NULL, na_action = c("fail", 
+    block = NULL, block_effect = c("fixed", "shrunk"), 
+    spatial = c("none", "smooth_xy", "row_col"), coords = NULL, 
+    weights = NULL, na_action = c("fail", 
         "complete"), span = 0.75, degree = 2L, k = 10L, 
-    gam_structure = c("additive", "tensor"), kernel_regtype = c("ll", 
+    gam_structure = c("additive", "tensor", "varying"), kernel_regtype = c("ll", 
         "lc"), bwmethod = "cv.aic", predictor_support = c("continuous", 
         "observed_integer", "integer_range", "custom_integer"), 
     integer_predictor = NULL, integer_range = NULL, 
@@ -29,12 +32,31 @@ agri_np_regression(formula, data = NULL, method = c("auto",
   \item{family}{Response family for GAM/SCAM.}
   \item{shape}{Optional monotonicity or curvature constraint.}
   \item{block}{Optional agronomic block variable. Engines that cannot adjust for blocks are rejected when this is supplied.}
-  \item{weights}{Optional observation weights. Unsupported weight-method combinations fail explicitly.}
+  \item{block_effect}{How the declared block enters the model. \code{"fixed"}, the default, estimates one free effect per block and assumes nothing about how blocks relate to each other, but those effects exist only for the blocks that were observed. \code{"shrunk"} replaces them by a penalized term whose effects are pulled towards their common mean by an amount the data choose, which is what makes prediction into an unobserved field or year possible. Available for \code{"gam"}, \code{"scam"} and \code{"smooth_quantile"}. The response curve stays nonparametric either way; this argument concerns only the nuisance structure. See \code{\link{agri_np_block_effects}} for the comparison and \code{\link{agri_np_conformal}} with \code{scope = "new_block"} for the assumption-free route to the same prediction.}
+  \item{spatial}{Nuisance structure for the position of the plot in the field.
+\code{"none"} is the default. \code{"smooth_xy"} adds a two-dimensional smooth
+of the coordinates, \code{s(row, col)}, which absorbs a continuous fertility
+gradient of any orientation. \code{"row_col"} adds additive row and column
+factors, which is cheaper and right when the layout is a lattice and the trend
+follows it.
+
+Blocking is a coarse instrument: it was invented for a field whose fertility
+varies in patches the size of a block, and it does nothing about a gradient that
+runs continuously across the trial, which is the common case. Available for the
+penalised additive engines, \code{gam}, \code{scam} and \code{smooth_quantile};
+requested for another engine it is refused rather than silently dropped.}
+
+\item{coords}{The two variables giving the position of each plot, for example
+\code{c("row", "col")}. Required whenever \code{spatial} is not \code{"none"}.
+They are nuisance terms, not predictors: prediction grids hold them at their
+reference value, so a reported curve refers to a plot of average position.}
+
+\item{weights}{Optional observation weights. Unsupported weight-method combinations fail explicitly.}
   \item{na_action}{Missing-data handling. \code{"fail"} (default) prevents silent row deletion; \code{"complete"} explicitly uses complete modeled rows and records how many were omitted.}
   \item{span}{LOESS span.}
   \item{degree}{LOESS or COBS polynomial degree where applicable.}
   \item{k}{Basis dimension used in automatically generated GAM/SCAM smooths.}
-  \item{gam_structure}{Use separate additive smooths or a tensor-product smooth for the first two numeric predictors in automatically generated GAM formulas.}
+  \item{gam_structure}{Shape of the automatically generated GAM formula. \code{"additive"} fits one smooth per numeric predictor and adjusts additively for qualitative ones, which forces the curves of different levels to be parallel. \code{"tensor"} fits a tensor-product smooth over the first two numeric predictors, for a response surface. \code{"varying"} fits one smooth of the focal numeric predictor per level of a single qualitative predictor, so the shape of the response may differ between cultivars, seasons or sites and each level can have its own optimum. Use \code{"varying"} before comparing optima with \code{\link{agri_np_optimum_test}}, because parallel curves share one optimum by construction.}
   \item{kernel_regtype}{Use local-linear (\code{"ll"}, default) or local-constant (\code{"lc"}) kernel regression with \pkg{np}.}
   \item{bwmethod}{Bandwidth-selection method for \pkg{np}.}
   \item{predictor_support}{Decision support for integer-valued predictors: observed tested integers, all integers in a range, or a custom set.}
@@ -49,7 +71,9 @@ agri_np_regression(formula, data = NULL, method = c("auto",
 Unified agronomic regression workflow containing strictly nonparametric smoothers, rank-robust estimators, conditional-quantile models, and modern semiparametric smoothers.
 }
 \details{
-Strictly nonparametric engines are \code{"loess"}, \code{"smoothing_spline"}, \code{"kernel"}, \code{"isotonic"}, \code{"cobs"}, \code{"discrete_kernel"}, and \code{"unimodal_isotonic"}. The \code{"umbrella"} pathway is a constrained generalized additive/order-restricted model, while \code{"integer_grid"} fits a selected flexible latent model but projects every public prediction and decision onto an admissible integer support. Rank-robust or semiparametric companions are \code{"theil_sen"}, \code{"siegel"}, \code{"quantile"}, \code{"gam"}, and \code{"scam"}.
+Strictly nonparametric engines are \code{"loess"}, \code{"smoothing_spline"}, \code{"kernel"}, \code{"isotonic"}, \code{"cobs"}, \code{"discrete_kernel"}, and \code{"unimodal_isotonic"}. The \code{"umbrella"} pathway is a constrained generalized additive/order-restricted model, while \code{"integer_grid"} fits a selected flexible latent model but projects every public prediction and decision onto an admissible integer support. Rank-robust or semiparametric companions are \code{"theil_sen"}, \code{"siegel"}, \code{"quantile"}, \code{"gam"}, \code{"scam"} and \code{"smooth_quantile"}.
+
+\code{"smooth_quantile"} fits a calibrated additive quantile regression, a smooth of a conditional quantile rather than of the mean. The agronomic point is that a fertilizer, a cultivar or an irrigation schedule can lift the good plots without lifting the poor ones: the mean rises either way, and a recommendation built on it will disappoint exactly the growers whose fields resemble the poor plots. The fit is defined by the pinball loss, so nothing is assumed about the shape of the response distribution, only about the smoothness of the curve. Use \code{\link{agri_np_quantile_curves}} for a set of quantiles at once.
 
 For integer-valued agronomic inputs, agriRank does not round a continuous optimum after fitting. It evaluates the fitted response directly over a declared set \eqn{\mathcal{X}_I} of admissible integers and defines the optimum as \eqn{x^* = \arg\max_{x\in\mathcal{X}_I} \hat m(x)} (or the corresponding minimum). With \code{predictor_support = "observed_integer"}, untested integer treatments are not interpolated. \code{"integer_range"} explicitly permits interpolation to every integer between the chosen bounds.
 

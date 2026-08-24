@@ -1,0 +1,790 @@
+---
+title: "Methodological Foundations, State of the Art, and Common Mistakes"
+author: "agriRank Development Team"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Methodological Foundations, State of the Art, and Common Mistakes}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(agriRank)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  dpi = 120
+)
+```
+
+
+**Foundations vignette**
+**Package:** `agriRank`
+**Version targeted:** `0.14.0`
+**Owns:** why the package is built the way it is, what the methods actually
+assume, and the mistakes it exists to prevent.
+
+---
+
+# 1. Why this vignette exists
+
+Every other vignette shows how to do something. This one explains why it is done
+that way, and what happens when it is not.
+
+That distinction matters more in nonparametric agronomy than in most fields,
+because the methods are frequently taught as a fallback. A normality test fails,
+so a rank test is used, and the rank test is described as "the nonparametric
+version" of the parametric one. Almost every part of that sequence is wrong: the
+selection rule, the description, and the hypothesis the reader is then told was
+tested.
+
+This vignette sets out what these methods do assume, what they estimate, and
+where the recent literature has moved past the textbook versions.
+
+> **A method is chosen from the design and the measurement scale, before the
+> data are examined. What it estimates is stated, not assumed to be the mean.**
+
+---
+
+# 2. Learning objectives
+
+After working through this vignette, the reader should be able to:
+
+1. state what a rank-based test actually tests, and what extra assumption turns
+   it into a statement about medians;
+2. explain why ordinary ranks are inadequate in unbalanced designs, and what
+   pseudo-ranks replace them with;
+3. explain what a permutation test assumes, and why permuting the wrong thing
+   tests the wrong hypothesis;
+4. say what aligned ranks make possible that classical rank tests do not;
+5. explain what a wild bootstrap does and why it suits incomplete repeated
+   measures;
+6. place the Conover procedure in its design context;
+7. name the families of modern nonparametric regression and say when each
+   applies;
+8. explain why integer support changes the estimand rather than the reporting;
+9. recognise and correct the ten mistakes catalogued in Part XVII;
+10. locate the documented limitations of this package version, and route around
+    them.
+
+---
+
+# 3. Foundations
+
+## 3.1 What a rank is, and what it discards
+
+Ranking replaces each observation by its position among the others. It discards
+the distances between observations and keeps their order.
+
+That is a loss, and it is worth being explicit about what is lost and what is
+gained.
+
+| Kept | Discarded |
+|---|---|
+| the order of the observations | the size of the gaps |
+| which treatment produced the largest value | how much larger it was |
+| the effect of a monotone transformation, which is none | the units |
+
+The gain is that no assumption about the shape of the distribution is needed,
+and a single extreme plot cannot dominate the analysis. The loss is efficiency
+when the distances **are** meaningful and the distribution **is** well behaved:
+in that case a parametric analysis is more powerful, and roughly 95% as powerful
+is the classical figure for the rank alternative under normality.
+
+Five percent is a small price for not having to be right about the distribution.
+
+## 3.2 What the hypothesis actually is
+
+This is stated loosely almost everywhere, including in textbooks.
+
+| Assumption | Then the test is about |
+|---|---|
+| independent samples, nothing else | equality of the whole distributions |
+| plus: distributions differ only by a location shift | equality of medians |
+| plus: distributions are also symmetric | equality of means |
+
+Without the shift assumption, a significant Kruskal-Wallis result can arise from
+a difference in **spread** rather than in location. Two treatments with the same
+median and different variability will be separated by the test, and reporting
+that as "the medians differed" is false.
+
+State which assumption you are making. In most agronomic settings the shift
+assumption is plausible and worth asserting explicitly; where the treatments
+plausibly change variability, the quantile machinery of *Optima, Quantiles, and
+How the Block Enters the Model* is the honest route.
+
+## 3.3 Where the asymptotics come from, and when they fail
+
+Most classical rank tests refer their statistic to a chi-square or F
+distribution. That reference is an **approximation**, valid as sample sizes grow.
+
+It degrades in three situations that are ordinary in agronomy:
+
+| Situation | Consequence |
+|---|---|
+| few blocks or few replicates | the approximation is poor in the tail, where decisions are made |
+| heavy tying, as in ordinal scores | the effective sample size is smaller than it appears |
+| strongly unbalanced groups | the approximation degrades unevenly across effects |
+
+The remedy in all three is a **resampling** reference distribution, built from
+the data rather than assumed. That is why the permutation and bootstrap engines
+in this package are not exotic alternatives; they are the appropriate default for
+small designed experiments.
+
+## 3.4 Exchangeability, the assumption underneath everything
+
+Every resampling procedure here rests on exchangeability: that under the null
+hypothesis, a reordering of the observations is as likely as the one observed.
+
+A declared design tells you exactly where exchangeability holds and where it does
+not.
+
+| Structure | Exchangeable | Not exchangeable |
+|---|---|---|
+| completely randomized | all plots | nothing |
+| randomized complete block | plots within a block | plots in different blocks |
+| split-plot | subplots within a whole plot | whole plots, at the subplot level |
+| repeated measures | subjects | occasions within a subject |
+| multi-environment | plots within an environment | plots in different environments |
+
+Every refusal this package raises can be traced to that table. The design
+declaration is not bureaucracy: it is the statement of where exchangeability
+holds, and therefore of which analyses are admissible.
+
+## 3.5 Interpretation
+
+If you can state, in one sentence, which reorderings your analysis treats as
+equally likely under the null, you understand what it assumes. If you cannot, the
+declaration is the place to start.
+
+---
+
+# 4. Scope and learning objectives
+
+This vignette owns the **methodological perspective and error-prevention block**. It explains why pseudo-ranks matter, why permutation must respect randomization, what ART/ART-C do, why wild bootstrap procedures matter for repeated data, how Conover depends on design, how modern nonparametric regression extends beyond LOESS, and why integer support changes the estimand. It then turns these principles into a catalogue of common mistakes and a compact method-selection guide.
+
+This is not the place to learn package syntax for the first time. Read it after the focused workflow vignettes or use it when reviewing an analysis.
+
+
+
+# Part XVI. State of the art and methodological perspective
+
+## 66. Why pseudo-ranks matter
+
+Rank procedures are often described as assumption-free replacements for parametric ANOVA. That description is misleading.
+
+In unbalanced factorial designs, ordinary ranks can induce effects that depend on sample allocation. Pseudo-ranks were developed to target nonparametric treatment effects in a way that is not driven by unequal cell sizes.
+
+The package therefore prefers pseudo-rank-based factorial procedures when their estimand matches the scientific question and the backend is available.
+
+Core references include Brunner et al. (2017), Happ et al. (2020), Brunner et al. (2021), and Konietschke and Brunner (2023).
+
+---
+
+## 67. Permutation is not simply “shuffle the data”
+
+A permutation test is valid only when the exchangeability or randomization scheme matches the design.
+
+In a CRD, unrestricted exchangeability may be reasonable under the corresponding null.
+
+In an RCBD, treatment assignments are exchangeable **within blocks**, not across the entire dataset.
+
+In split-plot designs, whole-plot and subplot randomizations occur at different levels.
+
+In repeated measurements, entire within-subject vectors cannot be treated as independent observations.
+
+Studentized permutation procedures and design-restricted resampling are therefore more defensible than indiscriminate label shuffling.
+
+Methodological anchors include Pauly, Brunner and Konietschke (2015), Umlauft, Konietschke and Pauly (2017), Frossard and Renaud (2021), and Hothorn et al. (2008).
+
+---
+
+## 68. ART and ART-C
+
+Aligned Rank Transform methods provide a practical factorial framework for main effects and interactions. ART is not equivalent to ranking the response once and running an ordinary ANOVA. Alignment is effect-specific.
+
+For multifactor contrasts, the ART-C procedure was developed because ordinary contrasts applied naively to an ART fit can be inappropriate.
+
+`agriRank` uses ART as one admissible factorial engine and warns users that contrast interpretation should follow ART-compatible methods.
+
+References: Wobbrock et al. (2011) and Elkin et al. (2021).
+
+---
+
+## 69. Repeated measurements and wild bootstrap
+
+Nonparametric repeated-measures methods estimate effects on marginal distributions or relative treatment effects while accounting for within-subject dependence.
+
+`nparLD` provides established rank-based longitudinal procedures. `MANOVA.RM` offers resampling-based repeated and multivariate inference. Wild-bootstrap rank procedures extend this family to repeated factorial hypotheses and multiple comparisons.
+
+The incomplete-data engine in `agriRank` is based on the recent methodology for incompletely observed nonparametric factorial repeated-measures designs, while remaining explicitly experimental until independent runtime validation is completed.
+
+Key references: Noguchi et al. (2012), Friedrich et al. (2017), Umlauft et al. (2019), Friedrich et al. (2019), and Amro et al. (2024).
+
+---
+
+## 70. Conover belongs to a design-specific context
+
+There is not one universal “Conover test” for every experiment.
+
+The package distinguishes:
+
+- the Kruskal-type Conover all-pairs procedure for independent one-way data;
+- the Friedman-type Conover all-pairs procedure for complete unreplicated block designs.
+
+This distinction is central in Agronomy because the same treatment set may be analyzed in a CRD or an RCBD, and the post-hoc procedure must preserve the experimental structure.
+
+---
+
+## 71. Modern nonparametric regression is broader than LOESS
+
+The regression module combines several complementary approaches:
+
+| Method | Main idea | Agronomic use |
+|---|---|---|
+| LOESS | local polynomial smoothing | exploratory local response |
+| Smoothing spline | penalized smooth curve | flexible one-dimensional response |
+| Kernel regression | local weighting with data-driven bandwidth | mixed continuous/categorical predictors |
+| Isotonic | monotonicity constraint | known increasing/decreasing response |
+| COBS | constrained quantile smoothing spline | robust shape-constrained quantiles |
+| Theil-Sen / Siegel | rank-robust linear tendency | approximately linear relationship with outliers |
+| Quantile regression | conditional quantiles | lower/median/upper response envelopes |
+| GAM | additive smooth components | multiple nonlinear predictors |
+| SCAM | shape-constrained GAM | biologically justified monotonicity/convexity |
+| Integer-support methods | discrete ordered decision support | plants, insects, fruits, events, applications |
+
+The package deliberately distinguishes strictly nonparametric smoothers from robust or semiparametric companions rather than labeling every flexible model “nonparametric.”
+
+---
+
+## 72. Integer support changes the estimand
+
+When the treatment can only be integer-valued, reporting a continuous optimum and rounding it is statistically and operationally different from defining the optimum directly on the admissible set.
+
+Integer-support inference therefore changes:
+
+- prediction domain;
+- optimum definition;
+- marginal effect definition;
+- bootstrap distribution;
+- uncertainty set;
+- decision threshold.
+
+This is especially relevant for agronomic decisions that are physically indivisible.
+
+Methodological references include Wang and van Ryzin (1981), Racine and Li (2004), Turner and Wollan (1997), Stout (2008), Geng and Shi (1990), and Liao and Meyer (2019).
+
+---
+
+# Part XVII. Common mistakes and their remedies
+
+## 73. “Shapiro significant, therefore Kruskal”
+
+**Problem:** a preliminary normality test does not define the experimental unit, repeated dependence, interaction, or target estimand.
+
+**Use instead:**
+
+```{r, eval=FALSE}
+agri_design()
+validate_agri_design()
+agri_methods()
+agri_rank(method = "auto")
+```
+
+---
+
+## 74. Ignoring block because it is not significant
+
+**Problem:** block is part of randomization, not a nuisance term selected by p-value.
+
+**Use instead:** preserve `block=` in the design and choose a design-aware method.
+
+---
+
+## 75. Using Kruskal-Wallis for a factorial interaction
+
+**Problem:** one-way ranking of treatment cells does not decompose A, B, and A×B as the intended factorial hypotheses.
+
+**Use instead:**
+
+```{r, eval=FALSE}
+np_factorial()
+agri_rank(method = "rankFD")
+agri_rank(method = "ART")
+agri_rank(method = "permuco")
+```
+
+---
+
+## 76. Reporting only letters
+
+**Problem:** letters hide direction, magnitude, uncertainty, and the actual comparisons.
+
+**Use instead:**
+
+```{r, eval=FALSE}
+agri_effects()
+agri_pairs()
+agri_conover()
+agri_cld()
+```
+
+with CLD as a secondary summary.
+
+---
+
+## 77. Treating repeated observations as replicates
+
+**Problem:** subject-time observations are dependent.
+
+**Use instead:**
+
+```{r, eval=FALSE}
+agri_design(..., subject = subject, within = time)
+agri_repeated()
+agri_missing_report()
+```
+
+---
+
+## 78. Removing incomplete subjects automatically
+
+**Problem:** complete-case deletion changes the analyzed population and may waste information.
+
+**Use instead:** characterize missingness, use an admissible incomplete-data method, and perform sensitivity analysis.
+
+---
+
+## 79. Imputing missing values with the mean
+
+**Problem:** mean imputation distorts variance and dependence and is not a valid generic solution.
+
+`agriRank` does not silently perform it.
+
+---
+
+## 80. Treating a quantitative dose as unrelated categories only
+
+**Problem:** the numeric ordering and spacing carry scientific information.
+
+**Use instead:** factorial comparisons when categorical estimands are desired, and `agri_np_regression()` or `agri_trend()` when the quantitative response pattern is the scientific target.
+
+---
+
+## 81. Rounding a continuous optimum for an integer treatment
+
+**Problem:** rounding does not solve the discrete optimization problem.
+
+**Use instead:**
+
+```{r, eval=FALSE}
+agri_integer_optimum()
+agri_integer_bootstrap()
+agri_integer_confset()
+```
+
+---
+
+## 82. Choosing a model by the smallest p-value
+
+**Problem:** model shopping invalidates confirmatory interpretation.
+
+**Use instead:** define the primary analysis before inspecting results; use `agri_sensitivity()` and `agri_np_compare()` to study robustness and predictive behavior.
+
+---
+
+# Part XVIII. Compact function-selection guide
+
+## 83. Experimental inference
+
+| Question | Start with | Continue with |
+|---|---|---|
+| What is the design? | `agri_design()` | `validate_agri_design()`, `design_summary()` |
+| One-factor CRD? | `np_crd()` | `agri_effects()`, `agri_conover()` |
+| Complete RCBD? | `np_rcbd()` | Friedman, RCBD Conover |
+| Factorial independent experiment? | `np_factorial()` | `rankFD`, ART, permutation |
+| Split-plot? | `np_splitplot()` | interaction/simple effects |
+| Split-split? | `np_splitsplit()` | hierarchical ART/permutation |
+| Strip-plot? | `np_stripplot()` | strip-specific ART/permutation |
+| Repeated complete? | `agri_repeated()` | `nparLD`, `MANOVA.RM`, `permuco` |
+| Repeated incomplete? | `agri_missing_report()` | native wild-rank when admissible |
+| Multiple responses? | `agri_multivariate()` | response-specific follow-up |
+| Multiple environments? | `agri_multienv()` | G×E interpretation |
+| Many endpoints? | `agri_batch()` | across-response multiplicity |
+| Method sensitivity? | `agri_sensitivity()` | report model dependence |
+
+## 84. Regression and decision support
+
+| Question | Start with | Continue with |
+|---|---|---|
+| Flexible one-dimensional curve? | `agri_np_regression(..., method="smoothing_spline")` | prediction/bootstrap |
+| Local exploratory curve? | `method="loess"` | diagnostics |
+| Mixed numeric and factor predictors? | `method="kernel"` or GAM | significance/specification |
+| Known monotonic response? | isotonic / SCAM / COBS | shape-constrained interpretation |
+| Conditional median/quantile? | `method="quantile"` | compare quantiles |
+| Two quantitative gradients? | GAM tensor surface | `agri_np_plot(type="surface")` |
+| Integer treatment? | `discrete_kernel`, `unimodal_isotonic`, `umbrella`, `integer_grid` | discrete optimum/threshold/bootstrap |
+| Practical threshold? | `agri_integer_threshold()` | efficiency table |
+| Uncertainty in discrete optimum? | `agri_integer_bootstrap()` | `agri_integer_confset()` |
+
+---
+
+# Appendix D. Selected methodological references
+
+The references below correspond to the methodological literature already used in the `agriRank` documentation. The package repository contains a double-verification audit and a verified RIS library under `inst/references/`.
+
+1. Pauly, M., Brunner, E., & Konietschke, F. (2015). Asymptotic permutation tests in general factorial designs. *Journal of the Royal Statistical Society: Series B*, 77(2), 461-473. https://doi.org/10.1111/rssb.12073
+2. Brunner, E., Konietschke, F., Pauly, M., & Puri, M. L. (2017). Rank-based procedures in factorial designs: hypotheses about non-parametric treatment effects. *Journal of the Royal Statistical Society: Series B*, 79(5), 1463-1485. https://doi.org/10.1111/rssb.12222
+3. Umlauft, M., Konietschke, F., & Pauly, M. (2017). Rank-based permutation approaches for non-parametric factorial designs. *British Journal of Mathematical and Statistical Psychology*, 70(3), 368-390. https://doi.org/10.1111/bmsp.12089
+4. Friedrich, S., Konietschke, F., & Pauly, M. (2017). A wild bootstrap approach for nonparametric repeated measurements. *Computational Statistics & Data Analysis*, 113, 38-52. https://doi.org/10.1016/j.csda.2016.06.016
+5. Umlauft, M., Placzek, M., Konietschke, F., & Pauly, M. (2019). Wild bootstrapping rank-based procedures: multiple testing in nonparametric factorial repeated measures designs. *Journal of Multivariate Analysis*, 171, 176-192. https://doi.org/10.1016/j.jmva.2018.12.005
+6. Noguchi, K., Gel, Y. R., Brunner, E., & Konietschke, F. (2012). nparLD: An R software package for the nonparametric analysis of longitudinal data in factorial experiments. *Journal of Statistical Software*, 50(12), 1-23. https://doi.org/10.18637/jss.v050.i12
+7. Friedrich, S., Konietschke, F., & Pauly, M. (2019). Resampling-based analysis of multivariate data and repeated measures designs with the R package MANOVA.RM. *The R Journal*, 11(2), 380-400. https://doi.org/10.32614/RJ-2019-051
+8. Frossard, J., & Renaud, O. (2021). Permutation tests for regression, ANOVA, and comparison of signals: the permuco package. *Journal of Statistical Software*, 99(15). https://doi.org/10.18637/jss.v099.i15
+9. Hothorn, T., Hornik, K., van de Wiel, M. A., & Zeileis, A. (2008). Implementing a class of permutation tests: the coin package. *Journal of Statistical Software*, 28(8), 1-23. https://doi.org/10.18637/jss.v028.i08
+10. Happ, M., Zimmermann, G., Brunner, E., & Bathke, A. C. (2020). Pseudo-ranks: How to calculate them efficiently in R. *Journal of Statistical Software*, 95, Code Snippet 1, 1-22. https://doi.org/10.18637/jss.v095.c01
+11. Brunner, E., Konietschke, F., Bathke, A. C., & Pauly, M. (2021). Ranks and pseudo-ranks: surprising results of certain rank tests in unbalanced designs. *International Statistical Review*, 89(2), 349-366. https://doi.org/10.1111/insr.12418
+12. Konietschke, F., & Brunner, E. (2023). rankFD: An R software package for nonparametric analysis of general factorial designs. *The R Journal*, 15(1), 142-158. https://doi.org/10.32614/RJ-2023-029
+13. Amro, L., Konietschke, F., & Pauly, M. (2024). Incompletely observed nonparametric factorial designs with repeated measurements: a wild bootstrap approach. *Biometrical Journal*, 66(8), e70008. https://doi.org/10.1002/bimj.70008
+14. Jan, S.-L., & Shieh, G. (2025). An improved nonparametric test and sample size procedures for the randomized complete block designs. *Sankhya B*, 87, 686-711. https://doi.org/10.1007/s13571-025-00362-2
+15. Thiel, K. E., Sattler, P., Bathke, A. C., & Zimmermann, G. (2026). Resampling NANCOVA: Nonparametric analysis of covariance in small samples. *Computational Statistics & Data Analysis*, 215, 108290. https://doi.org/10.1016/j.csda.2025.108290
+16. Wobbrock, J. O., Findlater, L., Gergle, D., & Higgins, J. J. (2011). The aligned rank transform for nonparametric factorial analyses using only ANOVA procedures. *Proceedings of CHI 2011*, 143-146. https://doi.org/10.1145/1978942.1978963
+17. Elkin, L. A., Kay, M., Higgins, J. J., & Wobbrock, J. O. (2021). An aligned rank transform procedure for multifactor contrast tests. *Proceedings of UIST 2021*, 754-768. https://doi.org/10.1145/3472749.3474784
+18. Hayfield, T., & Racine, J. S. (2008). Nonparametric econometrics: The np package. *Journal of Statistical Software*, 27(5). https://doi.org/10.18637/jss.v027.i05
+19. Pya, N., & Wood, S. N. (2015). Shape constrained additive models. *Statistics and Computing*, 25(3), 543-559. https://doi.org/10.1007/s11222-013-9448-7
+20. Sen, P. K. (1968). Estimates of the regression coefficient based on Kendall's tau. *Journal of the American Statistical Association*, 63(324), 1379-1389. https://doi.org/10.1080/01621459.1968.10480934
+21. Wood, S. N. (2025). Generalized additive models. *Annual Review of Statistics and Its Application*, 12, 497-526. https://doi.org/10.1146/annurev-statistics-112723-034249
+22. Ng, P., & Maechler, M. (2007). A fast and efficient implementation of qualitatively constrained quantile smoothing splines. *Statistical Modelling*, 7(4), 315-328. https://doi.org/10.1177/1471082X0700700403
+23. Koenker, R., & Bassett, G., Jr. (1978). Regression quantiles. *Econometrica*, 46(1), 33-50. https://doi.org/10.2307/1913643
+24. Racine, J. S., Hart, J., & Li, Q. (2006). Testing the significance of categorical predictor variables in nonparametric regression models. *Econometric Reviews*, 25(4), 523-544. https://doi.org/10.1080/07474930600972590
+25. Hsiao, C., Li, Q., & Racine, J. S. (2007). A consistent model specification test with mixed discrete and continuous data. *Journal of Econometrics*, 140(2), 802-826. https://doi.org/10.1016/j.jeconom.2006.07.015
+26. Wang, M.-C., & van Ryzin, J. (1981). A class of smooth estimators for discrete distributions. *Biometrika*, 68(1), 301-309. https://doi.org/10.1093/biomet/68.1.301
+27. Racine, J. S., & Li, Q. (2004). Nonparametric estimation of regression functions with both categorical and continuous data. *Journal of Econometrics*, 119(1), 99-130. https://doi.org/10.1016/S0304-4076(03)00157-X
+28. Turner, T. R., & Wollan, P. C. (1997). Locating a maximum using isotonic regression. *Computational Statistics & Data Analysis*, 25(3), 305-320. https://doi.org/10.1016/S0167-9473(97)00009-1
+29. Stout, Q. F. (2008). Unimodal regression via prefix isotonic regression. *Computational Statistics & Data Analysis*, 53(2), 289-297. https://doi.org/10.1016/j.csda.2008.08.005
+30. Geng, Z., & Shi, N.-Z. (1990). Isotonic regression for umbrella orderings. *Journal of the Royal Statistical Society Series C: Applied Statistics*, 39(3), 397-402. https://doi.org/10.2307/2347399
+31. Liao, X., & Meyer, M. C. (2019). cgam: An R package for the constrained generalized additive model. *Journal of Statistical Software*, 89(5). https://doi.org/10.18637/jss.v089.i05
+
+---
+
+---
+
+# Part XIX. Ten further mistakes, catalogued
+
+The mistakes in Part XVII are the classical ones. These ten arise specifically
+from the newer machinery, and each is prevented by a named refusal in the
+package.
+
+# 85. Reporting the fitted extreme as a recommendation
+
+**The mistake.** Reading the maximum of a fitted curve as the rate to apply.
+
+**Why it is wrong.** An extreme has to land somewhere. If the response plateaus
+rather than turning over, it lands on the boundary of the tested range, which is
+a property of the design and not of the crop.
+
+**Remedy.** `agri_np_optimum_test()` reports `p_boundary` and `identified`, and
+`agri_np_significant_slope()` supplies the alternative statement.
+
+---
+
+# 86. Comparing optima across curves forced to be parallel
+
+**The mistake.** Fitting `y ~ x + cultivar` and comparing each cultivar's
+optimum.
+
+**Why it is wrong.** An additive adjustment shifts curves without changing their
+shape, so the optima coincide by construction. The comparison describes the
+model, not the experiment.
+
+**Remedy.** `gam_structure = "varying"`; `agri_np_optimum_test()` detects the
+condition and refuses.
+
+---
+
+# 87. Quoting a confidence band as a prediction interval
+
+**The mistake.** "A grower can expect between 4.9 and 5.2 t/ha."
+
+**Why it is wrong.** The band covers the average response. An individual plot
+varies several times more.
+
+**Remedy.** `agri_np_conformal()`, which covers a future plot with a
+finite-sample guarantee, and states its scope.
+
+---
+
+# 88. Using the wrong conformal scope
+
+**The mistake.** Reporting a within-block interval as applying to a new farm.
+
+**Why it is wrong.** Predicting into an unobserved block is a stronger claim and
+carries between-block variation.
+
+**Remedy.** `scope = "new_block"`, and report both routes alongside the shrunk
+block model.
+
+---
+
+# 89. Checking a distribution-free model with a normal QQ-plot
+
+**The mistake.** Plotting residuals against normal quantiles after a
+nonparametric fit.
+
+**Why it is wrong.** It asks whether residuals are Gaussian, which the analysis
+never assumed.
+
+**Remedy.** `agri_np_simdiag()`, which asks where each observation falls inside
+its own predictive distribution.
+
+---
+
+# 90. Reading the uniformity row instead of the location row
+
+**The mistake.** "Residuals were uniform, so the model fits."
+
+**Why it is wrong.** Marginal uniformity pools every observation and has almost
+no power against a wrong curve shape. A fit too low at the ends and too high in
+the middle still produces uniform residuals on average.
+
+**Remedy.** Read the location check along the gradient, which is reported in the
+same table.
+
+---
+
+# 91. Confusing a model that is not wrong with one that is useful
+
+**The mistake.** Clean diagnostics reported as evidence that the model is
+informative.
+
+**Why it is wrong.** A model can pass every diagnostic while explaining
+essentially nothing. The real precision-agriculture example in
+*Distribution-Free Uncertainty and Model Checking* does exactly that.
+
+**Remedy.** Report the explained-variation indices and the SiZer statement
+beside the diagnostics.
+
+---
+
+# 92. Deleting the seeds that never germinated
+
+**The mistake.** Removing rows with no event, or forcing a germination curve to
+100%.
+
+**Why it is wrong.** A seed that never germinates is an observation, censored at
+the end of the trial, not a missing value. Deleting it overstates the capacity of
+the lot, sometimes grossly.
+
+**Remedy.** `agri_np_timetoevent()` requires `end = Inf` for censored subjects
+and warns when no row carries it.
+
+---
+
+# 93. Summing ranks across an incomplete design
+
+**The mistake.** Comparing rank sums in a tricot trial where each farmer saw
+three varieties out of thirty.
+
+**Why it is wrong.** A variety allocated to favourable farms collects flattering
+ranks for a reason unrelated to the variety.
+
+**Remedy.** `agri_rankings()` detects incompleteness, withholds the rank sums,
+and keeps the pairwise record, which is made inside blocks.
+
+---
+
+# 94. Using an experimental engine without its label
+
+**The mistake.** Reporting the native incomplete repeated-measures engine as an
+established method.
+
+**Why it is wrong.** Its calibration study is not complete. Running without error
+is not evidence of correct Type-I error.
+
+**Remedy.** The label appears in the function documentation, in
+`VALIDATION_PLAN.md`, and in the repeated-measures vignette. Use it, and say what
+it is.
+
+---
+
+# Part XX. A decision tree
+
+# 95. From a field notebook to an analysis
+
+```{r decision-tree, eval = FALSE}
+# 1. What was randomized, and to what?
+#    -> agri_design(), validate_agri_design()
+#
+# 2. Is the response a measurement, a censored time, or an order?
+#    measurement -> continue
+#    censored time -> agri_np_timetoevent()
+#    an order -> agri_rankings()
+#
+# 3. Is the treatment qualitative or quantitative?
+#    qualitative -> agri_rank(), then agri_conover(), agri_cld()
+#    quantitative -> continue, and report the factorial analysis too
+#
+# 4. Can the treatment take fractional values?
+#    no  -> agri_np_regression(predictor_support = "observed_integer")
+#    yes -> agri_np_regression(method = <chosen from structure>)
+#
+# 5. Does the fit describe the data?
+#    -> agri_np_simdiag(), read the location row
+#
+# 6. Is it worth anything?
+#    -> agri_np_diagnostics(cv = TRUE), pseudo_r2 and cv_r2 together
+#
+# 7. Where is the response still changing?
+#    -> agri_np_sizer(), agri_np_significant_slope()
+#
+# 8. Is there a rate to recommend?
+#    -> agri_np_optimum_test(); if identified is FALSE, report step 7 instead
+#
+# 9. Does the recommendation concern a plot rather than an average?
+#    -> agri_np_conformal(), with the scope stated
+#
+# 10. Does the conclusion survive another admissible engine?
+#     -> agri_sensitivity()
+#
+# 11. Record everything.
+#     -> agri_report(), export_results(), sessionInfo()
+```
+
+# 96. The three questions that settle most choices
+
+| Question | Settles |
+|---|---|
+| what was randomized, and to what unit | which engines are admissible |
+| is the treatment a category, a gradient, or a whole number | which module applies |
+| is the claim about the average, or about a plot | which interval to quote |
+
+---
+
+# Part XXI. The state of this version
+
+# 97. What is validated, and what is not
+
+Honesty about limitations is part of the package's design, so they are collected
+here rather than left in release notes.
+
+```{r limitations}
+data.frame(
+  item = c("permutation backend, factorial and rcbd",
+           "permutation backend, split-split-plot",
+           "permutation backend, strip-plot",
+           "native incomplete repeated-measures engine",
+           "rank, Conover, ART, rankFD engines",
+           "regression module",
+           "conformal coverage"),
+  status = c("calibrated", "NOT calibrated", "NOT calibrated",
+             "EXPERIMENTAL", "established backends", "established backends",
+             "finite-sample guarantee under exchangeability"),
+  action = c("use", "use rankFD or ART", "use rankFD or ART",
+             "use with the label, and report a sensitivity analysis",
+             "use", "use", "state the scope")
+)
+```
+
+## 97.1 The permutation calibration failure
+
+Under the null hypothesis, the permutation backend rejected in **none** of 500
+simulated split-split-plot and strip-plot experiments, where roughly 25
+rejections would be expected at the 5% level.
+
+The test is therefore not merely conservative: in those strata it does not
+reject. A non-significant result from it carries no information.
+
+This is documented in `VALIDATION_PLAN.md` and in
+`inst/calibration/`. It is not repaired by test coverage: the affected code is
+fully covered by unit tests, and the tests pass. Coverage measures whether code
+runs, not whether it is right.
+
+## 97.2 The experimental repeated-measures engine
+
+The native rank-based wild-bootstrap engine for incompletely observed repeated
+measurements implements the framework of Amro, Konietschke and Pauly (2024). Its
+validation plan lists thirteen items, all pending: intermediate rank quantities,
+relative effects, covariance matrices, the three statistics, frozen bootstrap
+sequences, Type-I error, power, missingness rates, ordinal data, ties,
+heteroscedasticity, row and label invariance, and comparison with reference code.
+
+Until those are complete, the engine carries an experimental label, and a
+manuscript using it should say so.
+
+## 97.3 What this means for a manuscript
+
+| If your design is | Then |
+|---|---|
+| CRD, RCBD, factorial | every engine here is usable |
+| split-plot, split-split-plot, strip-plot | the package refuses `permuco`; use `ART`. Not `rankFD`, which does not represent nested strata either |
+| repeated measures, complete | use `nparLD` or `MANOVA.RM` |
+| repeated measures, incomplete | use the native engine with its label, plus sensitivity |
+
+---
+
+# Part XXII. Glossary
+
+# 98. Terms used across the package
+
+| Term | Meaning here |
+|---|---|
+| **experimental unit** | the smallest entity independently assigned a treatment |
+| **exchangeability** | any reordering is equally likely under the null |
+| **stratum** | the level of the hierarchy at which an effect is tested |
+| **rank** | the position of an observation among the others |
+| **pseudo-rank** | a rank computed against an unweighted average of group distributions |
+| **aligned rank** | a rank of residuals with all other effects removed |
+| **relative marginal effect** | the probability that an observation exceeds a random one |
+| **probability of superiority** | the same quantity, for a pair |
+| **shift assumption** | distributions differ only in location |
+| **wild bootstrap** | resampling that multiplies residuals by random signs |
+| **calibration** | whether a test rejects at its nominal rate under the null |
+| **conformal prediction** | an interval for a future observation, guaranteed under exchangeability |
+| **marginal coverage** | averaged over the gradient, not guaranteed pointwise |
+| **quantile residual** | where an observation falls in its own predictive distribution |
+| **integer support** | the set of whole-number values a treatment may take |
+| **estimand** | the quantity being estimated, as distinct from the estimator |
+| **censored observation** | one known only to exceed a bound, not a missing value |
+| **MCAR, MAR, MNAR** | the three missingness mechanisms; the last two are indistinguishable from data |
+| **sensitivity analysis** | repeating an analysis under an alternative admissible choice |
+| **model dependence** | a conclusion that changes with a defensible analytical choice |
+
+---
+
+# Part XXIII. Where to go next
+
+| If you now want | Read |
+|---|---|
+| to declare and validate a design | *Design Foundations, CRD, and RCBD* |
+| comparisons and compact letters | *Effects, Conover, Contrasts, and Factorial Inference* |
+| hierarchical designs and trend tests | *Hierarchical Plot Designs, Trends, ANCOVA, and Power* |
+| repeated measures and missing data | *Repeated Measures and Missing Longitudinal Data* |
+| several responses or sites | *Multivariate, Multi-Environment, Batch, and Sensitivity Workflows* |
+| to fit a curve | *Nonparametric and Shape-Aware Regression* |
+| whole-number treatments | *Integer-Support Nonparametric Regression* |
+| intervals and model checking | *Distribution-Free Uncertainty and Model Checking* |
+| a rate to recommend | *Optima, Quantiles, and How the Block Enters the Model* |
+| germination or ranking data | *Time-to-Event and Ranking Data* |
+| figures, tables and reports | *Graphics, Tables, Reports, and Reproducibility* |
+| the whole workflow on one experiment | *Integrated Agronomic Case Study* |
+
+---
+
+# 99. Final perspective
+
+The functions in this package are ordinary. What is not ordinary is the number of
+places where they stop.
+
+A design declaration that refuses an engine. A comparison of optima that refuses
+parallel curves. A quantile that refuses a tail the replication cannot resolve. A
+whole-lot median returning `NA` because the lot never reaches half. A rank sum
+withheld because the design is incomplete. A derivative refused on an integer
+support. A permutation backend that documents its own calibration failure.
+
+Each of those replaces a number that would have looked like an answer.
+
+That is the design philosophy, and it is worth stating plainly: **the most useful
+thing a statistical package can do for an agronomist is to be clear about what
+the experiment cannot support.**

@@ -13,18 +13,18 @@ np_splitsplit(formula, data, block, whole_plot, subplot,
 \item{whole_plot}{Whole-plot treatment factor.}
 \item{subplot}{Subplot treatment factor.}
 \item{subsubplot}{Sub-subplot treatment factor.}
-\item{method}{`"auto"`, `"permuco"`, or `"ART"`.}
+\item{method}{`"auto"` or `"ART"`. Auto selects ART when ARTool is installed; permuco is not admissible for nested field strata.}
 \item{...}{Additional backend arguments.}
 }
-\details{The declared hierarchy is block -> whole plot -> subplot -> sub-subplot. The permuco adapter uses an Error(block/whole_plot/subplot) hierarchy; the ART adapter uses random intercepts for block, whole-plot units, and subplot units. Numerical calibration must be verified locally before release.}
+\details{The declared hierarchy is block -> whole plot -> subplot -> sub-subplot. The ART adapter uses random intercepts for block, whole-plot units, and subplot units. permuco is not admissible for this design; see `PERMUCO_ISOLAMENTO.md` for the rationale.}
 \value{An object of class `agri_rank_fit`.}
 \examples{
 x <- simulate_agri("split_split", seed = 1)
 d <- agri_design(yield ~ irrigation * cultivar * timing, x, design = "split_split", 
     block = block, whole_plot = irrigation, subplot = cultivar, subsubplot = timing)
-if (requireNamespace("permuco", quietly = TRUE)) np_splitsplit(yield ~ 
-    irrigation * cultivar * timing, x, block, irrigation, cultivar, timing, 
-    method = "permuco", np = 99)
+# Auto selects ART when ARTool is installed:
+np_splitsplit(yield ~ irrigation * cultivar * timing, x, block, irrigation, cultivar, timing)
+# Or explicitly:
 if (requireNamespace("ARTool", quietly = TRUE)) np_splitsplit(yield ~ irrigation * 
     cultivar * timing, x, block, irrigation, cultivar, timing, method = "ART")
 }

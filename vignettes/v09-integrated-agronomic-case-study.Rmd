@@ -1,0 +1,2185 @@
+---
+title: "Integrated Agronomic Case Study: Design to Report"
+author: "agriRank Development Team"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Integrated Agronomic Case Study: Design to Report}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(agriRank)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 6.8,
+  fig.height = 4.4,
+  dpi = 130
+)
+```
+
+**Integrated instructional vignette**
+**Package:** `agriRank`
+**Version targeted:** `0.14.0`
+**Purpose:** a practical starting point for students, researchers, reviewers and
+analysts who need to move from a field notebook to a defensible agronomic
+recommendation, without losing the logic of the experimental design along the
+way.
+
+---
+
+# 1. Why this vignette exists
+
+Nonparametric analysis becomes difficult when several decisions arrive at the
+same time: which unit was randomized, whether a factor is qualitative or a
+gradient, whether the response is a measurement at all, which comparisons are
+admissible, how much uncertainty a recommendation carries, and what to report
+when the data cannot answer the question that was asked.
+
+`agriRank` is organised so that those decisions can be taken in a defensible
+order. The central rule is short:
+
+> **Declare the randomization first. Then choose the analysis the design
+> permits. Check the fit before interpreting it. Report every estimate with the
+> uncertainty it actually carries, and report nothing the data do not contain.**
+
+That last clause does more work than it appears to. A large part of this package
+consists of functions that decline to answer, by name and with a reason, rather
+than return a number that looks like an answer. This vignette shows the whole
+sequence on one experiment, and every refusal it produces is treated as a
+result, not as an obstacle.
+
+The other vignettes each own one analytical block. This one connects them.
+
+---
+
+# 2. Learning objectives
+
+After working through this vignette, the reader should be able to:
+
+1. identify the experimental unit and the randomization before choosing any
+   test, and recognise when a design declaration has been made incorrectly;
+2. represent a randomized complete block factorial explicitly, and understand
+   what the declaration then forbids;
+3. distinguish an omnibus rank test from the comparisons that may follow it;
+4. read relative marginal effects rather than treatment means when the response
+   is analysed by ranks;
+5. produce compact letter displays that are computed inside the correct stratum,
+   and explain why a display computed across strata is not interpretable;
+6. decide whether a quantitative treatment should be analysed as a factor or as
+   a gradient, and defend the decision on design grounds rather than on fit;
+7. fit a nonparametric regression without selecting the engine by p-value;
+8. separate the three explained-variation indices and say what each one answers;
+9. report where a response is still changing, rather than where a fitted curve
+   happens to peak;
+10. attach a confidence interval to the **location** of an optimum, and detect
+    when no interior optimum is identified;
+11. distinguish an interval for a fitted curve from an interval for the next
+    plot, and produce the second when the recommendation concerns a plot;
+12. check a model without assuming a distribution, and know which of the checks
+    has power;
+13. analyse a treatment whose admissible values are whole numbers, without
+    rounding a continuous optimum;
+14. analyse experiments whose datum is a censored time or an order rather than
+    a measurement;
+15. run a sensitivity analysis and a missing-data sensitivity analysis as
+    routine parts of the workflow rather than as afterthoughts;
+16. assemble tables, figures and a reproducible report from the fitted objects;
+17. recognise the recurring mistakes this package is built to prevent, and name
+    the function that prevents each one.
+
+---
+
+# 3. The package in one map
+
+## 3.1 Instructional stages
+
+| Stage | What decision it settles | Main functions |
+|---|---|---|
+| Design | which unit was randomized, and what that permits | `agri_design()`, `validate_agri_design()`, `design_summary()`, `simulate_agri()` |
+| Omnibus | is there an effect at all, in the declared structure | `agri_rank()`, `np_crd()`, `np_rcbd()`, `np_factorial()`, `np_splitplot()`, `np_splitsplit()`, `np_stripplot()` |
+| Effects | how large, on a scale ranks support | `agri_effects()`, `agri_format_ci()` |
+| Comparisons | which pairs differ, with multiplicity controlled | `agri_pairs()`, `agri_conover()`, `agri_cld()`, `agri_contrast()` |
+| Gradients | what shape the response has over a quantitative treatment | `agri_np_regression()`, `agri_np_predict()`, `agri_np_plot()`, `agri_np_compare()`, `agri_np_diagnostics()` |
+| Recommendation | which rate to recommend, for whom, and with what interval | `agri_np_sizer()`, `agri_np_significant_slope()`, `agri_np_optimum_test()`, `agri_np_quantile_curves()` |
+| Uncertainty | what covers the curve, and what covers the next plot | `agri_np_bootstrap()`, `agri_np_conformal()`, `agri_np_coverage()` |
+| Model checking | does the fit describe the data, without a distribution | `agri_np_simdiag()` |
+| Integer decisions | treatments that can only be whole numbers | `agri_integer_predict()`, `agri_integer_optimum()`, `agri_integer_difference()`, `agri_integer_confset()` |
+| Repeated and missing | subject dependence, and incompleteness | `agri_repeated()`, `np_repeated()`, `agri_missing_report()`, `agri_missing_sensitivity()` |
+| Several responses or sites | multivariate and multi-environment structure | `agri_multivariate()`, `agri_multienv()` |
+| Non-measurements | censored times, and orders | `agri_np_timetoevent()`, `agri_rankings()` |
+| Sensitivity | does the conclusion depend on one analytical choice | `agri_sensitivity()`, `agri_batch()` |
+| Communication | tables, figures, reports, export | `agri_table()`, `agri_plot()`, `agri_report()`, `agri_dashboard()`, `agri_theme()`, `agri_save_figure()`, `export_results()` |
+
+The progression is deliberate. A reader should not begin with conformal
+prediction because it carries a guarantee, or with quantile curves because they
+produce an attractive figure. Each extension should answer a question that the
+experiment actually raises.
+
+## 3.2 Inspect the package programmatically
+
+```{r map}
+# Which methods does the package know about, and what does each assume?
+head(agri_methods(), 10)
+```
+
+The methods table is the honest starting point on a teaching computer: several
+engines are optional, and a method that is listed but whose backend is absent
+will say so by name rather than fall back silently to something else.
+
+---
+
+# 4. The experiment
+
+## 4.1 Scientific problem
+
+A researcher evaluates **three bean cultivars** under **four salinity levels**
+in a randomized complete block design with **five blocks**. Two outcomes are
+recorded:
+
+1. final dry biomass, measured once at harvest;
+2. SPAD, measured repeatedly at four times during the cycle.
+
+The questions, in the order a researcher actually asks them:
+
+| # | Question | Where it is answered |
+|---|---|---|
+| Q1 | Do cultivars differ in biomass? | Part II |
+| Q2 | Does salinity change biomass? | Part II |
+| Q3 | Is there a cultivar-by-salinity interaction? | Part II |
+| Q4 | Which cultivars differ from which, and by how much? | Part III |
+| Q5 | Should salinity be a factor or a gradient? | Part IV |
+| Q6 | Up to which salinity is biomass still falling? | Part V |
+| Q7 | Is there an identifiable salinity optimum, and where? | Part V |
+| Q8 | What happens to the poor plots, not the average plot? | Part V |
+| Q9 | What interval covers the **next** plot? | Part VI |
+| Q10 | Does the model describe the data? | Part VI |
+| Q11 | How does SPAD change over time, and does that depend on cultivar? | Part VII |
+| Q12 | What if some repeated SPAD values are missing? | Part VII |
+| Q13 | Does the conclusion survive a different analytical choice? | Part VIII |
+
+## 4.2 Simulate the teaching dataset
+
+The dataset is frozen with `set.seed()` so that every number in this vignette is
+reproducible. It is realistic enough for instruction but it is **not field
+evidence**, and no agronomic recommendation should be drawn from it.
+
+```{r sim}
+set.seed(1501)
+
+base <- expand.grid(
+  block    = factor(1:5),
+  cultivar = factor(c("C1", "C2", "C3")),
+  salinity = c(0, 2, 4, 6)
+)
+base$salinity_f <- factor(base$salinity)
+
+cult_eff <- c(C1 = 0.0, C2 = 1.2, C3 = 0.6)
+
+# Biomass falls with salinity, and C2 tolerates it better than the others.
+base$biomass <-
+  18 +
+  cult_eff[as.character(base$cultivar)] +
+  as.numeric(base$block) * 0.25 -
+  1.15 * base$salinity +
+  0.06 * base$salinity^2 +
+  ifelse(base$cultivar == "C2", 0.22 * base$salinity, 0) +
+  rnorm(nrow(base), 0, 0.9)
+
+str(base)
+```
+
+## 4.3 Look at the data before modelling anything
+
+```{r descriptives}
+obs <- aggregate(biomass ~ cultivar + salinity, base, function(v)
+  c(mean = mean(v), sd = stats::sd(v)))
+tab <- data.frame(obs[, c("cultivar", "salinity")],
+                  mean = round(obs$biomass[, "mean"], 2),
+                  sd   = round(obs$biomass[, "sd"], 2))
+tab
+```
+
+These are **observed summaries, not model estimates**. They already suggest a
+decline with salinity and a difference between cultivars. They say nothing about
+the block structure, about uncertainty, or about whether the decline is the same
+for every cultivar.
+
+Look at them as a figure before deciding anything:
+
+```{r raw-figure, fig.cap = "Observed biomass. Every point is one plot. Nothing has been modelled yet."}
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  print(
+    ggplot2::ggplot(base, ggplot2::aes(x = salinity, y = biomass,
+                                       colour = cultivar)) +
+      ggplot2::geom_point(alpha = 0.7, size = 1.8) +
+      ggplot2::stat_summary(fun = mean, geom = "line", linewidth = 0.9) +
+      ggplot2::labs(x = "Salinity (dS/m)", y = "Dry biomass (g)",
+                    colour = "Cultivar",
+                    caption = "Lines join observed means. They are not fitted curves.") +
+      agri_theme()
+  )
+}
+```
+
+Two features are visible and both matter later: the decline is not a straight
+line, and the cultivars do not decline in parallel.
+
+---
+
+# Part I. Design before analysis
+
+# 5. Start with the randomization, not the test
+
+## 5.1 The declaration
+
+```{r design}
+des <- agri_design(
+  biomass ~ cultivar * salinity_f,
+  data   = base,
+  design = "rcbd",
+  block  = block
+)
+des
+```
+
+The declaration is not bookkeeping. It is a statement about how the experiment
+was carried out, and it decides what may legitimately follow.
+
+```{r design-summary}
+design_summary(des)
+```
+
+## 5.2 Validate it
+
+```{r validate}
+validate_agri_design(des)
+```
+
+A design audit answers questions that no model-selection criterion can repair
+afterwards:
+
+- Are all intended treatment combinations represented?
+- Which factor was randomized to which unit?
+- Which observations share an experimental unit?
+- Is a repeated measurement being counted as an independent replicate?
+- Are there empty cells?
+- Does the declared structure match the randomization that actually happened?
+
+If any of those answers is uncertain, the next step is not analysis. It is
+clarification of the design.
+
+## 5.3 What the declaration then forbids
+
+This is where `agriRank` differs from a toolbox of tests. Once a block is
+declared, methods that cannot carry it are refused **by name**, rather than
+applied to the data with the block quietly dropped:
+
+```{r forbidden, error = TRUE}
+agri_rank(des, method = "kruskal")
+```
+
+The refusal is the point. A Kruskal-Wallis test on blocked data does not fail
+loudly on its own; it simply answers a different question, about a completely
+randomized experiment that was not the one performed. Discarding the block
+inflates the residual variation with between-block differences that the design
+was built to remove.
+
+## 5.4 The same rule in the other direction
+
+An analysis may also be refused because the declaration is missing information
+the method needs:
+
+```{r forbidden2, error = TRUE}
+np_repeated(biomass ~ cultivar, base)
+```
+
+Repeated measurements on one plant are not exchangeable with measurements on
+different plants, so the subject has to be declared. The message names the
+missing argument and the scientific reason for it.
+
+## 5.5 Interpretation
+
+The design declaration has three consequences that persist through the rest of
+the analysis:
+
+1. it fixes the **stratum** in which every subsequent comparison is made;
+2. it determines which engines are admissible, and which will be refused;
+3. it becomes part of the reported methods, so a reader can reconstruct what was
+   assumed.
+
+Nothing later in this vignette overrides it.
+
+---
+
+# Part II. The omnibus analysis
+
+# 6. Rank-based inference for the declared design
+
+## 6.1 Fit
+
+```{r fit}
+fit <- agri_rank(des)
+fit
+```
+
+The engine was chosen from the **structure** of the design, not from the
+response. No p-value was consulted in making the choice, and none should be: an
+engine selected because it produced the smallest p-value is no longer testing
+the hypothesis it appears to test.
+
+```{r omnibus}
+fit$omnibus
+```
+
+## 6.2 Reading the omnibus table
+
+Three effects are reported and they answer three different questions:
+
+| Effect | Question |
+|---|---|
+| `cultivar` | averaged over salinity, do cultivars differ? |
+| `salinity_f` | averaged over cultivars, does salinity change biomass? |
+| `cultivar:salinity_f` | does the salinity effect depend on the cultivar? |
+
+The interaction is the one to read first. If it is present, the two main effects
+are averages over conditions in which the behaviour differs, and quoting them as
+if they described every cultivar is misleading.
+
+```{r anova}
+anova(fit)
+```
+
+## 6.3 A result worth pausing on
+
+The two main effects are overwhelming. The interaction is **not detected**.
+
+That deserves attention, because the raw figure of section 4.3 looked as though
+the cultivars declined at different rates, and the data were in fact generated
+with a real interaction: C2 was given a genuine advantage that grows with
+salinity.
+
+So the experiment contains an effect that it cannot resolve. Five blocks are not
+enough to separate an interaction of that size from noise. Nothing is wrong with
+the analysis; the design simply lacks the power.
+
+This is the single most useful thing a worked example can demonstrate, and it is
+why section 35 of this vignette exists. **A non-significant interaction is not a
+parallel response.** It is a statement that the experiment could not distinguish
+one from the other.
+
+## 6.4 What follows from a non-detected interaction
+
+Two readings are defensible and they should be reported together:
+
+1. **Marginally.** With no evidence of an interaction, cultivar effects may be
+   quoted averaged over salinity, and salinity effects averaged over cultivars.
+   This is the simpler report and it is what most manuscripts would present.
+2. **With the caveat.** The absence of evidence is not evidence of parallelism,
+   and the confidence intervals of Part III will show that an agronomically
+   meaningful interaction remains compatible with these data.
+
+The gradient analysis of Part IV pursues the second reading further, because a
+curve estimated per cultivar can show a difference in shape that a factorial
+interaction test, spending six degrees of freedom, cannot detect.
+
+## 6.5 What an omnibus test does not tell you
+
+An omnibus test answers one question: whether the treatment labels carry any
+information at all about the ranks. It does not say which treatments differ, in
+what direction, or by how much. Those are separate questions with separate
+multiplicity problems, and they are the subject of Part III.
+
+A significant omnibus test is a licence to look further. It is not itself a
+finding worth reporting alone.
+
+## 6.6 Interpretation
+
+For this experiment the reading is:
+
+- salinity changes biomass, decisively;
+- cultivars differ, decisively;
+- the experiment cannot say whether they respond to salinity differently.
+
+---
+
+# 7. Effects on a scale that ranks support
+
+## 7.1 Cell summaries and mean ranks
+
+```{r effects}
+eff <- agri_effects(fit)
+eff
+```
+
+Two quantities are reported per treatment cell, and the choice is deliberate.
+
+`median` is a **location on the response scale**, in grams. It is the quantity a
+reader wants for agronomic magnitude, and it is the robust counterpart of a
+treatment mean: one extreme plot moves it very little.
+
+`mean_rank` is the quantity the **analysis actually used**. The omnibus test of
+section 6 and the comparisons of Part III both operate on within-block ranks and
+never look at the grams again. Reporting the mean rank beside the median lets a
+reader see the analysis, not merely its conclusion.
+
+## 7.2 Why not a treatment mean
+
+A rank-based analysis does not estimate a treatment mean, and printing one beside
+a rank test is a category error that appears constantly in the applied
+literature. The two objects answer different questions and can order the
+treatments differently.
+
+| Property | Treatment mean | Median and mean rank |
+|---|---|---|
+| Requires a scale with equal intervals | yes | no |
+| Affected by a single extreme plot | strongly | weakly |
+| Defined for ordinal data | no | yes |
+| Invariant to monotone transformation of the response | no | yes for the rank |
+| Matches what the test computed | no | yes |
+
+The last row is the one that matters for a manuscript. If the test ranked and the
+table means, a reader cannot check the one against the other.
+
+## 7.3 Reading the cell table
+
+```{r effects-read}
+e <- as.data.frame(eff)
+e$cultivar <- sub("::.*$", "", e$cell)
+e$salinity <- as.numeric(sub("^.*::", "", e$cell))
+with(e, tapply(median, list(cultivar, salinity), identity))
+```
+
+Laid out as a grid, the decline with salinity is visible in every cultivar, and
+C2 sits above the others at every level. Whether the **gap** widens with salinity
+is exactly the interaction the design could not resolve.
+
+## 7.4 An estimate travels with its interval
+
+```{r format-ci}
+# The helper exists so that an estimate and its interval reach a manuscript
+# table together, whatever produced them.
+agri_format_ci(estimate = 17.9, lower = 16.4, upper = 19.3, digits = 2)
+```
+
+Every estimate this package reports carries an interval where one is defined,
+and `agri_format_ci()` formats the pair as a single reportable string. An
+estimate quoted without its uncertainty is not a result.
+
+## 7.5 Interpretation
+
+Report the cell medians for magnitude and the omnibus test for evidence. Do not
+report either alone: the median without a test is anecdote, and the p-value
+without the median is a decision with no agronomic content.
+
+---
+
+# Part III. Comparisons that the design permits
+
+# 8. Pairwise comparisons and compact letters
+
+## 8.1 Design-aware Conover comparisons
+
+```{r conover}
+cmp <- agri_conover(fit)
+head(as.data.frame(cmp), 8)
+```
+
+The Conover procedure operates on the same within-block ranks that the omnibus
+test used. That continuity matters: a post-hoc procedure computed on a different
+quantity from the omnibus test can contradict it, and the reader has no way to
+tell which to believe.
+
+## 8.2 Compact letter displays, computed inside the stratum
+
+```{r cld}
+cld <- agri_cld(cmp)
+cld
+```
+
+A compact letter display is the most-read and least-understood object in
+agronomic papers. Two rules govern it here.
+
+**First, letters are computed within strata.** In a factorial with an
+interaction, a display that pools across the other factor is not interpretable,
+because two treatments may share a letter at one salinity and not at another.
+`agri_cld()` computes the display inside the stratum in which the comparisons
+were made.
+
+**Second, an incomplete family of comparisons is refused.** If some pairs are
+missing, the letters cannot be constructed consistently, and a partial display
+invites exactly the wrong reading. The function says so instead of producing
+something plausible-looking.
+
+## 8.3 What sharing a letter does and does not mean
+
+Sharing a letter means the comparison did not reach the chosen significance
+level. It does **not** mean the treatments are equal. With five blocks, the
+experiment has limited power, and a real difference of agronomic size can easily
+share a letter with zero.
+
+The honest report pairs the letters with the effect sizes of section 7. Letters
+alone answer "was it detected"; effects answer "how large", which is the
+question that matters agronomically.
+
+## 8.4 Planned contrasts, and an honest limitation
+
+Comparing every pair is rarely what the science asks. A planned contrast asks one
+specific question and pays a much smaller multiplicity price. The coefficients
+sum to zero, which is what makes it a contrast rather than a weighted average,
+and declaring it **before** looking at the data is what preserves its
+interpretation. A contrast chosen after seeing which cells are far apart is a
+pairwise comparison in disguise, with the multiplicity hidden.
+
+```{r contrast, error = TRUE}
+C <- rbind("C2 vs the other two" = c(-0.5, 1, -0.5))
+agri_contrast(fit, C)
+```
+
+The refusal is worth reading carefully, because it is a limitation of this
+version rather than a statement about the data. General user-defined contrasts
+are currently implemented only for the native repeated wild-rank engine. For
+every other engine the message says so and points to the backend object, instead
+of silently computing a contrast on a quantity for which it has not been
+validated.
+
+Where a planned contrast is essential and the engine does not support it, the
+defensible route is the pairwise machinery of section 8.1 with an appropriate
+multiplicity adjustment, accepting the loss of power that comparing more pairs
+entails.
+
+## 8.5 Interpretation
+
+The layers answer different questions and should be reported together:
+
+| Layer | Question | Function |
+|---|---|---|
+| Omnibus | is there anything here | `agri_rank()` |
+| Effects | how large, on the response scale and on the rank scale | `agri_effects()` |
+| Comparisons | which pairs, with multiplicity controlled | `agri_conover()`, `agri_cld()` |
+| Contrast | the one question the study was designed to answer | `agri_contrast()`, where supported |
+
+---
+
+# Part IV. From factor to gradient
+
+# 9. Should salinity be a factor or a curve?
+
+## 9.1 The decision is about the treatment, not about the fit
+
+Salinity was applied at 0, 2, 4 and 6 dS/m. Those are levels of a **quantitative**
+treatment, and they can be analysed two ways:
+
+| As a factor | As a gradient |
+|---|---|
+| makes no assumption about the shape between levels | assumes the response varies smoothly between levels |
+| answers: do these four levels differ | answers: what is the shape, and where is it changing |
+| cannot interpolate | can interpolate, within the tested range |
+| spends 3 degrees of freedom | spends fewer, and gains precision if the shape is real |
+
+The decision should be made on scientific grounds. If the four levels were
+chosen as representative points on a continuum, and interpolation between them
+is meaningful, the gradient analysis answers the real question. If they are
+distinct managements that happen to be labelled with numbers, they are a factor.
+
+Salinity is a continuum. It is analysed as a gradient from here on, with the
+factorial analysis of Part II retained as the design-faithful companion.
+
+## 9.2 Both analyses, side by side
+
+```{r factor-vs-gradient}
+data.frame(
+  analysis = c("factor", "gradient"),
+  question = c("do the four levels differ",
+               "what shape does biomass follow, and where does it change"),
+  reported_in = c("Part II", "Parts IV to VI")
+)
+```
+
+Reporting both is not indecision. They answer different questions, and a
+manuscript that reports only the factorial analysis of a quantitative treatment
+has left the shape of the response undescribed.
+
+---
+
+# 10. Fitting the gradient
+
+## 10.1 A first fit
+
+```{r np-fit}
+npfit <- agri_np_regression(biomass ~ salinity, base, method = "gam",
+                            block = block)
+npfit
+```
+
+The block is retained as an adjustment term. An engine that cannot carry it is
+refused, exactly as in Part I:
+
+```{r np-forbidden, error = TRUE}
+agri_np_regression(biomass ~ salinity, base, method = "loess", block = block)
+```
+
+## 10.2 Comparing engines without p-value shopping
+
+```{r np-compare}
+cmp_eng <- agri_np_compare(
+  biomass ~ salinity, base,
+  methods = c("gam", "kernel", "quantile"),
+  block = block, kfold = 5, seed = 1
+)
+cmp_eng
+```
+
+Note the `failures` column. An engine that cannot carry the declared block is
+recorded as a failure rather than silently dropped from the comparison, so the
+table cannot mislead by omission.
+
+Read this table as **predictive** comparison, not as model selection for
+inference. Cross-validated error says which engine predicts a held-out plot
+best. It does not say which engine gives the correct p-value, and choosing the
+engine that produced the most convenient p-value is the single most common way
+to invalidate a nonparametric analysis.
+
+The package therefore separates the two operations deliberately:
+`agri_np_compare()` reports predictive error, and nothing in it feeds back into
+the choice of an inferential engine.
+
+## 10.3 The fitted curve
+
+```{r np-plot, fig.cap = "Fitted salinity response with observed plots. The band is the analytic interval for the curve, not for a plot."}
+agri_np_plot(npfit, points = TRUE)
+```
+
+## 10.4 Explained variation, and what each index answers
+
+```{r np-diag}
+agri_np_diagnostics(npfit, cv = TRUE, seed = 1)$r2
+```
+
+Three indices are reported side by side because they answer three questions and
+routinely disagree:
+
+| Index | Question | Fails to notice |
+|---|---|---|
+| `pseudo_r2` | how much variation does the fitted curve reproduce | overfitting: it always rises with flexibility |
+| `cv_r2` | how much would it reproduce on a plot it has not seen | nothing, but it is noisy in small experiments |
+| `spearman_r2` | how much of the **ordering** does it get right | the size of the departures |
+
+A flexible engine typically shows a larger `pseudo_r2`, a larger
+`effective_df` and a **smaller** `cv_r2` than a rigid one on the same data. That
+pattern is the signature of a curve that is following noise, and it is visible
+only because the three are reported together.
+
+## 10.5 Interpretation
+
+Report `pseudo_r2` and `cv_r2` together, always. A single R-squared-like number
+beside a flexible nonparametric fit is uninformative at best, because the reader
+cannot tell whether it describes the response or the sampling noise.
+
+---
+
+# Part V. From a curve to a recommendation
+
+# 11. Where is the response still changing?
+
+## 11.1 The trap of the fitted extreme
+
+```{r optimum-naive}
+agri_np_optimum(npfit, objective = "min")
+```
+
+That is a number with no uncertainty attached, and it may well sit on the edge
+of the tested range. An extremum has to land somewhere; if the response does not
+turn over inside the range, it lands on a boundary, and reading the boundary as
+a recommendation is an artefact of the fitting, not a finding about the crop.
+
+## 11.2 The experiment decides which analysis is available
+
+The natural next step is a SiZer map, which classifies the derivative of the
+fitted curve across a whole column of bandwidths. On this experiment it is
+refused:
+
+```{r sizer-refused, error = TRUE, eval = requireNamespace("SiZer", quietly = TRUE)}
+agri_np_sizer(npfit)
+```
+
+Salinity was applied at **four** levels. A map of the derivative across
+bandwidths needs more positions than that, because with four points every
+bandwidth sees essentially the same three gaps and the column carries no
+information about robustness to smoothing.
+
+This is a **design** limitation, not a software one, and no analytical choice
+repairs it. A four-level design supports the factorial comparison of Part III
+and a fitted curve for description. It does not support a claim about where the
+response stops changing.
+
+The lesson is worth stating in its general form: **if a recommendation curve is
+the objective, the experiment has to be designed for it.** Six to eight levels
+with adequate replication is the usual minimum, and that decision is made before
+the field is laid out, not after the data arrive.
+
+## 11.3 A companion experiment that was designed for a gradient
+
+The package ships a nitrogen response with eight rates in five complete blocks,
+which is what the rest of Part V requires.
+
+```{r dose-data}
+data(agri_dose)
+c(levels = length(unique(agri_dose$dose)), blocks = nlevels(agri_dose$block),
+  plots = nrow(agri_dose))
+
+gfit <- agri_np_regression(yield ~ dose, agri_dose, method = "gam",
+                           block = block)
+agri_np_optimum(gfit)
+```
+
+The fitted maximum sits at the top of the tested range and `at_boundary` says so.
+That is the trap of section 11.1 in its commonest form: this response plateaus,
+and a maximum has to land somewhere.
+
+## 11.4 An answer that survives the smoothing choice
+
+```{r sizer, eval = requireNamespace("SiZer", quietly = TRUE)}
+sz <- agri_np_sizer(gfit)
+sz
+```
+
+```{r sizer-map, eval = requireNamespace("SiZer", quietly = TRUE), fig.cap = "SiZer map. Rows are amounts of smoothing, columns positions on the nitrogen axis. Read it vertically: a position classified the same way in every row does not depend on the smoothing choice."}
+plot(sz, type = "map")
+```
+
+```{r sizer-statement, eval = requireNamespace("SiZer", quietly = TRUE)}
+agri_np_significant_slope(sz, stability = 0.8)
+```
+
+This is the sentence a manuscript can carry: the interval over which yield is
+still rising, at a stated level of agreement across bandwidths. It is a different
+and far more defensible claim than the boundary maximum of section 11.3.
+
+## 11.5 Interpretation
+
+When the two disagree, the SiZer statement is the one to report. It describes the
+data; the fitted extreme describes the fit.
+
+---
+
+# 12. The location of an optimum, and its interval
+
+## 12.1 A recommended level is a location
+
+`agri_np_bootstrap()` resamples the **height** of the curve.
+`agri_np_optimum_test()` resamples its **position**. Those are different and
+unequally hard quantities: a curve can be estimated precisely while the position
+of its extreme wanders widely from one resampled experiment to the next, and a
+response that flattens is exactly the shape that makes it wander.
+
+```{r opt-test}
+ot <- agri_np_optimum_test(gfit, B = 199, seed = 1, n = 120, external = FALSE)
+ot
+```
+
+Three columns carry the result.
+
+`optimum` is the point estimate. `lower` and `upper` bound its **location**, not
+its height. `p_boundary` is the share of resampled experiments whose extreme
+landed on an end of the searched range, and `identified` turns `FALSE` when that
+share reaches one half.
+
+```{r opt-dist, fig.cap = "Where the extreme lands across resampled experiments. Mass piled against one end of the range is the visual form of an unidentified optimum."}
+plot(ot, type = "distribution")
+```
+
+## 12.2 The resampling respects the blocks
+
+Note the header line of the printed object: the resampling unit is the declared
+block, not the individual plot. Whole blocks are resampled together, because
+plots within a block are not exchangeable with plots in other blocks. That is
+what declaring a block asserts, and the bootstrap honours it.
+
+`B = 199` keeps this vignette fast. Use `B >= 999` for anything reported.
+
+## 12.3 Comparing the response of two cultivars
+
+Part II could not resolve the interaction. A curve fitted per cultivar is a
+second, more economical way to ask the same question, and to ask it the model
+must allow the curve **shapes** to differ, not merely their heights.
+
+```{r additive-refused, error = TRUE}
+fit_add <- agri_np_regression(biomass ~ salinity + cultivar, base,
+                              method = "gam", block = block)
+agri_np_optimum_test(fit_add, by = cultivar, B = 49, objective = "min",
+                     external = FALSE)
+```
+
+The refusal is arithmetic, not statistical. An additive adjustment shifts one
+curve above the other **without changing its shape**, so parallel curves have
+their extremes at the same place by construction. A comparison would report a
+difference of exactly zero and a p-value of one, describing the model rather
+than the experiment.
+
+```{r varying}
+fit_var <- agri_np_regression(biomass ~ salinity + cultivar, base,
+                              method = "gam", block = block,
+                              gam_structure = "varying")
+fit_var$formula_used
+```
+
+One smooth of salinity is now fitted per cultivar:
+
+```{r opt-by}
+ot2 <- agri_np_optimum_test(fit_var, by = cultivar, objective = "min",
+                            B = 199, seed = 1, n = 120, external = FALSE)
+ot2$optimum
+```
+
+```{r opt-curve, fig.cap = "Fitted response per cultivar with the resampled interval for the location of the extreme. The horizontal bar is uncertainty along the salinity axis, not along the biomass axis."}
+plot(ot2, type = "curve")
+```
+
+## 12.4 Interpretation
+
+Report the interval for the location, and report `p_boundary`. When
+`identified` is `FALSE`, do not report a level: report the SiZer statement of
+section 11 instead, which describes where the response is still changing without
+inventing a turning point.
+
+---
+
+# 13. The typical plot and the poor plot
+
+## 13.1 Why a mean curve is not enough
+
+Every curve so far describes a central tendency. That is a strong restriction on
+the agronomic question it can answer.
+
+A cultivar can hold up well in good plots and collapse in poor ones. The average
+response then looks acceptable, and a recommendation built on it will disappoint
+exactly the growers whose fields resemble the poor plots. Conditional quantiles
+ask the question directly: the median describes the typical plot, the tenth
+percentile is the **exposure curve**, what a grower meets in a bad year.
+
+```{r quantiles, eval = requireNamespace("qgam", quietly = TRUE)}
+q10 <- agri_np_regression(biomass ~ salinity, base,
+                          method = "smooth_quantile", tau = 0.10, block = block)
+q50 <- agri_np_regression(biomass ~ salinity, base,
+                          method = "smooth_quantile", tau = 0.50, block = block)
+
+nd <- data.frame(salinity = c(0, 2, 4, 6),
+                 block = factor("3", levels = levels(base$block)))
+data.frame(
+  salinity = nd$salinity,
+  q10 = round(as.numeric(agri_np_predict(q10, nd)), 2),
+  q50 = round(as.numeric(agri_np_predict(q50, nd)), 2),
+  gap = round(as.numeric(agri_np_predict(q50, nd)) -
+              as.numeric(agri_np_predict(q10, nd)), 2)
+)
+```
+
+Each curve is fitted by the pinball loss, which defines the quantile directly.
+Nothing is assumed about the shape of the response distribution, only about the
+smoothness of each curve.
+
+## 13.2 The fan, and the replication it needs
+
+A tail quantile needs observations in that tail. Sixty plots is thin for a
+tenth percentile, and the function says so rather than fitting one from three
+values.
+
+```{r fan, eval = requireNamespace("qgam", quietly = TRUE)}
+qc <- suppressWarnings(
+  agri_np_quantile_curves(biomass ~ salinity, base, block = block,
+                          quantiles = c(0.25, 0.5, 0.75), n = 50))
+qc$summary
+```
+
+Read `deviation` before anything else. It is the gap between the share of plots
+falling below each fitted curve and the quantile that curve claims to be,
+measured on the very data it was fitted to. A quantile that misses its own
+target here is not a tail this experiment can resolve, and `tracking` flags it.
+
+```{r fan-plot, eval = requireNamespace("qgam", quietly = TRUE), fig.cap = "Smooth conditional quantiles. Curves that fan out mean the treatment changes the spread of biomass, not only its level."}
+plot(qc, type = "fan")
+```
+
+```{r spread-plot, eval = requireNamespace("qgam", quietly = TRUE), fig.cap = "Distance between the outer quantiles along the gradient."}
+plot(qc, type = "spread")
+```
+
+## 13.3 Interpretation
+
+If the spread widens with salinity, the stress raises variability as well as
+lowering the level, and those are different agronomic problems. A recommendation
+that averages over them is not the same recommendation a risk-averse grower
+would make.
+
+---
+
+# Part VI. Uncertainty that survives the assumptions
+
+# 14. Three kinds of interval, and which to quote
+
+## 14.1 They answer different questions
+
+| Tool | What the interval covers | What it rests on |
+|---|---|---|
+| `agri_np_predict(interval = "confidence")` | the fitted curve | the asymptotic theory of that engine |
+| `agri_np_bootstrap()` | the fitted curve | the legitimacy of resampling experimental units |
+| `agri_np_conformal()` | **a future plot** | exchangeability alone, in finite samples |
+
+The first two describe how well the **average** response is known. Only the
+third describes where an individual plot will fall, which is what a grower is
+asking when a level is recommended.
+
+```{r three-intervals}
+nd2 <- data.frame(salinity = c(0, 3, 6),
+                  block = factor("3", levels = levels(base$block)))
+
+an <- as.data.frame(agri_np_predict(npfit, nd2, interval = "confidence"))
+bo <- as.data.frame(agri_np_bootstrap(npfit, newdata = nd2, B = 199, seed = 2))
+co <- as.data.frame(agri_np_conformal(npfit, newdata = nd2, level = 0.95,
+                                      seed = 1))
+
+data.frame(
+  salinity  = nd2$salinity,
+  analytic  = round(an$upper - an$lower, 3),
+  bootstrap = round(bo$upper - bo$lower, 3),
+  conformal = round(co$upper - co$lower, 3)
+)
+```
+
+The conformal interval is several times wider, and correctly so. Quoting a
+confidence band for the curve as if it described a plot understates the risk a
+grower carries by a large factor. This is one of the commonest and most
+consequential misreadings in applied agronomy.
+
+## 14.2 The guarantee, and where the design enters
+
+Split conformal prediction refits the engine on part of the data, measures
+absolute residuals on the held-out part, and adds the appropriate empirical
+quantile of those residuals. With the finite-sample correction the resulting
+interval satisfies
+
+$$P(Y_{\text{new}} \in \Gamma) \ge 1 - \alpha$$
+
+in finite samples, for any engine and any response distribution.
+
+The condition is **exchangeability**, and that is exactly where a declared
+design stops being decoration. Plots inside a block were randomized and are
+exchangeable. Plots in different blocks are not, because asserting that they
+differ is what declaring a block means.
+
+```{r conformal-scopes}
+cw <- agri_np_conformal(npfit, newdata = base, level = 0.90, seed = 1,
+                        scope = "within_block")
+cn <- agri_np_conformal(npfit, newdata = base, level = 0.90, seed = 1,
+                        scope = "new_block")
+
+data.frame(
+  question = c("a plot in a block we observed",
+               "a plot in a field we did not"),
+  mean_width = round(c(mean(cw$upper - cw$lower),
+                       mean(cn$upper - cn$lower)), 3)
+)
+```
+
+Predicting into a **new** block is a stronger claim, so the interval is wider: it
+now carries between-block variation. It also requires dropping the block-specific
+term, because a block effect is not estimable in a block that was never observed.
+
+## 14.3 Holding the method to its promise
+
+```{r coverage}
+cv <- agri_np_coverage(cw, data = base)
+data.frame(target = cv$target, empirical = round(cv$empirical, 3),
+           mean_width = round(cv$mean_width, 3), n = cv$n)
+cv$by_block
+```
+
+Coverage measured on the fitting data is optimistic, since those rows helped
+build the interval. Its role here is teaching and diagnosis.
+
+Note also that the guarantee is **marginal**, averaged over the gradient. It does
+not promise the stated coverage separately at every salinity.
+
+## 14.4 The model-based route to a new field, and the assumption-free one
+
+There are two ways to say something about a field that was never observed, and
+they rest on different things. They should be reported together.
+
+```{r shrunk}
+f_shrunk <- agri_np_regression(biomass ~ salinity, base, method = "gam",
+                               block = block, block_effect = "shrunk")
+agri_np_block_effects(f_shrunk)
+```
+
+A block that looks extreme is pulled back towards the common mean, because part
+of its apparent difference is noise. The amount of travel is the amount of
+between-block variation the data attribute to noise, and it is read off the
+table rather than assumed.
+
+```{r shrunk-plot, fig.cap = "How far each block is pulled towards the common mean. Filled: one free effect per block. Open: penalized, partly borrowed from the other blocks."}
+plot(agri_np_block_effects(f_shrunk))
+```
+
+The shrunk block term is the **model-based** route to a new field, at the price
+of a working assumption about how blocks vary. The conformal interval with
+`scope = "new_block"` is the **assumption-free** route. When the two disagree,
+the assumption is doing work the data do not support, and the wider of the two is
+the one to quote.
+
+---
+
+# 15. Model checking without a distribution
+
+## 15.1 Why not a normal QQ-plot
+
+A normal QQ-plot asks whether residuals look Gaussian. For a package built to
+avoid assuming a distribution, that is the wrong question asked of the wrong
+quantity.
+
+Simulation-based quantile residuals ask a better one: given the fitted model,
+where does each observation fall inside its own predictive distribution? Under a
+correct model those positions are uniform on the unit interval, whatever the
+response distribution is.
+
+```{r simdiag}
+sd_fit <- agri_np_simdiag(npfit, nsim = 200, seed = 1)
+sd_fit
+```
+
+```{r simdiag-plots, fig.cap = "Left question: are the scaled residuals uniform? Right question: is the fit equally good along the whole gradient?"}
+plot(sd_fit, type = "uniform_qq")
+plot(sd_fit, type = "residual_predictor")
+```
+
+## 15.2 The check that actually has power
+
+The three checks do not have equal power, and it is worth demonstrating rather
+than asserting. Below, the same data are fitted well by a block-adjusted GAM and
+badly by a straight line, which cannot follow a curved decline.
+
+```{r simdiag-power}
+fit_line <- agri_np_regression(biomass ~ salinity, base, method = "theil_sen")
+
+good <- agri_np_simdiag(npfit, nsim = 300, seed = 1)$checks
+bad  <- agri_np_simdiag(fit_line, nsim = 300, seed = 1)$checks
+
+data.frame(check = good$check,
+           p_gam = round(good$p_value, 4),
+           p_straight_line = round(bad$p_value, 4))
+```
+
+The overall uniformity check pools every observation, so a fit that is too low at
+the ends and too high in the middle still produces residuals that are uniform on
+average. The **location check along the gradient** is the row that moves, because
+it compares residual positions across bins of the predictor and therefore detects
+a non-monotone pattern that a rank correlation would miss entirely.
+
+The practical lesson: read the location row, not the headline uniformity row.
+
+## 15.3 These are descriptions, not decision rules
+
+Nothing here selects a method. A departure tells you that the fitted mean or the
+dispersion does not describe the data, which sends you back to the science, not
+to a different p-value.
+
+## 15.4 A model can pass every check and still be useless
+
+Diagnostics answer "is the fit wrong". The explained-variation indices of
+section 10.4 and the SiZer statement of section 11 answer "is the fit worth
+anything". A model can pass every diagnostic while explaining almost nothing,
+and reporting only the first is a common and consequential omission.
+
+---
+
+# Part VII. Treatments and responses that are not continuous
+
+# 16. When the treatment can only be a whole number
+
+## 16.1 The estimand, not the printing
+
+Some agronomic treatments cannot take fractional values: plants per hill,
+irrigation events, sprays per season, traps per hectare. The usual practice is
+to fit a continuous curve, find its maximum, and round. That is wrong at the
+level of the estimand rather than the presentation: the rounded value is not the
+best admissible decision, it is the neighbour of an inadmissible one.
+
+`agriRank` evaluates the fitted response **directly on the admissible integer
+support** and defines the optimum as the best of those values.
+
+```{r integer-fit}
+data(agri_density)
+fi <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
+                         integer_base_method = "smoothing_spline",
+                         predictor_support = "observed_integer")
+fi
+```
+
+```{r integer-predict}
+agri_integer_predict(fi)
+```
+
+## 16.2 Fractional predictions are refused
+
+```{r integer-refused, error = TRUE}
+agri_np_predict(fi, data.frame(plants = 7.5))
+```
+
+Once integer support is declared, a prediction at 7.5 plants describes an
+experiment that cannot be carried out. The function refuses rather than
+interpolating.
+
+## 16.3 The decision, its uncertainty, and its confidence set
+
+```{r integer-optimum}
+agri_integer_optimum(fi)
+```
+
+```{r integer-boot}
+ib <- agri_integer_bootstrap(fi, B = 199, seed = 1)
+ib
+```
+
+The bootstrap does not produce an interval here, because the quantity is
+discrete. It produces a **probability mass over admissible decisions**, which is
+the honest object: it says how often each whole number was best across resampled
+experiments.
+
+```{r integer-confset}
+agri_integer_confset(ib, level = 0.90)
+```
+
+The confidence set contains only admissible decisions. A set of three plant
+densities is a more useful answer to a grower than a single number with a
+symmetric interval that includes densities that cannot be planted.
+
+## 16.4 Differences between adjacent decisions
+
+```{r integer-diff}
+agri_integer_difference(fi, order = 1L)
+```
+
+On a discrete support the derivative is not an admissible quantity. What replaces
+it is the finite difference between adjacent admissible values: what is gained by
+planting one more. That is also the quantity an economic threshold is applied to.
+
+```{r sizer-integer, error = TRUE, eval = requireNamespace("SiZer", quietly = TRUE)}
+agri_np_sizer(fi)
+```
+
+## 16.5 Interpretation
+
+For an integer treatment, report the optimum, the probability mass over
+decisions, and the confidence set. Do not report a derivative, and do not report
+a rounded continuous optimum.
+
+---
+
+# 17. Repeated measurements
+
+## 17.1 The design changes, so the analysis changes
+
+SPAD was measured four times on the same plants. Repeated measurements on one
+plant are not exchangeable with measurements on different plants, and the
+subject has to be declared.
+
+```{r spad-sim}
+set.seed(1502)
+times <- c(20, 35, 50, 65)
+
+spad <- do.call(rbind, lapply(times, function(tt) {
+  z <- base[, c("block", "cultivar", "salinity", "salinity_f")]
+  z$subject <- factor(paste(z$block, z$cultivar, z$salinity, sep = "_"))
+  z$time <- factor(tt, levels = times)
+  z$spad <- 42 +
+    c(C1 = 0, C2 = 2.4, C3 = 1.1)[as.character(z$cultivar)] -
+    0.9 * z$salinity -
+    0.05 * (tt - 20) -
+    0.004 * z$salinity * (tt - 20) +
+    rnorm(nrow(z), 0, 1.3)
+  z
+}))
+str(spad)
+```
+
+```{r spad-design}
+des_r <- agri_design(spad ~ cultivar * time, spad, design = "repeated",
+                     subject = subject, within = time)
+des_r
+```
+
+```{r spad-fit}
+fit_r <- agri_rank(des_r)
+fit_r$omnibus
+```
+
+## 17.2 Reading a repeated-measures rank analysis
+
+The three effects answer:
+
+| Effect | Question |
+|---|---|
+| `cultivar` | averaged over time, do cultivars differ in SPAD |
+| `time` | averaged over cultivars, does SPAD change through the cycle |
+| `cultivar:time` | do the cultivars follow different trajectories |
+
+As in Part II, the interaction governs the reading of the main effects.
+
+```{r spad-plot, fig.cap = "SPAD trajectories. Each line is one cultivar averaged over blocks and salinity levels."}
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  print(
+    ggplot2::ggplot(spad, ggplot2::aes(x = time, y = spad,
+                                       colour = cultivar,
+                                       group = cultivar)) +
+      ggplot2::stat_summary(fun = mean, geom = "line", linewidth = 0.9) +
+      ggplot2::stat_summary(fun = mean, geom = "point", size = 2) +
+      ggplot2::labs(x = "Days after sowing", y = "SPAD", colour = "Cultivar") +
+      agri_theme()
+  )
+}
+```
+
+## 17.3 Interpretation
+
+A repeated-measures analysis answers questions about **trajectories**, not about
+final values. If the scientific question concerns the endpoint, the endpoint
+should be analysed as a single response in its own design, which is what Part II
+did for biomass.
+
+---
+
+# 18. Missing repeated observations
+
+## 18.1 Describe the missingness before modelling it
+
+```{r missing-sim}
+set.seed(1503)
+spad_miss <- spad
+drop <- sample(which(spad_miss$time != times[1]), 30)
+spad_miss$spad[drop] <- NA
+```
+
+```{r missing-report}
+des_m <- agri_design(spad ~ cultivar * time, spad_miss, design = "repeated",
+                     subject = subject, within = time)
+agri_missing_report(des_m)
+```
+
+The report answers three separate questions: how much is missing, where it is
+concentrated, and whether the pattern is related to the design. Those are not the
+same question, and a single overall percentage answers none of them well.
+
+## 18.2 Sensitivity, not imputation
+
+```{r missing-sens}
+ms <- agri_missing_sensitivity(des_m, B = 199, seed = 1)
+ms
+```
+
+This is a **sensitivity analysis**, not an imputation procedure. It asks whether
+the conclusion changes under different assumptions about why the values are
+missing. If it does, the honest report says so; no amount of imputation
+machinery converts an unverifiable assumption into evidence.
+
+## 18.3 The experimental engine, and its label
+
+```{r wild, eval = FALSE}
+# Not run in the vignette: this engine is experimental and its calibration
+# study is not complete. The label stays until it is.
+fit_w <- agri_repeated(des_m, backend = "native_wild", B = 1999,
+                       missing_assumption = "MCAR")
+fit_w$omnibus
+```
+
+The native incomplete repeated-measures engine implements rank-based
+wild-bootstrap inference. It is labelled **experimental** in the package
+documentation and it will keep that label until the validation plan in
+`VALIDATION_PLAN.md` has been completed. Using an unlabelled experimental engine
+in a manuscript is a risk that belongs to the analyst, and the package makes the
+label impossible to miss.
+
+## 18.4 Interpretation
+
+Report the missingness pattern, the sensitivity analysis, and the assumption
+under which the primary analysis was run. A missing-data assumption is part of
+the methods, not a technical detail.
+
+---
+
+# 19. When the datum is not a measurement at all
+
+## 19.1 Germination is counted inside intervals
+
+A germination trial produces counts inside intervals, not measurements. A seed
+that germinated between two inspections is known only to have done so somewhere
+inside that interval, and a seed that never germinates is not a missing value: it
+is an observation, censored at the end of the trial.
+
+```{r tte, eval = requireNamespace("drcte", quietly = TRUE)}
+data(verbascum, package = "drcte")
+tte <- agri_np_timetoevent(nSeeds ~ timeBef + timeAf, verbascum,
+                           by = Species, units = Dish, B = 99, seed = 1)
+tte$summary[, c("level", "subjects", "responded", "t50_responders", "t50_lot")]
+```
+
+Two properties of a seed lot are routinely collapsed into one number and should
+not be. **Capacity** is `responded`, the share that germinates at all.
+**Speed** is the quantiles among those that do.
+
+The whole-lot median is `NA` for a lot that never reaches half. That `NA` is the
+result: such a lot has no median germination time, and reporting one would
+require inventing a germination date for seeds that never germinated.
+
+```{r tte-plot, eval = requireNamespace("drcte", quietly = TRUE), fig.cap = "Estimated time-to-event distributions. The step function is the estimate itself, not a smooth curve fitted through cumulative percentages."}
+plot(tte, type = "cdf")
+```
+
+## 19.2 On-farm trials produce an order
+
+```{r rankings}
+r <- agri_rankings(biomass ~ cultivar, base, block = block)
+r$summary
+r$completeness
+```
+
+Every rank-based test in this package already works on within-block ranks.
+`agri_rankings()` shows them. Here the design is complete, so rank sums are
+comparable and the Conover machinery of Part III applies.
+
+In a tricot trial, where each farmer ranks three varieties out of many, the
+design is incomplete and rank sums are **not** comparable, because a variety
+allocated to favourable farms collects flattering ranks for a reason that has
+nothing to do with the variety. The function detects that, withholds the rank
+sums, and keeps the pairwise record, which is made inside blocks.
+
+```{r rankings-plot, fig.cap = "Share of blocks in which the row item was placed above the column item. Each cell uses only the blocks containing both."}
+plot(r, type = "pairwise")
+```
+
+## 19.3 Interpretation
+
+Both modules follow the same rule as the rest of the package: report the quantity
+the data contain, and decline the one they do not.
+
+---
+
+# Part VIII. Sensitivity and communication
+
+# 20. Does the conclusion depend on one analytical choice?
+
+## 20.1 Sensitivity across admissible engines
+
+```{r sensitivity}
+sens <- agri_sensitivity(fit, methods = c("primary", "permuco"))
+sens$table
+sens$interpretation
+```
+
+Every analysis contains choices that are defensible but not unique. A sensitivity
+analysis runs the admissible alternatives and reports whether the conclusion
+survives them.
+
+Read it as follows. If the alternatives agree, the conclusion does not rest on
+the choice, and that is worth one sentence in the results. If they disagree, the
+disagreement **is** the finding, and reporting only the convenient one is
+misconduct rather than simplification.
+
+## 20.2 Several responses at once
+
+```{r batch}
+bt <- agri_batch(des, responses = "biomass")
+bt$summary
+```
+
+`agri_batch()` repeats one declared design across several responses without
+changing the right-hand side. That constancy is the point: the temptation in a
+multi-response study is to adjust the model per response until each one is
+significant, and the batch interface makes that impossible by construction.
+
+## 20.3 Interpretation
+
+Sensitivity analysis is not a robustness ritual. It is the part of the workflow
+that distinguishes a conclusion about the crop from a conclusion about the
+software.
+
+---
+
+# 21. Publication-ready tables
+
+## 21.1 From a fitted object to a table
+
+```{r table-omnibus}
+agri_table(fit, what = "omnibus", format = "data.frame")
+```
+
+```{r table-effects}
+agri_table(fit, what = "effects", format = "data.frame")
+```
+
+`format = "auto"` returns a `gt` object when that package is installed, which is
+what a manuscript wants. `format = "data.frame"` is used here so the vignette
+prints plainly.
+
+Every table this package produces carries the uncertainty of the estimates it
+reports. A table of point estimates without intervals is not a result; it is a
+summary of one realisation of the experiment.
+
+## 21.2 Regression tables
+
+```{r table-reg}
+agri_np_diagnostics(npfit, cv = TRUE, seed = 1)$metrics
+```
+
+## 21.3 Table principles
+
+1. report the estimate and its interval in the same cell or in adjacent columns,
+   never on different pages;
+2. state the stratum in which the comparison was made;
+3. state the number of resampling replicates and the seed;
+4. do not report a compact letter display without the effect sizes beside it;
+5. do not report a p-value to more digits than the resampling supports: with
+   `B = 999` the smallest attainable value is `2/1000`.
+
+---
+
+# 22. Publication-ready figures
+
+## 22.1 The observed data
+
+```{r fig-raw, fig.cap = "Observed biomass by cultivar and salinity."}
+agri_plot(fit, type = "interaction")
+```
+
+## 22.2 The fitted response
+
+```{r fig-fit, fig.cap = "Fitted salinity response with observed plots."}
+agri_np_plot(npfit, points = TRUE, x_unit = "dS/m", y_unit = "g")
+```
+
+## 22.3 Colour that survives the reader
+
+```{r fig-grey, fig.cap = "One curve per cultivar in grey tones, safe for black-and-white print."}
+agri_np_plot(fit_var, group = "cultivar", palette = "grey",
+             x_unit = "dS/m", y_unit = "g")
+```
+
+Group colours default to a colour-blind-safe palette. Grey tones are available
+for journals that print in black and white, and the choice is an argument rather
+than a manual override, so it survives a rebuild.
+
+## 22.4 Export at journal widths
+
+```{r fig-export, eval = FALSE}
+p <- agri_np_plot(npfit, points = TRUE)
+
+# One column, TIFF with LZW compression, as most agronomy journals require.
+agri_save_figure(p, "figure_2.tiff", width = "one_column", dpi = 600)
+
+# The same figure as an editable vector for a thesis.
+agri_save_figure(p, "figure_2.pdf", width = "one_column")
+```
+
+`agri_save_figure()` writes TIFF, PDF, SVG, EPS or PNG at preset journal widths
+and keeps text and lines editable in the vector formats. A figure exported as a
+bitmap at screen resolution cannot be repaired later.
+
+## 22.5 Figure principles
+
+1. show the observed data under the fitted curve, always;
+2. say in the caption what the band covers: the curve, or a plot;
+3. do not draw a continuous line through an integer support;
+4. label the axis with its unit;
+5. use one figure to make one point.
+
+---
+
+# 23. A reproducible report
+
+```{r report, eval = FALSE}
+agri_report(fit, "salinity_case_study.md")
+agri_dashboard(fit)
+export_results(fit, "salinity_case_study.rds")
+```
+
+`agri_report()` writes a methods-and-results skeleton from the fitted object
+itself, so the reported design, engine, replication and seeds cannot drift from
+what was actually run. `export_results()` stores the object for a later session
+or for a reviewer.
+
+---
+
+# Part IX. Two integrated workflows
+
+# 24. Basic workflow: a factorial in blocks
+
+The minimal defensible sequence, in ten steps.
+
+### Step 1: data and design
+
+```{r wf1-1}
+d1 <- base
+des1 <- agri_design(biomass ~ cultivar * salinity_f, d1, design = "rcbd",
+                    block = block)
+```
+
+### Step 2: validate the declaration
+
+```{r wf1-2}
+validate_agri_design(des1)
+```
+
+### Step 3: omnibus inference
+
+```{r wf1-3}
+f1 <- agri_rank(des1)
+f1$omnibus
+```
+
+### Step 4: read the interaction first
+
+```{r wf1-4}
+ip <- f1$omnibus[grep(":", f1$omnibus$effect), ]
+ip[, c("effect", "Pr(>F)")]
+cat(if (ip[["Pr(>F)"]] < 0.10)
+      "Interaction detected: report the cultivar effect within salinity levels.\n"
+    else
+      paste("Interaction not detected. Main effects may be read marginally,",
+            "but absence of evidence is not evidence of parallelism.\n"))
+```
+
+### Step 5: effect sizes on the response scale
+
+```{r wf1-5}
+head(as.data.frame(agri_effects(f1)), 6)
+```
+
+### Step 6: comparisons with compact letters
+
+```{r wf1-6}
+agri_cld(agri_conover(f1))
+```
+
+### Step 7: sensitivity across admissible engines
+
+```{r wf1-7}
+agri_sensitivity(f1, methods = c("primary", "permuco"))$table
+```
+
+### Step 8: the design figure
+
+```{r wf1-8, fig.cap = "Interaction figure for the factorial analysis."}
+agri_plot(f1, type = "interaction")
+```
+
+### Step 9: the manuscript table
+
+```{r wf1-9}
+agri_table(f1, what = "omnibus", format = "data.frame")
+```
+
+### Step 10: report
+
+```{r wf1-10, eval = FALSE}
+agri_report(f1, "basic_workflow.md")
+```
+
+### Basic interpretation template
+
+> Biomass was analysed by design-aware rank-based inference in a randomized
+> complete block design with five blocks (`agri_design`, `agri_rank`). The
+> cultivar-by-salinity interaction was [significant / not significant]
+> (p = [value]), so cultivar effects are reported [within each salinity level /
+> marginally]. Relative marginal effects with 95% intervals are given in Table 1.
+> Pairwise comparisons used the design-aware Conover procedure with [method]
+> multiplicity control, and compact letters were computed within [stratum].
+> Conclusions were unchanged under [alternative engines], reported in the
+> supplementary material.
+
+---
+
+# 25. Advanced workflow: a quantitative gradient to a recommendation
+
+The sequence that turns a fitted curve into something a grower can act on.
+
+The gradient-designed nitrogen experiment is used here, because Stage E requires
+more than four levels.
+
+### Stage A: fit the gradient in the declared design
+
+```{r wf2-a}
+gA <- agri_np_regression(yield ~ dose, agri_dose, method = "gam", block = block)
+```
+
+### Stage B: compare engines predictively, and do not select on p
+
+```{r wf2-b}
+agri_np_compare(yield ~ dose, agri_dose, methods = c("gam", "kernel"),
+                block = block, kfold = 5, seed = 1)
+```
+
+### Stage C: explained variation, all three indices
+
+```{r wf2-c}
+agri_np_diagnostics(gA, cv = TRUE, seed = 1)$r2
+```
+
+### Stage D: check the fit without a distribution
+
+```{r wf2-d}
+agri_np_simdiag(gA, nsim = 200, seed = 1)$checks
+```
+
+### Stage E: where is the response still changing
+
+```{r wf2-e, eval = requireNamespace("SiZer", quietly = TRUE)}
+agri_np_significant_slope(agri_np_sizer(gA), stability = 0.8)
+```
+
+### Stage F: the location of the extreme, with its interval
+
+```{r wf2-f}
+agri_np_optimum_test(gA, B = 199, seed = 1, n = 80, external = FALSE)$optimum
+```
+
+### Stage G: an interval for the next plot
+
+```{r wf2-g}
+cfA <- agri_np_conformal(gA, newdata = agri_dose, level = 0.90, seed = 1)
+agri_np_coverage(cfA, data = agri_dose)$empirical
+```
+
+### Stage H: the poor plot as well as the typical one
+
+```{r wf2-h, eval = requireNamespace("qgam", quietly = TRUE)}
+suppressWarnings(
+  agri_np_quantile_curves(yield ~ dose, agri_dose, block = block,
+                          quantiles = c(0.25, 0.5, 0.75), n = 40))$summary
+```
+
+### Advanced interpretation template
+
+> The salinity response was modelled without assuming a functional form
+> (`agri_np_regression`, GAM engine, block retained as an adjustment term).
+> Predictive comparison across admissible engines is reported in Table S1; the
+> engine was not selected on the basis of any p-value. Explained variation was
+> [pseudo_r2] on the fitted values and [cv_r2] out of fold. Simulation-based
+> quantile residuals showed [no departure / a departure] in the location check
+> along the gradient (p = [value]).
+>
+> Biomass declined significantly up to [value] dS/m, with no evidence of further
+> change beyond it, at agreement across 80% of bandwidths (`agri_np_sizer`). The
+> location of the fitted extreme [was / was not] identified
+> (p_boundary = [value]); [where identified, its 95% interval was [a, b]].
+>
+> A split-conformal interval covering a **future plot** at [level] had mean width
+> [value] within an observed block and [value] for an unobserved field. Coverage
+> was verified at [value].
+>
+> All resampling used B = [value] replicates and seed [value].
+
+---
+
+# Part X. Common mistakes, and the function that prevents each
+
+# 26. Dropping the block because the test is simpler
+
+**The mistake.** Running a Kruskal-Wallis test on data from a blocked design,
+because the block "was not of interest".
+
+**Why it is wrong.** The block was removed from the treatment comparison by the
+randomization. Discarding it in the analysis puts the between-block variation
+back into the residual, which inflates it and reduces power. The test is valid
+for an experiment that was not performed.
+
+**What prevents it.** `agri_design()` records the block, and `agri_rank()`
+refuses an engine that cannot carry it. See section 5.3.
+
+---
+
+# 27. Treating a quantitative treatment as a factor without saying so
+
+**The mistake.** Analysing four salinity levels as four unrelated categories, and
+reporting only compact letters.
+
+**Why it is wrong.** The shape of the response is the agronomic content. Letters
+say which of the four tested levels differ, and nothing about what happens
+between them, which is where a recommendation lives.
+
+**What prevents it.** `agri_np_regression()` and Part IV. Reporting both
+analyses is the answer, not choosing one.
+
+---
+
+# 28. Selecting the engine by the p-value it produces
+
+**The mistake.** Fitting several smoothers and reporting the one whose treatment
+effect reached significance.
+
+**Why it is wrong.** The reported p-value is then the minimum of several, and its
+distribution under the null is no longer the one being quoted.
+
+**What prevents it.** `agri_np_compare()` reports cross-validated predictive
+error only, and nothing in it feeds back into the inferential engine. See
+section 10.2.
+
+---
+
+# 29. Reporting the fitted extreme as a recommendation
+
+**The mistake.** Reading the maximum or minimum of a fitted curve as the
+recommended level, without checking whether it is interior.
+
+**Why it is wrong.** An extreme has to land somewhere. If the response flattens
+rather than turning over, it lands on the boundary of the tested range, and the
+boundary is a property of the experimental design, not of the crop.
+
+**What prevents it.** `agri_np_optimum_test()` reports `p_boundary` and
+`identified`, and `agri_np_significant_slope()` provides the defensible
+alternative statement. See sections 11 and 12.
+
+---
+
+# 30. Comparing optima across curves the model forced to be parallel
+
+**The mistake.** Fitting `y ~ x + cultivar` and comparing the optimum of each
+cultivar.
+
+**Why it is wrong.** An additive adjustment shifts curves without changing their
+shape. Parallel curves share one optimum by construction, so the comparison
+describes the model, not the experiment.
+
+**What prevents it.** `agri_np_optimum_test()` detects parallel fitted curves and
+refuses, pointing to `gam_structure = "varying"`. See section 12.3.
+
+---
+
+# 31. Quoting a confidence band as if it covered a plot
+
+**The mistake.** Reporting the band around a fitted curve as the range in which
+a grower's yield will fall.
+
+**Why it is wrong.** A confidence band covers the average response. An individual
+plot varies far more, typically by a factor of several.
+
+**What prevents it.** `agri_np_conformal()` produces the interval that covers a
+future plot, with a finite-sample guarantee. The three widths are contrasted in
+section 14.1.
+
+---
+
+# 32. Rounding a continuous optimum to a whole number
+
+**The mistake.** Fitting a continuous curve over plant density, finding the
+maximum at 7.4 plants, and recommending 7.
+
+**Why it is wrong.** The rounded value is the neighbour of an inadmissible one,
+not the best admissible decision. They can differ.
+
+**What prevents it.** `predictor_support = "observed_integer"` and
+`agri_integer_optimum()`, which evaluate the response on the admissible support.
+See section 16.
+
+---
+
+# 33. Deleting the seeds that never germinated
+
+**The mistake.** Removing rows with no event before analysis, or forcing the
+germination curve up to 100%.
+
+**Why it is wrong.** A seed that never germinates is an observation, not a
+missing value. Deleting it overstates the capacity of the lot, sometimes
+grossly.
+
+**What prevents it.** `agri_np_timetoevent()` requires `end = Inf` for censored
+subjects, warns when no row has it, and reports capacity separately from speed.
+See section 19.1.
+
+---
+
+# 34. Summing ranks across an incomplete design
+
+**The mistake.** Ranking varieties within farms in an on-farm trial where each
+farmer saw only three of thirty, and comparing the rank sums.
+
+**Why it is wrong.** A variety allocated to favourable farms collects flattering
+ranks for a reason unrelated to the variety. The comparison measures allocation
+as much as genetics.
+
+**What prevents it.** `agri_rankings()` detects incompleteness, withholds the
+rank sums, and keeps the pairwise record, which is made inside blocks. See
+section 19.2.
+
+---
+
+# 35. Reading non-significance as equality
+
+**The mistake.** "The cultivars did not differ" after a test that did not reach
+the chosen level.
+
+**Why it is wrong.** Failing to detect a difference is not evidence of its
+absence, particularly with five blocks. The statement conflates a decision with a
+finding.
+
+**What prevents it.** `agri_effects()` reports the effect size with its interval,
+so a reader can see whether an agronomically important difference remains
+compatible with the data. See section 8.3.
+
+---
+
+# 36. Treating a diagnostic as a model-selection rule
+
+**The mistake.** Fitting several models and keeping the one whose residual
+diagnostics look best.
+
+**Why it is wrong.** Diagnostics answer whether a fit describes the data. Used
+repeatedly as a filter, they become a selection procedure whose properties are
+unknown, and the final p-value no longer means what it says.
+
+**What prevents it.** `agri_np_simdiag()` returns descriptions with the question
+each answers, and the documentation states that nothing in it selects a method.
+See section 15.3.
+
+---
+
+# 37. Using an experimental engine without its label
+
+**The mistake.** Using the native incomplete repeated-measures engine in a
+manuscript because it ran without error.
+
+**Why it is wrong.** Its calibration study is not complete. Running without error
+is not evidence of correct Type-I error.
+
+**What prevents it.** The engine is labelled experimental in its own
+documentation, in `VALIDATION_PLAN.md`, and in this vignette. See section 18.3.
+
+---
+
+# Part XI. Compact function-selection guide
+
+# 38. Choose by the question, not by the name
+
+| Your situation | Start here | Then |
+|---|---|---|
+| I have a field notebook and no analysis yet | `agri_design()` | `validate_agri_design()`, `design_summary()` |
+| One factor, no blocks | `np_crd()` | `agri_effects()`, `agri_conover()` |
+| One factor in blocks | `np_rcbd()` | `agri_conover()`, `agri_cld()` |
+| Two or more crossed factors | `np_factorial()` | read the interaction first |
+| Whole plots and subplots | `np_splitplot()` | `np_splitsplit()`, `np_stripplot()` |
+| Repeated measurements on the same unit | `np_repeated()` | `agri_repeated()`, `agri_missing_report()` |
+| Several responses on the same units | `agri_multivariate()` | `agri_table()` |
+| Several sites or years | `agri_multienv()` | check the GxE term |
+| A quantitative treatment, and I want the shape | `agri_np_regression()` | `agri_np_plot()`, `agri_np_diagnostics()` |
+| I need to know where the response stops changing | `agri_np_sizer()` | `agri_np_significant_slope()` |
+| I need to recommend a level, with an interval | `agri_np_optimum_test()` | check `p_boundary` |
+| The treatment can only be a whole number | `agri_np_regression(predictor_support=)` | `agri_integer_optimum()`, `agri_integer_confset()` |
+| I need an interval for the next plot | `agri_np_conformal()` | `agri_np_coverage()` |
+| I care about the poor plots, not the average | `agri_np_quantile_curves()` | `plot(type = "spread")` |
+| I want to know whether the model describes the data | `agri_np_simdiag()` | read the location row |
+| My data are germination counts | `agri_np_timetoevent()` | report capacity and speed apart |
+| My data are farmer rankings | `agri_rankings()` | check `completeness` first |
+| I want to know if the conclusion is fragile | `agri_sensitivity()` | `agri_batch()` |
+| I need a manuscript table | `agri_table()` | `agri_format_ci()` |
+| I need a journal figure | `agri_np_plot()`, `agri_plot()` | `agri_theme()`, `agri_save_figure()` |
+| I need a reproducible record | `agri_report()` | `export_results()` |
+
+# 39. Choose by what you must not do
+
+| Temptation | What to do instead |
+|---|---|
+| drop the block because the test is simpler | declare it and accept the refusal |
+| pick the engine with the best p-value | `agri_np_compare()` for prediction only |
+| round a continuous optimum to an integer | declare the integer support |
+| quote the fitted extreme as a recommendation | `agri_np_optimum_test()`, read `p_boundary` |
+| quote a confidence band as a plot interval | `agri_np_conformal()` |
+| report letters without effect sizes | report both |
+| delete the non-germinated seeds | code them as `end = Inf` |
+| sum ranks in an incomplete design | report the pairwise record |
+| call non-significance equality | report the interval |
+
+---
+
+# Part XII. Minimum reporting checklist
+
+# 40. What a manuscript using this package should contain
+
+**Design**
+
+1. the design as declared, including the blocking factor and the experimental
+   unit for each treatment;
+2. the number of blocks, replicates and plots, and any missing cells;
+3. the randomization actually used, if it differed from the intended one.
+
+**Analysis**
+
+4. the engine, named, and the reason it was admissible for this design;
+5. that the engine was not selected on the basis of a response p-value;
+6. the multiplicity control used for any set of comparisons;
+7. the stratum in which comparisons and compact letters were computed;
+8. the number of resampling replicates and the random seed.
+
+**Results**
+
+9. the omnibus result and the interaction, read before the main effects;
+10. effect sizes with intervals, not only p-values or letters;
+11. for a quantitative treatment: the fitted curve, the explained-variation
+    indices, and the interval over which the response is still changing;
+12. for a recommendation: the interval for the **location** of the optimum, and
+    the value of `p_boundary`; if not identified, say so and report the SiZer
+    statement instead;
+13. for a plot-level recommendation: a conformal interval, with its scope stated;
+14. for an integer treatment: the optimum, the probability mass over decisions,
+    and the confidence set;
+15. for germination data: capacity and speed reported separately, with the
+    censored subjects included;
+16. for ranking data: whether the design was complete.
+
+**Assurance**
+
+17. the model check, reported whatever its result;
+18. the sensitivity analysis across admissible engines;
+19. the missing-data assumption, if any values were missing;
+20. the package version and `sessionInfo()`.
+
+# 41. A note on what not to report
+
+Do not report a treatment mean beside a rank-based analysis; the analysis did not
+estimate one. Do not report a compact letter display as if it established
+equality. Do not report an optimum without its uncertainty. Do not report an
+R-squared-like index alone beside a flexible fit. Do not report a p-value to more
+digits than the resampling supports.
+
+---
+
+# Part XIII. Appendices
+
+# Appendix A. Exported function registry
+
+## A.1 Design
+
+| Function | Purpose |
+|---|---|
+| `agri_design()` | declare the randomization structure explicitly |
+| `validate_agri_design()` | audit the declaration against the data |
+| `design_summary()` | describe the declared design |
+| `simulate_agri()` | generate teaching data for a named design |
+| `agri_methods()` | list the available engines and what each assumes |
+
+## A.2 Design-aware inference
+
+| Function | Purpose |
+|---|---|
+| `agri_rank()` | omnibus inference for a declared design |
+| `np_crd()` | one factor, completely randomized |
+| `np_rcbd()` | one factor in complete blocks |
+| `np_factorial()` | crossed factors |
+| `np_splitplot()` | whole plots and subplots |
+| `np_splitsplit()` | three randomization levels |
+| `np_stripplot()` | two strips crossed within blocks |
+| `np_repeated()` | repeated measurements on the same unit |
+| `agri_repeated()` | repeated measures with backend selection |
+| `incomplete_wild_rank_test()` | experimental wild-bootstrap engine |
+
+## A.3 Effects, comparisons and contrasts
+
+| Function | Purpose |
+|---|---|
+| `agri_effects()` | relative marginal effects with intervals |
+| `agri_pairs()` | pairwise comparisons |
+| `agri_conover()` | design-aware Conover comparisons |
+| `agri_cld()` | compact letters, computed within strata |
+| `agri_contrast()` | planned contrasts |
+| `agri_format_ci()` | estimate and interval as reportable text |
+
+## A.4 Regression over a gradient
+
+| Function | Purpose |
+|---|---|
+| `agri_np_regression()` | fit a nonparametric or shape-aware curve |
+| `agri_np_predict()` | predict, with an analytic interval where defined |
+| `agri_np_plot()` | the standard regression figures |
+| `agri_np_curves()` | overlay the curves of several engines |
+| `agri_np_derivative()` | derivative of the fitted curve |
+| `agri_np_optimum()` | the fitted extreme, as a point |
+| `agri_np_bootstrap()` | resampling intervals and bands for the curve |
+| `agri_np_compare()` | predictive comparison of engines |
+| `agri_np_diagnostics()` | explained variation and predictive error |
+| `agri_np_significance()` | bootstrap tests for kernel fits |
+| `agri_np_specification()` | is a prespecified equation too restrictive |
+| `agri_np_interactive()` | interactive layer, when plotly is present |
+| `agri_np_forest()` | forest plot of coefficient intervals |
+| `agri_np_levels()` | the response at each level of a factor |
+
+## A.5 From a curve to a recommendation
+
+| Function | Purpose |
+|---|---|
+| `agri_np_sizer()` | where the derivative is significant, across bandwidths |
+| `agri_np_significant_slope()` | the same, as a reportable sentence |
+| `agri_np_optimum_test()` | interval and tests for the **location** of an optimum |
+| `agri_np_quantile_curves()` | conditional quantiles and their spread |
+| `agri_np_block_effects()` | fixed and shrunk block effects side by side |
+
+## A.6 Distribution-free uncertainty and checking
+
+| Function | Purpose |
+|---|---|
+| `agri_np_conformal()` | interval covering a future plot, with a guarantee |
+| `agri_np_coverage()` | empirical coverage of that interval |
+| `agri_np_simdiag()` | simulation-based quantile residuals |
+
+## A.7 Integer decision support
+
+| Function | Purpose |
+|---|---|
+| `agri_integer_predict()` | prediction restricted to admissible integers |
+| `agri_integer_optimum()` | best admissible whole-number decision |
+| `agri_integer_difference()` | gain from one more unit |
+| `agri_integer_threshold()` | economic or agronomic threshold rules |
+| `agri_integer_efficiency()` | response per unit of input |
+| `agri_integer_bootstrap()` | probability mass over admissible decisions |
+| `agri_integer_confset()` | discrete confidence set |
+
+## A.8 Missing data, several responses, several sites
+
+| Function | Purpose |
+|---|---|
+| `agri_missing_report()` | describe the missingness pattern |
+| `agri_missing_sensitivity()` | does the conclusion survive the assumption |
+| `agri_multivariate()` | several responses on the same units |
+| `agri_multienv()` | several sites or years, and GxE |
+| `agri_sensitivity()` | the conclusion across admissible engines |
+| `agri_batch()` | one design, several responses |
+
+## A.9 Data that are not measurements
+
+| Function | Purpose |
+|---|---|
+| `agri_np_timetoevent()` | interval-censored germination and emergence |
+| `agri_rankings()` | within-block rankings and on-farm trials |
+
+## A.10 Trend, covariance and power
+
+| Function | Purpose |
+|---|---|
+| `agri_trend()` | trend across ordered levels |
+| `agri_ancova()` | rank-based covariance adjustment |
+| `agri_power()` | power for a declared design |
+
+## A.11 Communication
+
+| Function | Purpose |
+|---|---|
+| `agri_table()` | manuscript tables from a fitted object |
+| `agri_plot()` | the standard design figures |
+| `agri_interactive()` | interactive layer for design figures |
+| `agri_theme()` | the shared journal theme |
+| `agri_save_figure()` | export at preset journal widths |
+| `agri_report()` | reproducible methods-and-results skeleton |
+| `agri_dashboard()` | assembled view of one analysis |
+| `export_results()` | store the fitted object |
+
+## A.12 Example data
+
+| Object | Content |
+|---|---|
+| `agri_dose` | nitrogen response in five complete blocks, with a plateau |
+| `agri_density` | plant density on an integer support |
+| `agri_surface` | two quantitative gradients, for a response surface |
+
+---
+
+# Appendix B. A single starter script
+
+Everything a first analysis needs, in one block.
+
+```{r starter, eval = FALSE}
+library(agriRank)
+
+# 1. Declare the randomization.
+des <- agri_design(yield ~ treatment, data = mydata, design = "rcbd",
+                   block = block)
+validate_agri_design(des)
+
+# 2. Omnibus inference in that structure.
+fit <- agri_rank(des)
+fit$omnibus
+
+# 3. Effect sizes with intervals, then comparisons with letters.
+agri_effects(fit)
+agri_cld(agri_conover(fit))
+
+# 4. If the treatment is a quantitative gradient, describe its shape.
+np <- agri_np_regression(yield ~ dose, mydata, method = "gam", block = block)
+agri_np_diagnostics(np, cv = TRUE, seed = 1)$r2
+agri_np_plot(np, points = TRUE)
+
+# 5. Say where the response is still changing, not where the fit peaks.
+agri_np_significant_slope(agri_np_sizer(np), stability = 0.8)
+
+# 6. If a level is to be recommended, give the interval for its location.
+agri_np_optimum_test(np, B = 999, seed = 1)
+
+# 7. If the recommendation concerns a plot, give a conformal interval.
+cf <- agri_np_conformal(np, level = 0.90, seed = 1)
+agri_np_coverage(cf, data = mydata)
+
+# 8. Check the fit without assuming a distribution.
+agri_np_simdiag(np, nsim = 500, seed = 1)
+
+# 9. Ask whether the conclusion survives another admissible engine.
+agri_sensitivity(fit, methods = c("primary", "permuco"))$table
+
+# 10. Record everything.
+agri_report(fit, "analysis.md")
+export_results(fit, "analysis.rds")
+sessionInfo()
+```
+
+---
+
+# Appendix C. Where to go next
+
+| If you want | Read |
+|---|---|
+| the design declaration in detail | *Design Foundations, CRD, and RCBD* |
+| comparisons and compact letters in detail | *Effects, Conover, Contrasts, and Factorial Inference* |
+| split-plot, strip-plot, trend, ANCOVA, power | *Hierarchical Plot Designs, Trends, ANCOVA, and Power* |
+| repeated measures and missing data | *Repeated Measures and Missing Longitudinal Data* |
+| several responses or sites | *Multivariate, Multi-Environment, Batch, and Sensitivity Workflows* |
+| the regression engines | *Nonparametric and Shape-Aware Regression for Agronomic Gradients* |
+| integer decisions | *Integer-Support Nonparametric Regression for Agronomy* |
+| figures, tables and reports | *Graphics, Tables, Reports, and Reproducibility* |
+| the theory and the pitfalls | *Methodological Foundations, State of the Art, and Common Mistakes* |
+| conformal prediction and model checking | *Distribution-Free Uncertainty and Model Checking* |
+| optima, quantiles and block structure | *Optima, Quantiles, and How the Block Enters the Model* |
+| germination and ranking data | *Time-to-Event and Ranking Data* |
+
+---
+
+# Final perspective
+
+The functions in this package are ordinary. What is not ordinary is the number
+of places where they stop.
+
+A design declaration that refuses an engine. A comparison of optima that refuses
+parallel curves. A quantile that refuses a tail the replication cannot resolve. A
+whole-lot median that returns `NA` because the lot never reaches half. A rank sum
+withheld because the design is incomplete. A derivative refused on an integer
+support.
+
+Each of those refusals replaces a number that would have looked like an answer.
+That is the entire design philosophy, and it is worth stating plainly: **the most
+useful thing a statistical package can do for an agronomist is to be clear about
+what the experiment cannot support.**
+
+The remaining scientific limitation of this version is documented rather than
+hidden. The permutation backend shows a calibration failure in split-split-plot
+and strip-plot strata, reported in `VALIDATION_PLAN.md`, and the native
+incomplete repeated-measures engine carries an experimental label until its
+calibration study is complete. Neither is repaired by test coverage, and neither
+should be used in a manuscript without reading those documents first.
+
+```{r session, eval = FALSE}
+sessionInfo()
+```

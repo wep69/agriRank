@@ -1,27 +1,26 @@
 # Documentation architecture
 
-The package documentation consists of 18 analytical vignettes, one dedicated `.Rd` page for every exported function, a long-form reference manual, a double-verified reference audit, and an integrated agronomic case study.
+The package documentation consists of 13 analytical vignettes, one dedicated `.Rd` page for every exported function, a long-form reference manual, a double-verified reference audit, and an integrated agronomic case study.
 
 ## Vignette sequence
 
-1. `00-overview.Rmd` — Design-aware nonparametric inference for agricultural experiments
-2. `01-design-validation.Rmd` — Declaring and validating agricultural experiments
-3. `02-crd-oneway.Rmd` — Completely randomized designs and one-way inference
-4. `03-rcbd.Rmd` — Randomized complete block designs
-5. `04-factorial.Rmd` — Nonparametric factorial experiments
-6. `05-effects-contrasts.Rmd` — Effect estimation, contrasts and multiple comparisons
-7. `06-splitplot.Rmd` — Split-plot experiments and hierarchical randomization
-8. `07-repeated-measures.Rmd` — Rank-based repeated-measures inference
-9. `08-missing-repeated.Rmd` — Missing data in repeated-measures experiments
-10. `09-trend-ancova-power.Rmd` — Quantitative treatments, covariate adjustment and power
-11. `10-multivariate-multienv.Rmd` — Multivariate responses and multi-environment experiments
-12. `11-batch-sensitivity.Rmd` — Batch workflows and inferential sensitivity
-13. `12-graphics.Rmd` — Scientific graphics and interactive exploration
-14. `13-reporting.Rmd` — Tables, reports and reproducibility
-15. `14-theory-state-of-art.Rmd` — Statistical foundations and state of the art
-16. `15-integrated-agronomic-case.Rmd` — From experimental design to a reproducible agronomic report
-17. `16-nonparametric-regression.Rmd` — Nonparametric and shape-aware regression for agronomic gradients
-18. `17-integer-support-regression.Rmd` — Integer-support nonparametric regression and discrete agronomic decisions
+1. `v01-design-crd-rcbd.Rmd` — Design Foundations, CRD, and RCBD
+2. `v02-effects-conover-factorials.Rmd` — Effects, Conover, Contrasts, and Factorial Inference
+3. `v03-hierarchical-designs-trends-ancova-power.Rmd` — Hierarchical Plot Designs, Trends, ANCOVA, and Power. Owns split-plot, split-split-plot and strip-plot, and the reasoning behind refusing an engine for those strata
+4. `v04-repeated-measures-and-missing-data.Rmd` — Repeated Measures and Missing Longitudinal Data
+5. `v05-multivariate-multienvironment-batch-sensitivity.Rmd` — Multivariate, Multi-Environment, Batch, and Sensitivity Workflows
+6. `v06-nonparametric-regression.Rmd` — Nonparametric and Shape-Aware Regression for Agronomic Gradients
+7. `v07-integer-support-regression.Rmd` — Integer-Support Nonparametric Regression for Agronomy
+8. `v08-graphics-reporting-reproducibility.Rmd` — Graphics, Tables, Reports, and Reproducibility
+9. `v09-integrated-agronomic-case-study.Rmd` — Integrated Agronomic Case Study: Design to Report
+10. `v10-theory-state-of-art-common-mistakes.Rmd` — Methodological Foundations, State of the Art, and Common Mistakes
+11. `v11-distribution-free-uncertainty-and-diagnostics.Rmd` — Distribution-Free Uncertainty and Model Checking for Agronomic Regression
+12. `v12-optima-quantiles-and-block-structure.Rmd` — Optima, Quantiles, and How the Block Enters the Model
+13. `v13-time-to-event-and-ranking-data.Rmd` — Time-to-Event and Ranking Data
+
+The `v` prefix is not decorative. R requires a vignette file name to begin with a
+letter, and the numbering must stay unique, since two files sharing a prefix
+produce ambiguous cross-references that no check reports.
 
 ## Example policy
 

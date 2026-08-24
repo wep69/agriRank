@@ -6,106 +6,6 @@ Development version **0.13.0**.
 
 `agriRank` represents the experimental design explicitly and connects that declaration to nonparametric, rank-based, permutation, resampling, effect-estimation, visualization, and reporting workflows. The package is intended for agricultural experiments in which the analyst needs more than a one-off Kruskal-Wallis or Friedman test.
 
----
-
-## Installation
-
-The package is not on CRAN yet. Install from this repository.
-
-### Without vignettes, fast
-
-This is the usual choice. It installs the package and its help pages in a few
-seconds and does not require Pandoc.
-
-```r
-# install.packages("remotes")
-remotes::install_github("wep69/agriRank")
-```
-
-`vignettes("agriRank")` will return nothing after this form of installation.
-The vignette sources are still in the repository under `vignettes/`, and the
-rendered versions are available in the source tarball of each release.
-
-### With vignettes
-
-All 18 vignettes execute their code when they are built, so this form takes
-about a minute and needs Pandoc, which comes with RStudio or with Quarto.
-
-```r
-# install.packages("remotes")
-remotes::install_github("wep69/agriRank", build_vignettes = TRUE)
-
-browseVignettes("agriRank")
-vignette("v16-nonparametric-regression", package = "agriRank")
-vignette("v17-integer-support-regression", package = "agriRank")
-```
-
-If the build fails for lack of Pandoc, install Quarto or RStudio, or fall back
-to the form without vignettes.
-
-### Optional backends
-
-Every statistical engine beyond base R lives in `Suggests`, so the package
-installs without them and asks for each one only when the corresponding method
-is requested. To install all of them at once:
-
-```r
-install.packages(c(
-  "ARTool", "cgam", "cobs", "coin", "emmeans", "gt", "Iso", "MANOVA.RM",
-  "mblm", "mgcv", "multcompView", "np", "nparcomp", "nparLD", "permuco",
-  "permute", "plotly", "PMCMRplus", "quantreg", "quarto", "rankFD", "scam",
-  "WRS2"
-))
-```
-
-### Checking the installation
-
-```r
-library(agriRank)
-packageVersion("agriRank")
-agri_methods()
-```
-
-## Example data
-
-Three data sets ship with the package, so every example and vignette works on a
-shared, agronomically interpretable experiment instead of a throwaway data frame:
-
-| Data set | Structure | Used for |
-|---|---|---|
-| `agri_dose` | 8 nitrogen rates, 0 to 280 kg ha⁻¹, in 5 blocks | continuous gradients, quadratic-plateau response |
-| `agri_density` | 1 to 9 plants per hill in 6 blocks | the integer decision workflow |
-| `agri_surface` | nitrogen by irrigation depth, 2 blocks | response surfaces with interacting gradients |
-
-```r
-data(agri_dose)
-fit <- agri_np_regression(yield ~ dose, agri_dose, method = "gam", block = block)
-agri_np_optimum(fit)
-```
-
-Yield is in Mg ha⁻¹ throughout. The generating script is in `data-raw/`, and
-`simulate_agri()` produces fresh replicates of the same three structures through
-the scenarios `"dose_response"`, `"integer_density"` and `"surface"`.
-
-## Cheat sheet
-
-A two-page reference of the whole workflow, from design declaration to report.
-
-| Language | Download | Size |
-|---|---|---|
-| Portuguese | [agriRank_Cheatsheet_PT.pdf](https://github.com/wep69/agriRank/raw/main/cheatsheet/agriRank_Cheatsheet_PT.pdf) | 21 MB |
-| English | [agriRank_Cheatsheet_EN.pdf](https://github.com/wep69/agriRank/raw/main/cheatsheet/agriRank_Cheatsheet_EN.pdf) | 2.5 MB |
-
-Both are also attached to the
-[v0.13.0 release](https://github.com/wep69/agriRank/releases/tag/v0.13.0),
-together with the source tarball.
-
-The cheat sheets live in `cheatsheet/` in this repository and are deliberately
-kept **outside the R package**: they are listed in `.Rbuildignore`, so they do
-not travel inside the tarball and do not count toward the installed size.
-
----
-
 ## Integrated hierarchical and multi-response designs
 
 Version 0.13.0 explicitly represents split-split and strip-plot randomization strata, integrates multivariate MANOVA.RM results into the common table/report/export workflow, and enforces environment inclusion in multi-environment models. Split-split designs declare `block`, `whole_plot`, `subplot`, and `subsubplot`; strip-plot designs declare `block`, `strip_a`, and `strip_b`.
@@ -171,58 +71,72 @@ The native incomplete repeated-measures engine is **experimental**. It follows t
 
 ## Documentation
 
-The package contains **18 English vignettes** covering the full analytical workflow, including a dedicated state-of-the-art review and a final integrated agronomic case study. Every exported function has a dedicated reference page and at least **three examples**.
+The package contains **13 English vignettes**, reorganized so that each one owns
+one coherent analytical block rather than one function. Every exported function
+has a dedicated reference page and at least **three examples**.
 
-- Vignette map: `vignettes/README.md`
+| # | Vignette | Owns |
+|---|---|---|
+| 01 | Design foundations, CRD and RCBD | declaring and validating the randomization |
+| 02 | Effects, Conover comparisons and factorials | post-hoc comparisons and compact letter displays |
+| 03 | Hierarchical designs, trends, ANCOVA and power | split-plot, split-split, strip-plot, trend, covariance |
+| 04 | Repeated measures and missing data | subject dependence and incompleteness |
+| 05 | Multivariate, multi-environment, batch and sensitivity | several responses, several sites, many analyses |
+| 06 | Nonparametric and shape-aware regression | fitting curves to agronomic gradients |
+| 07 | Integer-support regression | decisions that can only take whole values |
+| 08 | Graphics, tables, reports and reproducibility | publication-ready output |
+| 09 | Integrated agronomic case study | the whole workflow on one experiment |
+| 10 | Theory, state of the art and common mistakes | background and pitfalls |
+| 11 | Distribution-free uncertainty and model checking | SiZer, conformal prediction, simulation diagnostics |
+| 12 | Optima, quantiles and block structure | what rate to recommend, for whom, and how the block enters |
+| 13 | Time-to-event and ranking data | germination counted in intervals, and on-farm trials whose datum is an order |
+
+
 - Long-form manual: `inst/manual/REFERENCE_MANUAL.md`
 - Documentation coverage: `inst/manual/DOCUMENTATION_COVERAGE.md`
 - Reference verification audit: `inst/references/REFERENCE_VERIFICATION.md`
 - Verified RIS: `inst/references/agriRank-methods-verified.ris`
 
-All vignette code chunks are executed when the vignettes are built, so every
-figure and table you see was produced by the code shown above it. Building the
-18 vignettes takes about 36 seconds with every optional backend installed.
-Resampling counts inside teaching chunks are deliberately small; increase them
-for scientific analysis.
+## Installing without rebuilding the vignettes
 
-## Validation status
+Every code chunk in the 13 vignettes is executed when the package is built.
+Rebuilding them takes about **three minutes**, and that cost belongs to whoever
+runs `R CMD build`, not to whoever installs the result.
 
-Honest reporting of what has and has not been verified.
+Two installation routes therefore behave very differently.
 
-**Verified.**
+**Recommended: the released tarball.** It already contains the built vignettes
+in `inst/doc`, so installation takes about ten seconds and nothing is
+recompiled:
 
-- `R CMD check --as-cran`: 0 errors, 0 warnings, 2 notes that are local
-  environment artifacts. macbuilder, R 4.6.1 on macOS arm64: **Status OK**, no
-  errors, warnings or notes.
-- Test suite: 486 expectations, 0 failures, 0 skips, with all optional backends
-  installed. Line coverage 86.5%.
-- Numerical identity against the reference backends: Kruskal-Wallis versus
-  `stats::kruskal.test`, Friedman versus `stats::friedman.test`, Conover versus
-  `PMCMRplus` at 1e-12 tolerance, ART versus `ARTool::art`, repeated-measures
-  statistics versus `nparLD`, kernel versus `np`, unimodal isotonic versus
-  `Iso`, umbrella versus `cgam`.
-- Regression module: 185 functional checks, all passing, including the integer
-  decision workflow. The discrete optimum is obtained by evaluation over the
-  admissible support, not by rounding a continuous optimum.
-
-**Not verified yet, and this matters.**
-
-Type-I error calibration is still incomplete. A pilot study of 500 replicates
-per scenario is available under `inst/calibration/`, and it already found that
-the **`permuco` adapters for split-split-plot and strip-plot reject at a rate
-near zero under the null hypothesis**. A test that never rejects under H0 also
-has almost no power under H1. Until this is resolved, do not use
-`method = "permuco"` for confirmatory inference in those two designs; prefer
-ART.
-
-The full calibration requires at least 10000 replicates per scenario:
-
-```
-Rscript inst/calibration/run-calibration.R --R=10000 --cores=8
+```r
+install.packages(
+  "https://github.com/wep69/agriRank/releases/download/v0.14.0/agriRank_0.14.0.tar.gz",
+  repos = NULL, type = "source"
+)
+browseVignettes("agriRank")
 ```
 
-The native incomplete repeated-measures engine keeps its **experimental** label
-until that plan is complete.
+**From the repository source.** `install_github()` builds from the sources,
+where `inst/doc` does not exist, so the vignettes are either skipped or rebuilt
+on your machine:
+
+```r
+# Fast, but installs no vignettes at all.
+remotes::install_github("wep69/agriRank")
+
+# Installs the vignettes, and pays the full rebuild locally.
+remotes::install_github("wep69/agriRank", build_vignettes = TRUE)
+```
+
+Use the release tarball unless you are developing the package.
+
+During development, skip the rebuild while iterating and run the complete check
+only before a release:
+
+```sh
+R CMD check --as-cran --no-build-vignettes agriRank_0.14.0.tar.gz
+```
 
 ## Statistical principles
 
@@ -233,34 +147,6 @@ until that plan is complete.
 5. Prefer effect estimates and uncertainty over letter displays alone.
 6. Treat missingness assumptions as scientific assumptions, not as conclusions from a diagnostic test.
 7. Use sensitivity analysis to assess stability, never to choose the smallest p-value.
-
-## Citation
-
-```r
-citation("agriRank")
-```
-
-Pereira, W. E., & Pereira Martinez, M. H. (2026). *agriRank: Design-Aware
-Rank-Based, Permutation and Robust Inference for Agricultural Experiments*.
-R package version 0.13.0.
-
-## Authors
-
-- Walter Esfrain Pereira, author, creator, copyright holder
-  ([ORCID 0000-0003-1085-0191](https://orcid.org/0000-0003-1085-0191))
-- Magali Haidee Pereira Martinez, author
-  ([ORCID 0009-0009-5419-959X](https://orcid.org/0009-0009-5419-959X))
-
-## License
-
-GPL-3.
-
-## Issues
-
-Bug reports and method requests are welcome at
-<https://github.com/wep69/agriRank/issues>. When reporting a numerical problem,
-please include the output of `sessionInfo()` and a reproducible example built
-with `simulate_agri()` whenever possible.
 
 ## Bibliographic metadata
 
@@ -308,7 +194,115 @@ agri_integer_efficiency(fit_i)
 
 Four complementary strategies are available: `discrete_kernel` for ordered-discrete kernel regression, `unimodal_isotonic` for a single increase-then-decrease response, `umbrella` for constrained umbrella ordering with compatible covariate/block adjustment, and `integer_grid` for projecting a flexible latent regression onto a declared integer decision lattice. Public prediction rejects fractional or out-of-support values once integer support has been declared. Bootstrap uncertainty is summarized as probability mass over admissible integer optima and can be converted to a discrete confidence set.
 
-See `vignettes/v17-integer-support-regression.Rmd`.
+See `vignettes/v07-integer-support-regression.Rmd`.
+
+## Distribution-free uncertainty and model checking
+
+Version 0.14 adds the three tools that turn a fitted curve into a defensible
+recommendation. All are distribution free and all refuse to answer a question
+the data cannot support.
+
+```r
+fit <- agri_np_regression(yield ~ dose, agri_dose, method = "gam", block = block)
+
+# Where is the response still rising, whatever the smoothing?
+sz <- agri_np_sizer(fit)
+agri_np_significant_slope(sz, stability = 0.8)
+plot(sz, type = "map")
+
+# What interval covers the NEXT plot, not the fitted curve?
+cf <- agri_np_conformal(fit, newdata = agri_dose, level = 0.90)
+agri_np_coverage(cf, data = agri_dose)
+
+# Does the model describe the data, without assuming normality?
+agri_np_simdiag(fit, nsim = 300, seed = 1)
+```
+
+`agri_np_sizer()` is the honest alternative to `agri_np_optimum()` whenever the
+fitted maximum lands on the boundary of the tested range, which is what happens
+every time a response plateaus. `agri_np_conformal()` carries a finite-sample
+marginal coverage guarantee under exchangeability alone, and splits by block
+because plots in different blocks are not exchangeable; `scope = "new_block"`
+states the stronger claim for a field or year that was not observed.
+`agri_np_simdiag()` reports simulation-based quantile residuals with three
+checks, of which the location check along the gradient is the one with power
+against a wrong curve shape.
+
+See `vignettes/v11-distribution-free-uncertainty-and-diagnostics.Rmd`, which
+repeats the whole workflow on a real precision-agriculture maize trial from
+`agridat`.
+
+## From a curve to a recommendation
+
+```r
+# A rate is a location, and locations have intervals. This resamples the
+# argmax, not the height of the curve, keeping whole blocks together.
+ot <- agri_np_optimum_test(fit, B = 999, seed = 1)
+ot          # reports p_boundary and refuses to name a rate when none exists
+
+# Comparing cultivars needs curves that may differ in SHAPE. An additive
+# adjustment forces parallel curves, which share one optimum by construction.
+f2 <- agri_np_regression(yield ~ dose + cultivar, d, method = "gam",
+                         block = block, gam_structure = "varying")
+agri_np_optimum_test(f2, by = cultivar, B = 999)
+
+# The median describes the typical plot. The 10th percentile describes the
+# plot a grower meets in a bad year.
+qc <- agri_np_quantile_curves(yield ~ dose, d, block = block)
+plot(qc, type = "fan")
+plot(qc, type = "spread")
+
+# How the block enters decides whether the model can speak about a new field.
+fs <- agri_np_regression(yield ~ dose, d, method = "gam", block = block,
+                         block_effect = "shrunk")
+agri_np_block_effects(fs)
+```
+
+`agri_np_optimum_test()` exists because `agri_np_optimum()` returns a point with
+no uncertainty, and because a curve can be estimated precisely while the
+position of its maximum wanders widely. `agri_np_quantile_curves()` exists
+because a treatment can lift the good plots without lifting the poor ones, and a
+mean curve cannot tell the difference. `block_effect = "shrunk"` is the
+model-based route to a prediction for an unobserved field, and should be
+reported next to `agri_np_conformal(scope = "new_block")`, which is the
+assumption-free route to the same prediction.
+
+See `vignettes/v12-optima-quantiles-and-block-structure.Rmd`.
+
+## When the datum is not a measurement
+
+Two agronomic experiments do not produce a measurement, and forcing them into
+methods built for one reports quantities the data do not contain.
+
+```r
+# Germination is counted inside intervals, and seeds that never germinate are
+# observations censored at the end of the trial, not missing values.
+tte <- agri_np_timetoevent(nSeeds ~ timeBef + timeAf, verbascum,
+                           by = Species, units = Dish)
+tte$summary   # capacity and speed, reported separately
+plot(tte, type = "cdf")
+
+# On-farm trials return an order, not a measurement.
+r <- agri_rankings(position ~ variety, tricot, block = farm, ranked = TRUE)
+r$completeness   # incomplete designs make rank sums non-comparable
+r$pairwise       # which survives, because each comparison is inside one block
+```
+
+`agri_np_timetoevent()` keeps a seed lot's two properties apart, because one
+number cannot carry both: **capacity**, the share that germinates at all, and
+**speed**, the quantiles among those that do. The whole-lot median is `NA` for a
+lot that never reaches half, and that `NA` is the result. Curves are compared by
+permutation at the level of the dish or tray, since seeds sharing a dish are not
+independent.
+
+`agri_rankings()` shows the within-block ranks that Friedman and Conover already
+use internally, and bridges to tricot data. Where the design is incomplete it
+withholds rank sums, because an item allocated to favourable farms collects
+flattering ranks for the wrong reason, and keeps the pairwise record, which is
+made inside blocks. Plackett-Luce worth is offered as a labelled model-based
+companion when that package is installed.
+
+See `vignettes/v13-time-to-event-and-ranking-data.Rmd`.
 
 ### Conover comparisons
 

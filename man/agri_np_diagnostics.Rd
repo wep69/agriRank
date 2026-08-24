@@ -1,12 +1,20 @@
 \name{agri_np_diagnostics}
 \alias{agri_np_diagnostics}
 \title{Diagnostics for nonparametric regression}
-\usage{agri_np_diagnostics(object, cv = FALSE, kfold = 5L, seed = 1)}
+\usage{agri_np_diagnostics(object, cv = FALSE, kfold = 5L, seed = 1,
+                    cv_scope = c("within_block", "new_block"))}
 \arguments{
   \item{object}{An \code{agri_np_reg_fit}.}
   \item{cv}{If \code{TRUE}, the cross-validated coefficient of determination is computed, which requires refitting the engine \code{kfold} times.}
   \item{kfold}{Number of folds used when \code{cv = TRUE}.}
   \item{seed}{Random seed for the fold assignment.}
+  \item{cv_scope}{With a declared block, which question \code{cv_r2} answers.
+    \code{"within_block"} stratifies the folds and reports the error of
+    predicting another plot in a block already observed; \code{"new_block"}
+    holds out whole blocks and reports the error of predicting a block never
+    seen. Identical in meaning and in wording to the argument of
+    \code{\link{agri_np_compare}}, so that the two cross-validation routines of
+    the package answer the same question.}
 }
 \description{Summarizes residual behavior, predictive error, explained variation, missing responses, and engine-specific smoothing information.}
 \details{The diagnostics are descriptive. They should not be used as an automatic significance-driven model-selection rule.

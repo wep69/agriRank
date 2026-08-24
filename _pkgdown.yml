@@ -23,7 +23,39 @@ reference:
   contents: [agri_np_regression, agri_np_predict, agri_np_plot,
              agri_np_derivative, agri_np_optimum, agri_np_bootstrap,
              agri_np_compare, agri_np_diagnostics, agri_np_significance,
-             agri_np_specification, agri_np_interactive]
+             agri_np_specification, agri_np_interactive,
+             agri_np_extractors, agri_np_curves, agri_np_regression_plots,
+             agri_np_forest, agri_np_levels]
+
+- title: Distribution-free uncertainty and model checking
+  desc: >
+    Where the response is really changing, what interval covers the next plot,
+    and whether the fit describes the data, all without a distributional
+    assumption.
+  contents: [agri_np_sizer, agri_np_conformal, agri_np_simdiag,
+             agri_np_effect_test, agri_np_shape_test]
+
+- title: Data the cross-sectional module cannot hold
+  desc: >
+    Plots measured more than once, several responses to the same gradient, and
+    plots that were lost.
+  contents: [agri_np_longitudinal, agri_np_multiresponse, agri_np_impute]
+
+- title: From a curve to a recommendation
+  desc: >
+    What rate to recommend and with what interval, whether an optimum exists at
+    all, what the poor plots do rather than the average one, and how the
+    declared block enters the model.
+  contents: [agri_np_optimum_test, agri_np_optimum_economic,
+             agri_np_optimum_surface, agri_np_quantile_curves,
+             agri_np_block_effects]
+
+- title: When the datum is not a measurement
+  desc: >
+    Germination and emergence, counted inside intervals and censored at the end
+    of the trial, and on-farm trials in which the datum is an order rather than
+    a measurement.
+  contents: [agri_np_timetoevent, agri_rankings]
 
 - title: Integer decision support
   desc: >
@@ -43,23 +75,36 @@ reference:
 
 - title: Graphics, tables and reports
   contents: [agri_plot, agri_interactive, agri_table, agri_dashboard,
-             agri_report, export_results, agri_methods]
+             agri_report, export_results, agri_methods,
+             agri_graphics, agri_format_ci, agri_broom]
 
 - title: Example data
   desc: Shared data sets used across the examples and vignettes.
   contents: [agri_dose, agri_density, agri_surface]
 
 articles:
-- title: Getting started
-  contents: [v00-overview, v01-design-validation]
 - title: Designs
-  contents: [v02-crd-oneway, v03-rcbd, v04-factorial, v06-splitplot,
-             v07-repeated-measures, v08-missing-repeated,
-             v10-multivariate-multienv]
-- title: Estimation and reporting
-  contents: [v05-effects-contrasts, v09-trend-ancova-power,
-             v11-batch-sensitivity, v12-graphics, v13-reporting]
+  contents:
+  - v01-design-crd-rcbd
+  - v03-hierarchical-designs-trends-ancova-power
+  - v04-repeated-measures-and-missing-data
+  - v05-multivariate-multienvironment-batch-sensitivity
+- title: Effects and comparisons
+  contents:
+  - v02-effects-conover-factorials
 - title: Regression
-  contents: [v16-nonparametric-regression, v17-integer-support-regression]
-- title: Background
-  contents: [v14-theory-state-of-art, v15-integrated-agronomic-case]
+  contents:
+  - v06-nonparametric-regression
+  - v07-integer-support-regression
+  - v11-distribution-free-uncertainty-and-diagnostics
+  - v12-optima-quantiles-and-block-structure
+  - v14-from-curve-to-decision
+  - v15-testing-assumptions-and-difficult-data
+- title: Data that are not measurements
+  contents:
+  - v13-time-to-event-and-ranking-data
+- title: Reporting and background
+  contents:
+  - v08-graphics-reporting-reproducibility
+  - v09-integrated-agronomic-case-study
+  - v10-theory-state-of-art-common-mistakes

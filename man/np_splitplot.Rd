@@ -20,20 +20,13 @@ np_splitplot(formula, data, block, whole_plot, subplot, method = "auto", ...)
 Pauly M, Brunner E, Konietschke F (2015), DOI: 10.1111/rssb.12073. Brunner E, Konietschke F, Pauly M, Puri ML (2017), DOI: 10.1111/rssb.12222. Konietschke F, Brunner E (2023), DOI: 10.32614/RJ-2023-029. See the package vignettes and `inst/references/agriRank-methods-verified.ris` for engine-specific verified references.
 }
 \examples{
-# Example 1
-x<-simulate_agri("split_plot");
-if (requireNamespace("permuco", quietly = TRUE)) np_splitplot(yield ~ irrigation * 
-    cultivar, x, block, irrigation, cultivar, "permuco")
+# Example 1: the automatic method now selects ART for split-plots
+x <- simulate_agri("split_plot")
+np_splitplot(yield ~ irrigation * cultivar, x, block, irrigation, cultivar)
 
-# Example 2
-x<-simulate_agri("split_plot");
+# Example 2: explicitly request ART
+x <- simulate_agri("split_plot")
 if (requireNamespace("ARTool", quietly = TRUE)) np_splitplot(yield ~ irrigation * 
     cultivar, x, block, irrigation, cultivar, "ART")
-
-# Example 3
-x<-simulate_agri("split_plot");
-if (requireNamespace("permuco", quietly = TRUE) || requireNamespace("ARTool", 
-    quietly = TRUE)) np_splitplot(yield ~ irrigation * cultivar, x, block, 
-    irrigation, cultivar)
 }
 \seealso{\code{agri_design}, \code{agri_rank}, \code{agri_effects}, \code{agri_report}}

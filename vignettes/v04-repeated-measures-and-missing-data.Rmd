@@ -1,0 +1,722 @@
+---
+title: "Repeated Measures and Missing Longitudinal Data"
+author: "agriRank Development Team"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Repeated Measures and Missing Longitudinal Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(agriRank)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 6.8,
+  fig.height = 4.4,
+  dpi = 130
+)
+```
+
+**Repeated measures vignette**
+**Package:** `agriRank`
+**Version targeted:** `0.14.0`
+**Owns:** measurements taken more than once on the same unit, and what to do
+when some of them are absent.
+
+---
+
+# 1. Why this vignette exists
+
+Measuring the same plant four times does not give four independent
+observations. It gives one plant, observed four times, and the difference
+between those two statements is the whole content of this vignette.
+
+The dependence is not a nuisance to be removed. It is information: a plant that
+starts tall tends to stay tall, and a trajectory is a richer datum than an
+endpoint. But it must be represented, and an analysis that treats the four
+measurements as four replicates inflates the apparent replication fourfold, with
+every interval correspondingly too narrow.
+
+> **Declare the subject. Analyse trajectories, not endpoints. When values are
+> missing, describe the pattern before modelling it, and report the assumption
+> as part of the methods.**
+
+## 1.1 The second half of the vignette
+
+Longitudinal agronomic data are almost never complete. A plant dies, a plot is
+flooded, a measurement day is rained out, a leaf is lost to a herbivore.
+
+Missingness is not a technical inconvenience to be imputed away. **Why** a value
+is absent determines which analyses remain valid, and that question is
+scientific, not computational.
+
+---
+
+# 2. Learning objectives
+
+After working through this vignette, the reader should be able to:
+
+1. distinguish a repeated-measures design from a design with more replicates;
+2. declare `subject` and `within` correctly, and explain what each asserts;
+3. explain why an omnibus repeated-measures test answers a question about
+   trajectories rather than endpoints;
+4. choose among the available backends on structural grounds;
+5. read a missing-data report and say what it does and does not establish;
+6. distinguish MCAR, MAR and MNAR, and name a plausible agronomic mechanism for
+   each;
+7. explain why the choice among them cannot be made from the data alone;
+8. run a missing-data sensitivity analysis and interpret its output;
+9. recognise the experimental label on the native wild-bootstrap engine and say
+   what it means for a manuscript;
+10. recognise the deliberate refusal of an additional block stratum in the
+    repeated-measures workflow, and why it is preferable to a silent
+    approximation.
+
+---
+
+# 3. The repeated-measures module in one map
+
+| Function | What it does | Requires |
+|---|---|---|
+| `agri_design(design = "repeated")` | declare subject and within factors | `subject`, `within` |
+| `np_repeated()` | the one-step wrapper | the same |
+| `agri_repeated()` | fit with an explicit backend | a declared design |
+| `agri_missing_report()` | describe the missingness pattern | a declared design |
+| `agri_missing_sensitivity()` | does the conclusion survive the assumption | a declared design |
+| `incomplete_wild_rank_test()` | the native experimental engine | a declared design |
+| `agri_plot(type = "missing")` | see where the gaps are | a fitted object |
+
+## 3.1 Which backend, and when
+
+```{r backend-map}
+data.frame(
+  backend = c("nparLD", "MANOVA.RM", "native_wild"),
+  handles_missing = c("no", "no", "yes"),
+  status = c("established", "established", "EXPERIMENTAL"),
+  use_when = c("complete data, classical rank ATS",
+               "complete data, resampling WTS and MATS",
+               "incomplete data, and only after reading section 12")
+)
+```
+
+---
+
+# Part I. Complete repeated measures
+
+# 4. Declaring the design
+
+```{r rm-design}
+rm <- simulate_agri(
+  "repeated",
+  seed = 701,
+  n    = 10
+)
+str(rm)
+
+des_rm <- agri_design(
+  height ~ treatment * time,
+  rm,
+  design  = "repeated",
+  subject = subject,
+  within  = time
+)
+des_rm
+```
+
+## 4.1 What `subject` asserts
+
+`subject` names the unit that was measured repeatedly. Declaring it asserts:
+
+1. that measurements sharing a subject are **not** independent;
+2. that the subject, not the measurement, is the replicate;
+3. and therefore that the treatment comparison has as many independent units as
+   there are subjects, not as there are rows.
+
+## 4.2 What `within` asserts
+
+`within` names the factor that varies **inside** a subject. Time is the usual
+one, but a within factor can also be a leaf position, a soil depth, or a
+sampling date.
+
+The distinction matters because a between-subject factor and a within-subject
+factor are tested with different precision, for the same reason a whole-plot and
+a subplot factor are in a split-plot. A within-subject comparison is made inside
+the subject and is therefore free of between-subject variation.
+
+| Factor | Varies | Compared | Typically |
+|---|---|---|---|
+| `treatment` | between subjects | across subjects | less precise |
+| `time` | within subjects | inside each subject | more precise |
+| `treatment:time` | within subjects | inside each subject | more precise |
+
+## 4.3 The declaration cannot be inferred
+
+```{r rm-refused, error = TRUE}
+np_repeated(height ~ treatment * time, rm)
+```
+
+Nothing in the data file distinguishes forty independent plants from ten plants
+measured four times. The subject column exists in both cases; only the
+experimenter knows which it is.
+
+## 4.4 Interpretation
+
+Write down how many independent subjects the experiment has, before analysing
+anything. If that number is small, the trajectory analysis will be imprecise
+whatever the total row count suggests.
+
+---
+
+# 5. Fitting a complete repeated-measures analysis
+
+```{r rm-fit}
+fit_rm <- agri_repeated(
+  des_rm,
+  backend = "auto",
+  B       = 999,
+  iter    = 999,
+  seed    = 701
+)
+
+fit_rm
+```
+
+## 5.1 The three effects, and what each asks
+
+| Effect | Question |
+|---|---|
+| `treatment` | averaged over time, do the treatments differ |
+| `time` | averaged over treatments, does the response change through the cycle |
+| `treatment:time` | do the treatments follow different trajectories |
+
+The interaction is read first, as always. If present, the main effects are
+averages over conditions in which the behaviour differs.
+
+## 5.2 A repeated-measures analysis is about trajectories
+
+This is worth stating plainly, because it is the commonest misuse.
+
+A repeated-measures analysis answers questions about the **shape of the response
+over time**. If the scientific question concerns the final value, the final value
+should be analysed as a single response in its own design, which is simpler and
+usually more powerful.
+
+| The question is | Analyse |
+|---|---|
+| does the treatment change final yield | the final measurement, as an RCBD |
+| does the treatment change how fast plants grow | the trajectory, as repeated measures |
+| does the treatment delay senescence | the trajectory |
+| does the treatment change the maximum reached | the maximum per subject, as an RCBD |
+
+Running a repeated-measures analysis to answer an endpoint question spends
+degrees of freedom on time effects nobody asked about.
+
+## 5.3 The figure
+
+```{r rm-plot, fig.cap = "Trajectories by treatment. Each line is a treatment mean over subjects; the question is whether the lines are parallel."}
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  print(
+    ggplot2::ggplot(rm, ggplot2::aes(x = time, y = height,
+                                     colour = treatment, group = treatment)) +
+      ggplot2::stat_summary(fun = mean, geom = "line", linewidth = 0.9) +
+      ggplot2::stat_summary(fun = mean, geom = "point", size = 2) +
+      ggplot2::labs(x = "Occasion", y = "Height", colour = "Treatment") +
+      agri_theme()
+  )
+}
+```
+
+---
+
+# 6. Choosing a backend
+
+## 6.1 nparLD
+
+```{r nparld}
+if (requireNamespace("nparLD", quietly = TRUE)) {
+  fit_nparld <- agri_repeated(des_rm, backend = "nparLD", seed = 701)
+  print(fit_nparld)
+}
+```
+
+`nparLD` implements the classical rank-based analysis of longitudinal data. It
+computes relative treatment effects and an ANOVA-type statistic, and it is the
+established reference for complete designs of this shape.
+
+## 6.2 MANOVA.RM
+
+```{r manovarm}
+if (requireNamespace("MANOVA.RM", quietly = TRUE)) {
+  fit_mrm <- agri_repeated(des_rm, backend = "MANOVA.RM", iter = 999,
+                           seed = 701)
+  print(fit_mrm)
+}
+```
+
+`MANOVA.RM` provides a Wald-type statistic with a resampling reference
+distribution, and a modified ANOVA-type statistic. The resampling matters: the
+Wald-type statistic is known to be liberal in small samples, and the resampled
+version corrects it.
+
+## 6.3 Which to use
+
+| Situation | Prefer |
+|---|---|
+| complete data, one within factor | `nparLD` |
+| complete data, small samples | `MANOVA.RM` with resampling |
+| complete data, several responses | `agri_multivariate()`, see the multivariate vignette |
+| incomplete data | `native_wild`, having read section 12 |
+
+## 6.4 Comparing them is legitimate; choosing on p is not
+
+Running two backends and reporting the agreement is a sensitivity analysis.
+Running two and reporting the one that reached significance is a selection
+procedure whose properties are unknown. The rule is the same throughout this
+package.
+
+---
+
+# Part II. Missing longitudinal data
+
+# 7. Describe before modelling
+
+```{r missing-data}
+rm_miss <- simulate_agri(
+  "repeated_missing",
+  seed         = 801,
+  n            = 12,
+  missing_rate = 0.15
+)
+
+des_miss <- agri_design(
+  height ~ treatment * time,
+  rm_miss,
+  design  = "repeated",
+  subject = subject,
+  within  = time
+)
+
+miss_report <- agri_missing_report(des_miss)
+miss_report
+```
+
+## 7.1 Three separate questions
+
+A single overall percentage answers none of these well:
+
+| Question | Why it matters |
+|---|---|
+| how much is missing | determines how much power remains |
+| where is it concentrated | one treatment losing plants is a finding, not a nuisance |
+| does the pattern relate to the design | determines which assumptions are tenable |
+
+## 7.2 The figure
+
+```{r missing-plot, fig.cap = "Where the gaps are. Concentration in one treatment or at one occasion is the pattern to look for."}
+agri_plot(
+  agri_rank(
+    des_miss,
+    method             = "incomplete_wild",
+    B                  = 299,
+    seed               = 801,
+    missing_assumption = "MCAR"
+  ),
+  type = "missing"
+)
+```
+
+## 7.3 What the report establishes, and what it cannot
+
+The report describes the **observed** pattern. It cannot establish why values are
+absent, because the reason involves the values that were not recorded.
+
+That limitation is fundamental rather than technical, and it is the subject of
+the next section.
+
+---
+
+# 8. MCAR, MAR, MNAR
+
+## 8.1 The three mechanisms
+
+| Assumption | Means | An agronomic mechanism |
+|---|---|---|
+| **MCAR** | missingness is unrelated to anything | a technician dropped a tray; a measurement day was rained out for the whole trial |
+| **MAR** | missingness depends on **observed** values | plants below a height threshold at week 2 were not measured at week 4, and week 2 is recorded |
+| **MNAR** | missingness depends on the **unobserved** value itself | plants died because they were about to be small, and the size they would have reached is unrecorded |
+
+## 8.2 Why the choice cannot be made from the data
+
+MAR and MNAR are **not distinguishable** from the observed data. Both produce the
+same observed pattern; they differ in what happened to the values you do not
+have.
+
+This is not a limitation of any particular method. No amount of computation
+recovers information that was never recorded, and any procedure claiming to
+choose among them from the data alone is smuggling in an assumption.
+
+## 8.3 What follows
+
+The assumption is a **scientific** statement about the mechanism, made from
+knowledge of the experiment, and it belongs in the methods section beside the
+design.
+
+| If the mechanism was | State |
+|---|---|
+| an equipment failure or a rained-out day | MCAR, and say why |
+| a protocol that skipped plants based on a recorded earlier value | MAR, and name the value |
+| plant death related to the treatment | MNAR, and say the analysis is a sensitivity analysis rather than an estimate |
+
+## 8.4 The most consequential case in agronomy
+
+Plant death is frequently **MNAR**, and it is frequently treated as MCAR.
+
+If a treatment kills the weakest plants, the survivors in that treatment are a
+selected subset, and any analysis of survivors overstates the treatment's
+performance. The missingness is then not a nuisance at all: it is one of the main
+results, and it should be analysed as a survival outcome in its own right.
+
+## 8.5 Interpretation
+
+Report the assumption, the reason for it, and a sensitivity analysis under an
+alternative. An analysis that does not state its missingness assumption has made
+one anyway.
+
+---
+
+# 9. The native incomplete engine
+
+```{r wild-fit}
+fit_miss <- incomplete_wild_rank_test(
+  des_miss,
+  B                  = 1999,
+  seed               = 801,
+  statistic          = "ATS",
+  missing_assumption = "MCAR"
+)
+
+fit_miss
+```
+
+## 9.1 What it does
+
+The engine implements rank-based quadratic-form inference for incompletely
+observed repeated measurements, with a wild-bootstrap reference distribution. It
+uses the observed cells directly rather than imputing the absent ones, which is
+what makes it applicable when a subject has some but not all occasions.
+
+Note that `missing_assumption` is a **required** argument with no silent default
+behaviour. The engine will not proceed without an explicit statement of what is
+being assumed, which is the point.
+
+## 9.2 The statistic
+
+| `statistic` | Is | Behaves |
+|---|---|---|
+| `"ATS"` | ANOVA-type statistic | conservative, robust in small samples |
+| `"WTS"` | Wald-type statistic | liberal in small samples unless resampled |
+
+For agronomic sample sizes, `"ATS"` with resampling is the safer default.
+
+---
+
+# 10. Sensitivity to the assumption
+
+```{r missing-sens}
+sens_miss <- agri_missing_sensitivity(
+  des_miss,
+  B         = 999,
+  seed      = 802,
+  statistic = "ATS"
+)
+
+sens_miss
+```
+
+## 10.1 This is not imputation
+
+An imputation procedure fills the gaps and then analyses the completed data as
+if it were observed. A sensitivity analysis does something different and more
+honest: it asks whether the conclusion **changes** under different assumptions
+about why values are absent.
+
+| | Imputation | Sensitivity |
+|---|---|---|
+| Produces | one completed dataset | several analyses |
+| Claims | the filled values are plausible | nothing about the filled values |
+| Answers | what is the estimate | is the estimate robust to the assumption |
+| Fails when | the mechanism is MNAR | never, but it may report instability |
+
+## 10.2 How to read the output
+
+| Outcome | Reading |
+|---|---|
+| conclusions agree across assumptions | the result does not rest on the missingness assumption; say so in one sentence |
+| conclusions differ | **that is the finding**; report all of them and state which was pre-specified |
+
+The second case is uncomfortable and it is where most of the value lies. A
+conclusion that survives only under MCAR, in an experiment where plants died, is
+not a conclusion.
+
+## 10.3 Interpretation
+
+Report the primary assumption, the sensitivity range, and the mechanism you
+believe operated. Those three together are what a reviewer needs.
+
+---
+
+# Part III. Two deliberate refusals
+
+# 11. An additional block stratum is refused
+
+```{r block-refused, error = TRUE}
+blocked_rm <- rm_miss
+blocked_rm$block <- factor(rep(1:4, length.out = nrow(blocked_rm)))
+
+blocked_des <- agri_design(
+  height ~ treatment * time,
+  blocked_rm,
+  design  = "repeated",
+  subject = subject,
+  within  = time,
+  block   = block
+)
+
+agri_rank(blocked_des, method = "auto")
+```
+
+## 11.1 Why the refusal is preferable
+
+A repeated-measures experiment laid out in blocks has **three** levels of
+structure: the block, the subject inside the block, and the occasion inside the
+subject. The rank-based engines available here represent two of them.
+
+Two responses are possible. Accept the block and treat it approximately, or
+refuse and say so. The package refuses, for a specific reason: an approximation
+that is not validated would produce a p-value with unknown calibration, and the
+analyst would have no way to detect it.
+
+## 11.2 What to do instead
+
+| Option | When it is defensible |
+|---|---|
+| drop the block from the declaration | when between-block variation is demonstrably small; report the decision |
+| analyse each block separately and combine | when blocks are few and interpretable |
+| analyse a derived endpoint in the full design | when the scientific question is about an endpoint anyway |
+| use a mixed model outside this package | when the subject-and-block structure is the scientific object |
+
+The last option is not a defeat. This package is deliberately narrow, and a
+three-level longitudinal structure is a legitimate place to leave it.
+
+---
+
+# 12. The experimental label
+
+The native incomplete repeated-measures engine is labelled **experimental** in
+the package documentation, and it keeps that label until the validation plan in
+`VALIDATION_PLAN.md` is complete.
+
+## 12.1 What remains to be verified
+
+```{r validation-items}
+data.frame(
+  item = c("intermediate rank quantities", "relative effects",
+           "covariance matrices", "WTS/ATS/MATS",
+           "frozen wild-bootstrap sequences", "Type-I error",
+           "power", "missingness rates", "ordinal data", "ties",
+           "heteroscedasticity", "row and label invariance",
+           "comparison with reference code"),
+  status = "pending"
+)
+```
+
+## 12.2 What the label means in practice
+
+Running without error is **not** evidence of correct Type-I error. An engine can
+produce plausible p-values that are systematically too small or too large, and
+nothing in the output reveals it.
+
+For a manuscript, the defensible positions are:
+
+1. use an established backend on complete data, and report the missingness
+   separately;
+2. or use the native engine and describe it as experimental, with the
+   sensitivity analysis of section 10 as the primary evidence.
+
+What is not defensible is using it without the label.
+
+---
+
+# Part IV. Common mistakes, and the function that prevents each
+
+# 13. Counting measurements as replicates
+
+**The mistake.** Ten plants measured four times, analysed as forty observations.
+
+**Why it is wrong.** The experiment has ten independent units. Every interval is
+too narrow by roughly a factor of two.
+
+**What prevents it.** `agri_design(design = "repeated", subject =)` records the
+unit, and the analysis uses it. See section 4.
+
+---
+
+# 14. Running a repeated-measures analysis for an endpoint question
+
+**The mistake.** Analysing four occasions when the question concerns final
+yield.
+
+**Why it is wrong.** It spends degrees of freedom on time effects nobody asked
+about, and the answer to the endpoint question is buried in an interaction.
+
+**What prevents it.** Nothing automatic. See the decision table in section 5.2.
+
+---
+
+# 15. Analysing only the survivors
+
+**The mistake.** Dropping subjects with any missing occasion, and analysing the
+complete cases.
+
+**Why it is wrong.** If death is related to treatment, the survivors are a
+selected subset, and the comparison is biased in favour of the treatment that
+killed more. See section 8.4.
+
+**What prevents it.** `agri_missing_report()` shows where the losses are
+concentrated, and the incomplete engine uses the observed cells rather than
+discarding subjects.
+
+---
+
+# 16. Not stating the missingness assumption
+
+**The mistake.** Reporting an analysis of incomplete data without saying what was
+assumed.
+
+**Why it is wrong.** An assumption was made regardless. Leaving it unstated moves
+it from the methods section, where a reader can disagree with it, into the code,
+where they cannot.
+
+**What prevents it.** `incomplete_wild_rank_test()` requires
+`missing_assumption` explicitly. See section 9.1.
+
+---
+
+# 17. Treating a sensitivity analysis as a robustness ritual
+
+**The mistake.** Running `agri_missing_sensitivity()`, observing that it ran, and
+reporting the primary analysis unchanged.
+
+**Why it is wrong.** The output is the point. If the conclusions differ across
+assumptions, that difference is a result.
+
+**What prevents it.** Reading section 10.2.
+
+---
+
+# 18. Using the experimental engine without its label
+
+**The mistake.** Reporting the native wild-bootstrap engine as an established
+method.
+
+**Why it is wrong.** Its calibration study is incomplete. See section 12.
+
+**What prevents it.** The label is in the function documentation, in
+`VALIDATION_PLAN.md`, and here.
+
+---
+
+# Part V. Compact selection guide
+
+# 19. Choose by the completeness and the question
+
+| Situation | Use |
+|---|---|
+| complete data, trajectory question | `agri_repeated(backend = "nparLD")` |
+| complete data, small samples | `agri_repeated(backend = "MANOVA.RM")` |
+| complete data, endpoint question | analyse the endpoint with `np_rcbd()` |
+| incomplete data | `agri_missing_report()`, then `incomplete_wild_rank_test()` |
+| incomplete data, always | `agri_missing_sensitivity()` as well |
+| repeated measures inside blocks | see section 11.2 |
+| death related to treatment | analyse survival too, see *Time-to-Event and Ranking Data* |
+
+---
+
+# Part VI. Minimum reporting checklist
+
+# 20. What the methods section must contain
+
+1. the number of subjects, and the number of occasions per subject;
+2. the subject and the within factor, named;
+3. that the subject is the experimental unit for the between-subject factor;
+4. the backend, and why it suits the completeness of the data;
+5. the number of resampling iterations and the seed;
+6. the amount of missingness and where it is concentrated;
+7. the missingness assumption, and the mechanism believed to have operated;
+8. the sensitivity analysis and its outcome;
+9. if the native engine was used, its experimental status;
+10. the package version.
+
+# 21. A worked methods paragraph
+
+> Plant height was measured on 12 plants per treatment at four occasions.
+> The subject was the individual plant and the within-subject factor was
+> occasion; the design was declared and validated with `agri_design()` from
+> agriRank 0.14.0. Of the 144 scheduled measurements, 15% were absent,
+> distributed across treatments without evident concentration
+> (`agri_missing_report()`). Because the losses followed a rained-out
+> measurement day affecting the whole trial, missingness was taken as completely
+> at random. Inference used the native rank-based wild-bootstrap engine
+> (`incomplete_wild_rank_test()`, ANOVA-type statistic, 1999 resamples, seed
+> 801), which is labelled experimental in the package documentation. A
+> sensitivity analysis across missingness assumptions
+> (`agri_missing_sensitivity()`, 999 resamples) did not alter the conclusions and
+> is reported in Table S3.
+
+---
+
+# 22. Where to go next
+
+| If you now want | Read |
+|---|---|
+| the design declaration in detail | *Design Foundations, CRD, and RCBD* |
+| comparisons after the omnibus test | *Effects, Conover, Contrasts, and Factorial Inference* |
+| several responses on the same subjects | *Multivariate, Multi-Environment, Batch, and Sensitivity Workflows* |
+| plant death as an outcome in its own right | *Time-to-Event and Ranking Data* |
+| the whole workflow on one experiment | *Integrated Agronomic Case Study* |
+
+---
+
+# Part VII. Glossary
+
+# 23. Terms used in this vignette
+
+| Term | Meaning here |
+|---|---|
+| **subject** | the unit measured repeatedly; the replicate for a between-subject factor |
+| **occasion** | one measurement time on a subject |
+| **within factor** | a factor varying inside a subject |
+| **between factor** | a factor varying across subjects |
+| **trajectory** | the sequence of measurements on one subject |
+| **MCAR** | missing completely at random, unrelated to anything |
+| **MAR** | missing at random, related only to observed values |
+| **MNAR** | missing not at random, related to the unobserved value itself |
+| **complete case** | a subject with no missing occasion |
+| **ATS** | ANOVA-type statistic, conservative in small samples |
+| **WTS** | Wald-type statistic, liberal in small samples unless resampled |
+| **wild bootstrap** | a resampling scheme that multiplies residuals by random signs |
+| **sensitivity analysis** | repeating an analysis under alternative assumptions |
+
+---
+
+# Selected methodological references
+
+- Amro, L., Konietschke, F., and Pauly, M. (2024). Multiplication-combination tests for incomplete paired data. *Statistics in Medicine*.
+- Brunner, E., Bathke, A. C., and Konietschke, F. (2018). *Rank and Pseudo-Rank Procedures for Independent Observations in Factorial Designs*. Springer.
+- Friedrich, S., Konietschke, F., and Pauly, M. (2019). Resampling-based analysis of multivariate data and repeated measures designs with the R package MANOVA.RM. *The R Journal*, 11(2), 380-400.
+- Little, R. J. A., and Rubin, D. B. (2019). *Statistical Analysis with Missing Data*, 3rd edition. Wiley.
+- Noguchi, K., Gel, Y. R., Brunner, E., and Konietschke, F. (2012). nparLD: An R software package for the nonparametric analysis of longitudinal data in factorial experiments. *Journal of Statistical Software*, 50(12), 1-23. https://doi.org/10.18637/jss.v050.i12
+
+The package also ships a verified RIS library under `inst/references/`.
