@@ -1,7 +1,7 @@
 # agriRank, documento de continuidade
 
-**Última atualização:** 14 de agosto de 2026
-**Versão do pacote:** 0.13.0
+**Última atualização:** 24 de agosto de 2026
+**Versão do pacote:** 0.14.0
 **Repositório:** https://github.com/wep69/agriRank (público)
 
 Este documento existe para que qualquer pessoa, inclusive você mesmo daqui a
@@ -324,8 +324,11 @@ também entrou no pacote como **vinheta em destaque**
 `vignettes/v18-integrated-tutorial.Rmd` (VignetteIndexEntry "Integrated
 agriRank Tutorial"), com os callouts convertidos para blockquotes e os
 exercícios para `<details>` (compatíveis com rmarkdown) e o fluxo final em
-lista em vez de mermaid. A vinheta é reconstruída pelo `R CMD check` e usa
-`B = 1000`, o que eleva o check para cerca de 20 minutos.
+lista em vez de mermaid. **B na vinheta:** usa `B_tut <- 199` centralizado
+(com a nota padrão "B >= 999 para inferência final") para não encarecer o
+check do CRAN nem a instalação a partir da fonte; os tutoriais standalone
+mantêm `B = 1000`. Com isso a vinheta reconstrói em ~18 s. Commit
+`0383918`.
 
 ## 4. Ferramentas
 
@@ -356,8 +359,9 @@ silêncio e deixa um pacote misturado (funções novas ao lado de internas
 antigas). O sintoma é uma função existente com assinatura antiga mesmo com o
 código-fonte novo. Instale sempre **como Administrador** (terminal elevado ou
 RStudio elevado). Há um script pronto: `D:\agriRank-validation\install_admin.bat`
-(remove e reinstala elevado, log em `logs\install_admin.log`). Para validações
-rápidas sem elevar, instale numa biblioteca isolada:
+(remove, faz `R CMD build` com vinhetas via pandoc do Quarto, e instala o
+tarball; log em `logs\install_admin.log`). Para validações rápidas sem elevar,
+instale numa biblioteca isolada:
 `R.exe CMD INSTALL --library=D:\agriRank-validation\lib-tutorial <pkg>` e
 aponte `R_LIBS` para ela.
 
