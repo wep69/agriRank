@@ -1199,14 +1199,14 @@ carry it is refused, exactly as in Part I:</p>
 <span><span class="co">#&gt; Warning in rq.fit.br(x, y, tau = tau, ...): Solution may be nonunique</span></span>
 <span><span class="co">#&gt; Warning in rq.fit.br(x, y, tau = tau, ...): Solution may be nonunique</span></span>
 <span><span class="va">cmp_eng</span></span>
-<span><span class="co">#&gt;     method  n     RMSE       MAE     MedAE       bias  Spearman selected_metric</span></span>
-<span><span class="co">#&gt; 1   kernel 60 1.194009 0.9657748 0.8409605 0.00639163 0.7494928        1.194009</span></span>
-<span><span class="co">#&gt; 2 quantile 60 1.202536 0.9424161 0.7556347 0.19524875 0.7937196        1.202536</span></span>
-<span><span class="co">#&gt; 3      gam 60 1.251441 1.0110466 0.9423772 0.02306380 0.7676147        1.251441</span></span>
-<span><span class="co">#&gt;   failures</span></span>
-<span><span class="co">#&gt; 1        0</span></span>
-<span><span class="co">#&gt; 2        0</span></span>
-<span><span class="co">#&gt; 3        0</span></span></code></pre></div>
+<span><span class="co">#&gt;     method  n     RMSE       MAE     MedAE        bias  Spearman</span></span>
+<span><span class="co">#&gt; 1   kernel 60 1.194009 0.9657749 0.8409606 0.006391614 0.7494928</span></span>
+<span><span class="co">#&gt; 2 quantile 60 1.202536 0.9424161 0.7556347 0.195248748 0.7937196</span></span>
+<span><span class="co">#&gt; 3      gam 60 1.251441 1.0110466 0.9423772 0.023063802 0.7676147</span></span>
+<span><span class="co">#&gt;   selected_metric failures</span></span>
+<span><span class="co">#&gt; 1        1.194009        0</span></span>
+<span><span class="co">#&gt; 2        1.202536        0</span></span>
+<span><span class="co">#&gt; 3        1.251441        0</span></span></code></pre></div>
 <p>Note the <code>failures</code> column. An engine that cannot carry
 the declared block is recorded as a failure rather than silently dropped
 from the comparison, so the table cannot mislead by omission.</p>
@@ -1484,7 +1484,7 @@ experiment.</p>
 <span>                              gam_structure <span class="op">=</span> <span class="st">"varying"</span><span class="op">)</span></span>
 <span><span class="va">fit_var</span><span class="op">$</span><span class="va">formula_used</span></span>
 <span><span class="co">#&gt; biomass ~ cultivar + s(salinity, by = cultivar, k = 3) + block</span></span>
-<span><span class="co">#&gt; &lt;environment: 0x55cb99e59708&gt;</span></span></code></pre></div>
+<span><span class="co">#&gt; &lt;environment: 0x55c480ccb998&gt;</span></span></code></pre></div>
 <p>One smooth of salinity is now fitted per cultivar:</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ot2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/agri_np_optimum_test.html">agri_np_optimum_test</a></span><span class="op">(</span><span class="va">fit_var</span>, by <span class="op">=</span> <span class="va">cultivar</span>, objective <span class="op">=</span> <span class="st">"min"</span>,</span>
@@ -3790,8 +3790,8 @@ not a result; it is a summary of one realisation of the experiment.</p>
 </h3>
 <div class="sourceCode" id="cb74"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/agri_np_diagnostics.html">agri_np_diagnostics</a></span><span class="op">(</span><span class="va">npfit</span>, cv <span class="op">=</span> <span class="cn">TRUE</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">metrics</span></span>
-<span><span class="co">#&gt;    n     RMSE       MAE     MedAE       bias  Spearman</span></span>
-<span><span class="co">#&gt; 1 60 1.084035 0.8833927 0.8806807 1.5099e-15 0.8214748</span></span></code></pre></div>
+<span><span class="co">#&gt;    n     RMSE       MAE     MedAE         bias  Spearman</span></span>
+<span><span class="co">#&gt; 1 60 1.084035 0.8833927 0.8806807 2.575734e-15 0.8214748</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="table-principles">21.3 Table principles<a class="anchor" aria-label="anchor" href="#table-principles"></a>

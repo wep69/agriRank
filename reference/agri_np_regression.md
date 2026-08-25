@@ -332,8 +332,8 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
 #> agriRank nonparametric regression summary
 #> Method: gam
 #> 
-#>   n      RMSE       MAE     MedAE         bias  Spearman
-#>  40 0.1849693 0.1451067 0.1100682 6.439268e-16 0.9534218
+#>   n      RMSE       MAE     MedAE          bias  Spearman
+#>  40 0.1849693 0.1451067 0.1100682 -1.321167e-15 0.9534218
 #> 
 #> Backend summary:
 #> 

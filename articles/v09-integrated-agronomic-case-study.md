@@ -883,14 +883,14 @@ cmp_eng <- agri_np_compare(
 #> Warning in rq.fit.br(x, y, tau = tau, ...): Solution may be nonunique
 #> Warning in rq.fit.br(x, y, tau = tau, ...): Solution may be nonunique
 cmp_eng
-#>     method  n     RMSE       MAE     MedAE       bias  Spearman selected_metric
-#> 1   kernel 60 1.194009 0.9657748 0.8409605 0.00639163 0.7494928        1.194009
-#> 2 quantile 60 1.202536 0.9424161 0.7556347 0.19524875 0.7937196        1.202536
-#> 3      gam 60 1.251441 1.0110466 0.9423772 0.02306380 0.7676147        1.251441
-#>   failures
-#> 1        0
-#> 2        0
-#> 3        0
+#>     method  n     RMSE       MAE     MedAE        bias  Spearman
+#> 1   kernel 60 1.194009 0.9657749 0.8409606 0.006391614 0.7494928
+#> 2 quantile 60 1.202536 0.9424161 0.7556347 0.195248748 0.7937196
+#> 3      gam 60 1.251441 1.0110466 0.9423772 0.023063802 0.7676147
+#>   selected_metric failures
+#> 1        1.194009        0
+#> 2        1.202536        0
+#> 3        1.251441        0
 ```
 
 Note the `failures` column. An engine that cannot carry the declared
@@ -1176,7 +1176,7 @@ fit_var <- agri_np_regression(biomass ~ salinity + cultivar, base,
                               gam_structure = "varying")
 fit_var$formula_used
 #> biomass ~ cultivar + s(salinity, by = cultivar, k = 3) + block
-#> <environment: 0x55cb99e59708>
+#> <environment: 0x55c480ccb998>
 ```
 
 One smooth of salinity is now fitted per cultivar:
@@ -3540,8 +3540,8 @@ not a result; it is a summary of one realisation of the experiment.
 ``` r
 
 agri_np_diagnostics(npfit, cv = TRUE, seed = 1)$metrics
-#>    n     RMSE       MAE     MedAE       bias  Spearman
-#> 1 60 1.084035 0.8833927 0.8806807 1.5099e-15 0.8214748
+#>    n     RMSE       MAE     MedAE         bias  Spearman
+#> 1 60 1.084035 0.8833927 0.8806807 2.575734e-15 0.8214748
 ```
 
 ### 21.3 Table principles

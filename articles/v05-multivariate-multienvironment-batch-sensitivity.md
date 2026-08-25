@@ -452,7 +452,7 @@ met_additive
 #>                        SS df         F parametric P(>F) resampled P(>F)
 #> .agri_env_block  3384.300 14 0.8929787       0.57185652      0.43328666
 #> genotype         2515.800  3 3.0978126       0.03685246      0.03720744
-#> environment      1922.787  2 3.5514160       0.03758355      0.01560312
+#> environment      1225.807  2 2.2640839       0.11646626      0.01780356
 #> Residuals       11369.700 42        NA               NA              NA
 ```
 

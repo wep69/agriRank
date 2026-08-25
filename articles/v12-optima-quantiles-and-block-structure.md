@@ -231,7 +231,7 @@ fit2 <- agri_np_regression(yield ~ dose + cultivar, d2, method = "gam",
                            block = block, gam_structure = "varying")
 fit2$formula_used
 #> yield ~ cultivar + s(dose, by = cultivar, k = 7) + block
-#> <environment: 0x563c05108160>
+#> <environment: 0x55d7afe67b30>
 ```
 
 ``` r

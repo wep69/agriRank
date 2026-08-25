@@ -89,7 +89,7 @@ doi:10.1146/annurev-statistics-112723-034249.
 # Example 1: experimental-design report
 f <- np_crd(yield ~ treatment, simulate_agri("crd"))
 agri_report(f, tempfile(fileext = ".md"), format = "md", language = "en")
-#> [1] "/tmp/RtmpkvOfgU/file1dd92e090122.md"
+#> [1] "/tmp/RtmpSbmQ6v/file1b973ae67351.md"
 
 # Example 2: regression report
 set.seed(82)
@@ -97,7 +97,7 @@ d <- data.frame(salinity = seq(.5, 6, length.out = 35))
 d$biomass <- 24*exp(-.12*d$salinity^1.5) + rnorm(35, 0, .7)
 r <- agri_np_regression(biomass ~ salinity, d, method = "loess")
 agri_report(r, tempfile(fileext = ".md"), format = "md")
-#> [1] "/tmp/RtmpkvOfgU/file1dd918759501.md"
+#> [1] "/tmp/RtmpSbmQ6v/file1b974acc76d1.md"
 
 # Example 3: integer-support regression report
 di <- data.frame(plants = rep(1:8, each = 4))
@@ -105,5 +105,5 @@ di$yield <- 20 + 7*di$plants - .55*di$plants^2 + rnorm(nrow(di))
 ri <- agri_np_regression(yield ~ plants, di, method = "integer_grid",
   integer_base_method = "smoothing_spline")
 agri_report(ri, tempfile(fileext = ".md"), format = "md")
-#> [1] "/tmp/RtmpkvOfgU/file1dd97ef8a824.md"
+#> [1] "/tmp/RtmpSbmQ6v/file1b974bb85796.md"
 ```

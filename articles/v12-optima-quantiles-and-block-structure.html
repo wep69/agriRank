@@ -328,7 +328,7 @@ per cultivar, so the shapes may differ:</p>
 <span>                           block <span class="op">=</span> <span class="va">block</span>, gam_structure <span class="op">=</span> <span class="st">"varying"</span><span class="op">)</span></span>
 <span><span class="va">fit2</span><span class="op">$</span><span class="va">formula_used</span></span>
 <span><span class="co">#&gt; yield ~ cultivar + s(dose, by = cultivar, k = 7) + block</span></span>
-<span><span class="co">#&gt; &lt;environment: 0x563c05108160&gt;</span></span></code></pre></div>
+<span><span class="co">#&gt; &lt;environment: 0x55d7afe67b30&gt;</span></span></code></pre></div>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ot2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/agri_np_optimum_test.html">agri_np_optimum_test</a></span><span class="op">(</span><span class="va">fit2</span>, by <span class="op">=</span> <span class="va">cultivar</span>, B <span class="op">=</span> <span class="fl">199</span>, seed <span class="op">=</span> <span class="fl">1</span>, n <span class="op">=</span> <span class="fl">120</span>,</span>
 <span>                            external <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"npregfast"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>

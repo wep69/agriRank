@@ -502,8 +502,8 @@ head(agri_table(fit_crd, what = "pairs", format = "data.frame"), 6)
 ``` r
 
 agri_table(fit_ss, what = "metrics", format = "data.frame")
-#>    n      RMSE       MAE      MedAE        bias  Spearman
-#> 1 60 0.1693096 0.1283542 0.09768723 1.34485e-13 0.9560433
+#>    n      RMSE       MAE      MedAE         bias  Spearman
+#> 1 60 0.1693096 0.1283542 0.09768723 9.436896e-14 0.9560433
 ```
 
 ### 10.1 The formats

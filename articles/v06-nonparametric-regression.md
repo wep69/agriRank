@@ -186,8 +186,8 @@ agri_np_diagnostics(fit_ss)
 #> [1] "smoothing_spline"
 #> 
 #> $metrics
-#>    n      RMSE       MAE    MedAE          bias  Spearman
-#> 1 55 0.5869064 0.4823941 0.404772 -4.420222e-12 0.9120491
+#>    n      RMSE       MAE    MedAE         bias  Spearman
+#> 1 55 0.5869064 0.4823941 0.404772 -4.57554e-12 0.9120491
 #> 
 #> $r2
 #>   pseudo_r2 cv_r2 spearman_r2 effective_df  n
@@ -429,7 +429,7 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
 #> Method: gam
 #> 
 #>   n      RMSE       MAE     MedAE         bias  Spearman
-#>  60 0.4620908 0.3867066 0.3589656 1.125031e-15 0.9569325
+#>  60 0.4620908 0.3867066 0.3589656 3.256722e-16 0.9569325
 #> 
 #> Backend summary:
 #> 
@@ -742,7 +742,7 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
 }
 #>   method  n      RMSE       MAE     MedAE         bias  Spearman
 #> 1    gam 60 0.5458867 0.4568858 0.4689659 -0.005611808 0.9398166
-#> 2 kernel 60 0.6414834 0.5123385 0.4662844  0.118146281 0.9125313
+#> 2 kernel 60 0.6414834 0.5123385 0.4662844  0.118146303 0.9125313
 #>   selected_metric failures
 #> 1       0.5458867        0
 #> 2       0.6414834        0
@@ -1179,7 +1179,7 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   print(gvar$formula_used)
 }
 #> yield ~ cultivar + s(dose, by = cultivar, k = 10)
-#> <environment: 0x5578412544b8>
+#> <environment: 0x5644482f3fc0>
 ```
 
 ``` r
@@ -1372,8 +1372,8 @@ Data*.
 fit_report <- agri_np_regression(yield ~ dose, dose_data,
                                  method = "smoothing_spline")
 agri_table(fit_report, "metrics", format = "data.frame")
-#>    n      RMSE       MAE    MedAE          bias  Spearman
-#> 1 55 0.5869064 0.4823941 0.404772 -4.420222e-12 0.9120491
+#>    n      RMSE       MAE    MedAE         bias  Spearman
+#> 1 55 0.5869064 0.4823941 0.404772 -4.57554e-12 0.9120491
 ```
 
 ``` r

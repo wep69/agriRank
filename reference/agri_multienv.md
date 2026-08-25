@@ -104,9 +104,9 @@ if (requireNamespace("permuco", quietly = TRUE)) agri_multienv(yield ~
 #>   Design: multienv
 #>   Method: permuco permutation ANOVA on mid-ranks
 #>   Response: yield
-#>                          SS df          F parametric P(>F) resampled P(>F)
-#> .agri_env_block  2959.25000 17 0.45777198      0.960519785      0.94949495
-#> genotype         7147.11111  3 6.26506742      0.001055334      0.01010101
-#> environment        70.65169  2 0.09289858      0.911439768      0.66666667
-#> Residuals       19393.38889 51         NA               NA              NA
+#>                           SS df           F parametric P(>F) resampled P(>F)
+#> .agri_env_block 2.959250e+03 17 0.457771978      0.960519785      0.94949495
+#> genotype        7.147111e+03  3 6.265067420      0.001055334      0.01010101
+#> environment     7.641286e-01  2 0.001004738      0.998995786      0.34343434
+#> Residuals       1.939339e+04 51          NA               NA              NA
 ```

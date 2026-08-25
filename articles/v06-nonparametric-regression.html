@@ -346,8 +346,8 @@ response undescribed, which is usually the part a reader wants.</p>
 <span><span class="co">#&gt; [1] "smoothing_spline"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $metrics</span></span>
-<span><span class="co">#&gt;    n      RMSE       MAE    MedAE          bias  Spearman</span></span>
-<span><span class="co">#&gt; 1 55 0.5869064 0.4823941 0.404772 -4.420222e-12 0.9120491</span></span>
+<span><span class="co">#&gt;    n      RMSE       MAE    MedAE         bias  Spearman</span></span>
+<span><span class="co">#&gt; 1 55 0.5869064 0.4823941 0.404772 -4.57554e-12 0.9120491</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $r2</span></span>
 <span><span class="co">#&gt;   pseudo_r2 cv_r2 spearman_r2 effective_df  n</span></span>
@@ -574,7 +574,7 @@ stronger claim than an unconstrained one, not a weaker one.</p>
 <span><span class="co">#&gt; Method: gam</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   n      RMSE       MAE     MedAE         bias  Spearman</span></span>
-<span><span class="co">#&gt;  60 0.4620908 0.3867066 0.3589656 1.125031e-15 0.9569325</span></span>
+<span><span class="co">#&gt;  60 0.4620908 0.3867066 0.3589656 3.256722e-16 0.9569325</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Backend summary:</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -897,7 +897,7 @@ always, with <code>effective_df</code> beside them.</p>
 <span><span class="op">}</span></span>
 <span><span class="co">#&gt;   method  n      RMSE       MAE     MedAE         bias  Spearman</span></span>
 <span><span class="co">#&gt; 1    gam 60 0.5458867 0.4568858 0.4689659 -0.005611808 0.9398166</span></span>
-<span><span class="co">#&gt; 2 kernel 60 0.6414834 0.5123385 0.4662844  0.118146281 0.9125313</span></span>
+<span><span class="co">#&gt; 2 kernel 60 0.6414834 0.5123385 0.4662844  0.118146303 0.9125313</span></span>
 <span><span class="co">#&gt;   selected_metric failures</span></span>
 <span><span class="co">#&gt; 1       0.5458867        0</span></span>
 <span><span class="co">#&gt; 2       0.6414834        0</span></span></code></pre></div>
@@ -1350,7 +1350,7 @@ differ:</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">gvar</span><span class="op">$</span><span class="va">formula_used</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="co">#&gt; yield ~ cultivar + s(dose, by = cultivar, k = 10)</span></span>
-<span><span class="co">#&gt; &lt;environment: 0x5578412544b8&gt;</span></span></code></pre></div>
+<span><span class="co">#&gt; &lt;environment: 0x5644482f3fc0&gt;</span></span></code></pre></div>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">"gvar"</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/agri_np_plot.html">agri_np_plot</a></span><span class="op">(</span><span class="va">gvar</span>, predictor <span class="op">=</span> <span class="st">"dose"</span>, group <span class="op">=</span> <span class="st">"cultivar"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
@@ -1536,8 +1536,8 @@ Longitudinal Data</em>.</p>
 <code class="sourceCode R"><span><span class="va">fit_report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">dose_data</span>,</span>
 <span>                                 method <span class="op">=</span> <span class="st">"smoothing_spline"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/agri_table.html">agri_table</a></span><span class="op">(</span><span class="va">fit_report</span>, <span class="st">"metrics"</span>, format <span class="op">=</span> <span class="st">"data.frame"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    n      RMSE       MAE    MedAE          bias  Spearman</span></span>
-<span><span class="co">#&gt; 1 55 0.5869064 0.4823941 0.404772 -4.420222e-12 0.9120491</span></span></code></pre></div>
+<span><span class="co">#&gt;    n      RMSE       MAE    MedAE         bias  Spearman</span></span>
+<span><span class="co">#&gt; 1 55 0.5869064 0.4823941 0.404772 -4.57554e-12 0.9120491</span></span></code></pre></div>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="../reference/agri_table.html">agri_table</a></span><span class="op">(</span><span class="va">fit_report</span>, <span class="st">"derivative"</span>, n <span class="op">=</span> <span class="fl">40</span>, format <span class="op">=</span> <span class="st">"data.frame"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   predictor         x derivative</span></span>

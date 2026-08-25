@@ -89,8 +89,8 @@ agri_np_diagnostics(f1)
 #> [1] "smoothing_spline"
 #> 
 #> $metrics
-#>    n      RMSE       MAE MedAE          bias  Spearman
-#> 1 40 0.3623191 0.3128471 0.279 -1.432245e-15 0.8511985
+#>    n      RMSE       MAE MedAE         bias  Spearman
+#> 1 40 0.3623191 0.3128471 0.279 1.343312e-15 0.8511985
 #> 
 #> $r2
 #>   pseudo_r2 cv_r2 spearman_r2 effective_df  n

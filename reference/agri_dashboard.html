@@ -78,7 +78,7 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Example 1: CRD dashboard source</span></span></span>
 <span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="np_crd.html">np_crd</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">treatment</span>, <span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">agri_dashboard</span><span class="op">(</span><span class="va">f</span>, <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".qmd"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpkvOfgU/file1dd95d783099.qmd"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpSbmQ6v/file1b9745c93028.qmd"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Example 2: smoothing-spline regression dashboard</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">83</span><span class="op">)</span></span></span>
@@ -86,7 +86,7 @@
 <span class="r-in"><span><span class="va">d</span><span class="op">$</span><span class="va">yield</span> <span class="op">&lt;-</span> <span class="fl">6</span> <span class="op">+</span> <span class="fl">.06</span><span class="op">*</span><span class="va">d</span><span class="op">$</span><span class="va">dose</span> <span class="op">-</span> <span class="fl">.0002</span><span class="op">*</span><span class="va">d</span><span class="op">$</span><span class="va">dose</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">35</span>, <span class="fl">0</span>, <span class="fl">.4</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">d</span>, method <span class="op">=</span> <span class="st">"smoothing_spline"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">agri_dashboard</span><span class="op">(</span><span class="va">r</span>, <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".qmd"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpkvOfgU/file1dd9b856ea3.qmd"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpSbmQ6v/file1b971f1964bb.qmd"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Example 3: incomplete repeated-measures analysis</span></span></span>
 <span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated_missing"</span><span class="op">)</span></span></span>
@@ -94,7 +94,7 @@
 <span class="r-in"><span><span class="va">fr</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_rank.html">agri_rank</a></span><span class="op">(</span><span class="va">des</span>, <span class="st">"incomplete_wild"</span>, B <span class="op">=</span> <span class="fl">99</span>, missing_assumption <span class="op">=</span> <span class="st">"MCAR"</span><span class="op">)</span></span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>B &lt; 199 gives coarse Monte Carlo p-values; use &gt;= 999 for analysis and &gt;= 4999 for final work when feasible.</span>
 <span class="r-in"><span><span class="fu">agri_dashboard</span><span class="op">(</span><span class="va">fr</span>, <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".qmd"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpkvOfgU/file1dd9378368d3.qmd"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpSbmQ6v/file1b9738df25d5.qmd"</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
