@@ -1,0 +1,67 @@
+name: binaries
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build (ex: v0.14.0, vazio = HEAD)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.os }} (${{ matrix.r }})
+    runs-on: ${{ matrix.config.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {os: windows-latest, r: 'release', ext: 'zip'}
+          - {os: macos-latest,   r: 'release', ext: 'tgz'}
+    env:
+      _R_CHECK_FORCE_SUGGESTS_: false
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout tag or main
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.config.r }}
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - name: Build source tarball
+        run: R CMD build --no-manual .
+        shell: bash
+
+      - name: Build binary
+        run: |
+          TARBALL=$(ls -t agriRank_*.tar.gz | head -n1)
+          echo "TARBALL=$TARBALL"
+          R CMD INSTALL --build "$TARBALL"
+          ls -lh agriRank*.zip agriRank*.tgz 2>/dev/null || true
+        shell: bash
+
+      - name: Upload to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            agriRank*.zip
+            agriRank*.tgz
+            agriRank*.tar.gz
