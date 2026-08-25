@@ -1,0 +1,23 @@
+pandoc: '3.9'
+pkgdown: 2.2.1
+pkgdown_sha: ~
+articles:
+  v01-design-crd-rcbd: v01-design-crd-rcbd.html
+  v02-effects-conover-factorials: v02-effects-conover-factorials.html
+  v03-hierarchical-designs-trends-ancova-power: v03-hierarchical-designs-trends-ancova-power.html
+  v04-repeated-measures-and-missing-data: v04-repeated-measures-and-missing-data.html
+  v05-multivariate-multienvironment-batch-sensitivity: v05-multivariate-multienvironment-batch-sensitivity.html
+  v06-nonparametric-regression: v06-nonparametric-regression.html
+  v07-integer-support-regression: v07-integer-support-regression.html
+  v08-graphics-reporting-reproducibility: v08-graphics-reporting-reproducibility.html
+  v09-integrated-agronomic-case-study: v09-integrated-agronomic-case-study.html
+  v10-theory-state-of-art-common-mistakes: v10-theory-state-of-art-common-mistakes.html
+  v11-distribution-free-uncertainty-and-diagnostics: v11-distribution-free-uncertainty-and-diagnostics.html
+  v12-optima-quantiles-and-block-structure: v12-optima-quantiles-and-block-structure.html
+  v13-time-to-event-and-ranking-data: v13-time-to-event-and-ranking-data.html
+  v14-from-curve-to-decision: v14-from-curve-to-decision.html
+  v15-testing-assumptions-and-difficult-data: v15-testing-assumptions-and-difficult-data.html
+last_built: 2026-08-25T00:01Z
+urls:
+  reference: https://wep69.github.io/agriRank/reference
+  article: https://wep69.github.io/agriRank/articles
