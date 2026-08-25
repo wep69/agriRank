@@ -168,8 +168,13 @@
   dat <- design$data
   dat$.agri_subject <- .subject_namespace(dat, design)
   f <- stats::as.formula(paste(response, "~", paste(deparse(design$formula[[3L]]), collapse = "")), env = environment(design$formula))
-  z <- nparLD::nparLD(f, data = dat, subject = ".agri_subject",
-                      description = FALSE, plot.CI = FALSE, alpha = alpha, ...)
+  nparld_formals <- tryCatch(names(formals(nparLD::nparLD)), error = function(e) character())
+  nparld_args <- list(f, data = dat, subject = ".agri_subject", alpha = alpha)
+  if ("description" %in% nparld_formals) nparld_args$description <- FALSE
+  if ("plot.CI" %in% nparld_formals) nparld_args$plot.CI <- FALSE
+  dots <- list(...)
+  if (length(dots)) nparld_args <- c(nparld_args, dots)
+  z <- do.call(nparLD::nparLD, nparld_args)
   tab <- as.data.frame(z$ANOVA.test)
   tab$effect <- rownames(tab); rownames(tab) <- NULL
   list(method = "nparLD ANOVA-type rank inference", omnibus = tab,
