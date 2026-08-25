@@ -72,3 +72,6 @@ Suggests:
     WRS2
 Config/testthat/edition: 3
 VignetteBuilder: knitr
+URL: https://wep69.github.io/agriRank/, https://github.com/wep69/agriRank
+BugReports: https://github.com/wep69/agriRank/issues
+

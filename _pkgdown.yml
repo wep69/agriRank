@@ -78,6 +78,9 @@ reference:
              agri_report, export_results, agri_methods,
              agri_graphics, agri_format_ci, agri_broom]
 
+- title: Package and methods
+  contents: [agriRank-package, update.agri_np_reg_fit]
+
 - title: Example data
   desc: Shared data sets used across the examples and vignettes.
   contents: [agri_dose, agri_density, agri_surface]
@@ -108,3 +111,5 @@ articles:
   - v08-graphics-reporting-reproducibility
   - v09-integrated-agronomic-case-study
   - v10-theory-state-of-art-common-mistakes
+
+
