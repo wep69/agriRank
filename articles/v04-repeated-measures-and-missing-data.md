@@ -1,0 +1,4191 @@
+# Repeated Measures and Missing Longitudinal Data
+
+**Repeated measures vignette** **Package:** `agriRank` **Version
+targeted:** `0.14.0` **Owns:** measurements taken more than once on the
+same unit, and what to do when some of them are absent.
+
+------------------------------------------------------------------------
+
+## 1. Why this vignette exists
+
+Measuring the same plant four times does not give four independent
+observations. It gives one plant, observed four times, and the
+difference between those two statements is the whole content of this
+vignette.
+
+The dependence is not a nuisance to be removed. It is information: a
+plant that starts tall tends to stay tall, and a trajectory is a richer
+datum than an endpoint. But it must be represented, and an analysis that
+treats the four measurements as four replicates inflates the apparent
+replication fourfold, with every interval correspondingly too narrow.
+
+> **Declare the subject. Analyse trajectories, not endpoints. When
+> values are missing, describe the pattern before modelling it, and
+> report the assumption as part of the methods.**
+
+### 1.1 The second half of the vignette
+
+Longitudinal agronomic data are almost never complete. A plant dies, a
+plot is flooded, a measurement day is rained out, a leaf is lost to a
+herbivore.
+
+Missingness is not a technical inconvenience to be imputed away. **Why**
+a value is absent determines which analyses remain valid, and that
+question is scientific, not computational.
+
+------------------------------------------------------------------------
+
+## 2. Learning objectives
+
+After working through this vignette, the reader should be able to:
+
+1.  distinguish a repeated-measures design from a design with more
+    replicates;
+2.  declare `subject` and `within` correctly, and explain what each
+    asserts;
+3.  explain why an omnibus repeated-measures test answers a question
+    about trajectories rather than endpoints;
+4.  choose among the available backends on structural grounds;
+5.  read a missing-data report and say what it does and does not
+    establish;
+6.  distinguish MCAR, MAR and MNAR, and name a plausible agronomic
+    mechanism for each;
+7.  explain why the choice among them cannot be made from the data
+    alone;
+8.  run a missing-data sensitivity analysis and interpret its output;
+9.  recognise the experimental label on the native wild-bootstrap engine
+    and say what it means for a manuscript;
+10. recognise the deliberate refusal of an additional block stratum in
+    the repeated-measures workflow, and why it is preferable to a silent
+    approximation.
+
+------------------------------------------------------------------------
+
+## 3. The repeated-measures module in one map
+
+| Function | What it does | Requires |
+|----|----|----|
+| `agri_design(design = "repeated")` | declare subject and within factors | `subject`, `within` |
+| [`np_repeated()`](https://wep69.github.io/agriRank/reference/np_repeated.md) | the one-step wrapper | the same |
+| [`agri_repeated()`](https://wep69.github.io/agriRank/reference/agri_repeated.md) | fit with an explicit backend | a declared design |
+| [`agri_missing_report()`](https://wep69.github.io/agriRank/reference/agri_missing_report.md) | describe the missingness pattern | a declared design |
+| [`agri_missing_sensitivity()`](https://wep69.github.io/agriRank/reference/agri_missing_sensitivity.md) | does the conclusion survive the assumption | a declared design |
+| [`incomplete_wild_rank_test()`](https://wep69.github.io/agriRank/reference/incomplete_wild_rank_test.md) | the native experimental engine | a declared design |
+| `agri_plot(type = "missing")` | see where the gaps are | a fitted object |
+
+### 3.1 Which backend, and when
+
+``` r
+
+data.frame(
+  backend = c("nparLD", "MANOVA.RM", "native_wild"),
+  handles_missing = c("no", "no", "yes"),
+  status = c("established", "established", "EXPERIMENTAL"),
+  use_when = c("complete data, classical rank ATS",
+               "complete data, resampling WTS and MATS",
+               "incomplete data, and only after reading section 12")
+)
+#>       backend handles_missing       status
+#> 1      nparLD              no  established
+#> 2   MANOVA.RM              no  established
+#> 3 native_wild             yes EXPERIMENTAL
+#>                                             use_when
+#> 1                  complete data, classical rank ATS
+#> 2             complete data, resampling WTS and MATS
+#> 3 incomplete data, and only after reading section 12
+```
+
+------------------------------------------------------------------------
+
+## Part I. Complete repeated measures
+
+## 4. Declaring the design
+
+``` r
+
+rm <- simulate_agri(
+  "repeated",
+  seed = 701,
+  n    = 10
+)
+str(rm)
+#> 'data.frame':    80 obs. of  4 variables:
+#>  $ subject  : Factor w/ 20 levels "1","2","3","4",..: 1 1 1 1 2 2 2 2 3 3 ...
+#>  $ treatment: Factor w/ 2 levels "control","treated": 1 1 1 1 1 1 1 1 1 1 ...
+#>  $ time     : Ord.factor w/ 4 levels "1"<"2"<"3"<"4": 1 2 3 4 1 2 3 4 1 2 ...
+#>  $ height   : num  13.7 13.81 10.44 5.14 9.43 ...
+
+des_rm <- agri_design(
+  height ~ treatment * time,
+  rm,
+  design  = "repeated",
+  subject = subject,
+  within  = time
+)
+des_rm
+#> agriRank experimental design
+#>   Design:   repeated
+#>   Response: height
+#>   Factors:  treatment * time
+#>   Subject:  subject
+#>   Within:   time
+#>   Rows:     80
+```
+
+### 4.1 What `subject` asserts
+
+`subject` names the unit that was measured repeatedly. Declaring it
+asserts:
+
+1.  that measurements sharing a subject are **not** independent;
+2.  that the subject, not the measurement, is the replicate;
+3.  and therefore that the treatment comparison has as many independent
+    units as there are subjects, not as there are rows.
+
+### 4.2 What `within` asserts
+
+`within` names the factor that varies **inside** a subject. Time is the
+usual one, but a within factor can also be a leaf position, a soil
+depth, or a sampling date.
+
+The distinction matters because a between-subject factor and a
+within-subject factor are tested with different precision, for the same
+reason a whole-plot and a subplot factor are in a split-plot. A
+within-subject comparison is made inside the subject and is therefore
+free of between-subject variation.
+
+| Factor           | Varies           | Compared            | Typically    |
+|------------------|------------------|---------------------|--------------|
+| `treatment`      | between subjects | across subjects     | less precise |
+| `time`           | within subjects  | inside each subject | more precise |
+| `treatment:time` | within subjects  | inside each subject | more precise |
+
+### 4.3 The declaration cannot be inferred
+
+``` r
+
+np_repeated(height ~ treatment * time, rm)
+#> Error:
+#> ! `np_repeated()` requires `subject=`: repeated measurements are not exchangeable across subjects.
+```
+
+Nothing in the data file distinguishes forty independent plants from ten
+plants measured four times. The subject column exists in both cases;
+only the experimenter knows which it is.
+
+### 4.4 Interpretation
+
+Write down how many independent subjects the experiment has, before
+analysing anything. If that number is small, the trajectory analysis
+will be imprecise whatever the total row count suggests.
+
+------------------------------------------------------------------------
+
+## 5. Fitting a complete repeated-measures analysis
+
+``` r
+
+fit_rm <- agri_repeated(
+  des_rm,
+  backend = "auto",
+  B       = 999,
+  iter    = 999,
+  seed    = 701
+)
+
+fit_rm
+#> agriRank fit
+#>   Design: repeated
+#>   Method: nparLD ANOVA-type rank inference
+#>   Response: height
+#> [1] effect
+#> <0 rows> (or 0-length row.names)
+```
+
+### 5.1 The three effects, and what each asks
+
+| Effect | Question |
+|----|----|
+| `treatment` | averaged over time, do the treatments differ |
+| `time` | averaged over treatments, does the response change through the cycle |
+| `treatment:time` | do the treatments follow different trajectories |
+
+The interaction is read first, as always. If present, the main effects
+are averages over conditions in which the behaviour differs.
+
+### 5.2 A repeated-measures analysis is about trajectories
+
+This is worth stating plainly, because it is the commonest misuse.
+
+A repeated-measures analysis answers questions about the **shape of the
+response over time**. If the scientific question concerns the final
+value, the final value should be analysed as a single response in its
+own design, which is simpler and usually more powerful.
+
+| The question is | Analyse |
+|----|----|
+| does the treatment change final yield | the final measurement, as an RCBD |
+| does the treatment change how fast plants grow | the trajectory, as repeated measures |
+| does the treatment delay senescence | the trajectory |
+| does the treatment change the maximum reached | the maximum per subject, as an RCBD |
+
+Running a repeated-measures analysis to answer an endpoint question
+spends degrees of freedom on time effects nobody asked about.
+
+### 5.3 The figure
+
+``` r
+
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  print(
+    ggplot2::ggplot(rm, ggplot2::aes(x = time, y = height,
+                                     colour = treatment, group = treatment)) +
+      ggplot2::stat_summary(fun = mean, geom = "line", linewidth = 0.9) +
+      ggplot2::stat_summary(fun = mean, geom = "point", size = 2) +
+      ggplot2::labs(x = "Occasion", y = "Height", colour = "Treatment") +
+      agri_theme()
+  )
+}
+```
+
+![Trajectories by treatment. Each line is a treatment mean over
+subjects; the question is whether the lines are
+parallel.](v04-repeated-measures-and-missing-data_files/figure-html/rm-plot-1.png)
+
+Trajectories by treatment. Each line is a treatment mean over subjects;
+the question is whether the lines are parallel.
+
+------------------------------------------------------------------------
+
+## 6. Choosing a backend
+
+### 6.1 nparLD
+
+``` r
+
+if (requireNamespace("nparLD", quietly = TRUE)) {
+  fit_nparld <- agri_repeated(des_rm, backend = "nparLD", seed = 701)
+  print(fit_nparld)
+}
+#> agriRank fit
+#>   Design: repeated
+#>   Method: nparLD ANOVA-type rank inference
+#>   Response: height
+#> [1] effect
+#> <0 rows> (or 0-length row.names)
+```
+
+`nparLD` implements the classical rank-based analysis of longitudinal
+data. It computes relative treatment effects and an ANOVA-type
+statistic, and it is the established reference for complete designs of
+this shape.
+
+### 6.2 MANOVA.RM
+
+``` r
+
+if (requireNamespace("MANOVA.RM", quietly = TRUE)) {
+  fit_mrm <- agri_repeated(des_rm, backend = "MANOVA.RM", iter = 999,
+                           seed = 701)
+  print(fit_mrm)
+}
+#> agriRank fit
+#>   Design: repeated
+#>   Method: MANOVA.RM WildBS
+#>   Response: height
+#>                Test statistic   df1    df2 p-value
+#> treatment               8.883 1.000 39.437   0.005
+#> time                   18.497 1.914    Inf   0.000
+#> treatment:time         14.317 1.914    Inf   0.000
+```
+
+`MANOVA.RM` provides a Wald-type statistic with a resampling reference
+distribution, and a modified ANOVA-type statistic. The resampling
+matters: the Wald-type statistic is known to be liberal in small
+samples, and the resampled version corrects it.
+
+### 6.3 Which to use
+
+| Situation | Prefer |
+|----|----|
+| complete data, one within factor | `nparLD` |
+| complete data, small samples | `MANOVA.RM` with resampling |
+| complete data, several responses | [`agri_multivariate()`](https://wep69.github.io/agriRank/reference/agri_multivariate.md), see the multivariate vignette |
+| incomplete data | `native_wild`, having read section 12 |
+
+### 6.4 Comparing them is legitimate; choosing on p is not
+
+Running two backends and reporting the agreement is a sensitivity
+analysis. Running two and reporting the one that reached significance is
+a selection procedure whose properties are unknown. The rule is the same
+throughout this package.
+
+------------------------------------------------------------------------
+
+## Part II. Missing longitudinal data
+
+## 7. Describe before modelling
+
+``` r
+
+rm_miss <- simulate_agri(
+  "repeated_missing",
+  seed         = 801,
+  n            = 12,
+  missing_rate = 0.15
+)
+
+des_miss <- agri_design(
+  height ~ treatment * time,
+  rm_miss,
+  design  = "repeated",
+  subject = subject,
+  within  = time
+)
+
+miss_report <- agri_missing_report(des_miss)
+miss_report
+#> $response
+#> [1] "height"
+#> 
+#> $n_rows
+#> [1] 96
+#> 
+#> $n_missing
+#> [1] 14
+#> 
+#> $missing_rate
+#> [1] 0.1458333
+#> 
+#> $missing_rows
+#>  [1]  6 17 20 22 33 47 48 52 60 65 66 76 77 89
+#> 
+#> $assumption_note
+#> [1] "The missingness mechanism cannot be established from observed data alone. MCAR/MAR/MNAR assumptions require scientific justification and sensitivity analysis."
+#> 
+#> $repeated
+#> $repeated$n_subjects
+#> [1] 24
+#> 
+#> $repeated$n_occasions
+#> [1] 4
+#> 
+#> $repeated$complete_subjects
+#> [1] 13
+#> 
+#> $repeated$incomplete_subjects
+#> [1] 11
+#> 
+#> $repeated$subjects_with_no_observed_response
+#> [1] 0
+#> 
+#> $repeated$observed_by_occasion
+#>  1  2  3  4 
+#> 19 21 23 19 
+#> 
+#> $repeated$missing_rate_by_occasion
+#>          1          2          3          4 
+#> 0.20833333 0.12500000 0.04166667 0.20833333 
+#> 
+#> $repeated$pattern_counts
+#> patterns
+#> 1111 0111 1110 1011 0011 0110 1100 
+#>   13    3    3    2    1    1    1 
+#> 
+#> $repeated$monotone_subjects
+#> [1] 17
+#> 
+#> $repeated$nonmonotone_subjects
+#> [1] 7
+#> 
+#> $repeated$observation_matrix
+#>                 1     2     3     4
+#> control@@1   TRUE  TRUE  TRUE  TRUE
+#> control@@2   TRUE FALSE  TRUE  TRUE
+#> control@@3   TRUE  TRUE  TRUE  TRUE
+#> control@@4   TRUE  TRUE  TRUE  TRUE
+#> control@@5  FALSE  TRUE  TRUE FALSE
+#> control@@6   TRUE FALSE  TRUE  TRUE
+#> control@@7   TRUE  TRUE  TRUE  TRUE
+#> control@@8   TRUE  TRUE  TRUE  TRUE
+#> control@@9  FALSE  TRUE  TRUE  TRUE
+#> control@@10  TRUE  TRUE  TRUE  TRUE
+#> control@@11  TRUE  TRUE  TRUE  TRUE
+#> control@@12  TRUE  TRUE FALSE FALSE
+#> treated@@13  TRUE  TRUE  TRUE FALSE
+#> treated@@14  TRUE  TRUE  TRUE  TRUE
+#> treated@@15  TRUE  TRUE  TRUE FALSE
+#> treated@@16  TRUE  TRUE  TRUE  TRUE
+#> treated@@17 FALSE FALSE  TRUE  TRUE
+#> treated@@18  TRUE  TRUE  TRUE  TRUE
+#> treated@@19  TRUE  TRUE  TRUE FALSE
+#> treated@@20 FALSE  TRUE  TRUE  TRUE
+#> treated@@21  TRUE  TRUE  TRUE  TRUE
+#> treated@@22  TRUE  TRUE  TRUE  TRUE
+#> treated@@23 FALSE  TRUE  TRUE  TRUE
+#> treated@@24  TRUE  TRUE  TRUE  TRUE
+#> 
+#> 
+#> attr(,"class")
+#> [1] "agri_missing_report"
+```
+
+### 7.1 Three separate questions
+
+A single overall percentage answers none of these well:
+
+| Question | Why it matters |
+|----|----|
+| how much is missing | determines how much power remains |
+| where is it concentrated | one treatment losing plants is a finding, not a nuisance |
+| does the pattern relate to the design | determines which assumptions are tenable |
+
+### 7.2 The figure
+
+``` r
+
+agri_plot(
+  agri_rank(
+    des_miss,
+    method             = "incomplete_wild",
+    B                  = 299,
+    seed               = 801,
+    missing_assumption = "MCAR"
+  ),
+  type = "missing"
+)
+```
+
+![Where the gaps are. Concentration in one treatment or at one occasion
+is the pattern to look
+for.](v04-repeated-measures-and-missing-data_files/figure-html/missing-plot-1.png)
+
+Where the gaps are. Concentration in one treatment or at one occasion is
+the pattern to look for.
+
+### 7.3 What the report establishes, and what it cannot
+
+The report describes the **observed** pattern. It cannot establish why
+values are absent, because the reason involves the values that were not
+recorded.
+
+That limitation is fundamental rather than technical, and it is the
+subject of the next section.
+
+------------------------------------------------------------------------
+
+## 8. MCAR, MAR, MNAR
+
+### 8.1 The three mechanisms
+
+| Assumption | Means | An agronomic mechanism |
+|----|----|----|
+| **MCAR** | missingness is unrelated to anything | a technician dropped a tray; a measurement day was rained out for the whole trial |
+| **MAR** | missingness depends on **observed** values | plants below a height threshold at week 2 were not measured at week 4, and week 2 is recorded |
+| **MNAR** | missingness depends on the **unobserved** value itself | plants died because they were about to be small, and the size they would have reached is unrecorded |
+
+### 8.2 Why the choice cannot be made from the data
+
+MAR and MNAR are **not distinguishable** from the observed data. Both
+produce the same observed pattern; they differ in what happened to the
+values you do not have.
+
+This is not a limitation of any particular method. No amount of
+computation recovers information that was never recorded, and any
+procedure claiming to choose among them from the data alone is smuggling
+in an assumption.
+
+### 8.3 What follows
+
+The assumption is a **scientific** statement about the mechanism, made
+from knowledge of the experiment, and it belongs in the methods section
+beside the design.
+
+| If the mechanism was | State |
+|----|----|
+| an equipment failure or a rained-out day | MCAR, and say why |
+| a protocol that skipped plants based on a recorded earlier value | MAR, and name the value |
+| plant death related to the treatment | MNAR, and say the analysis is a sensitivity analysis rather than an estimate |
+
+### 8.4 The most consequential case in agronomy
+
+Plant death is frequently **MNAR**, and it is frequently treated as
+MCAR.
+
+If a treatment kills the weakest plants, the survivors in that treatment
+are a selected subset, and any analysis of survivors overstates the
+treatment’s performance. The missingness is then not a nuisance at all:
+it is one of the main results, and it should be analysed as a survival
+outcome in its own right.
+
+### 8.5 Interpretation
+
+Report the assumption, the reason for it, and a sensitivity analysis
+under an alternative. An analysis that does not state its missingness
+assumption has made one anyway.
+
+------------------------------------------------------------------------
+
+## 9. The native incomplete engine
+
+``` r
+
+fit_miss <- incomplete_wild_rank_test(
+  des_miss,
+  B                  = 1999,
+  seed               = 801,
+  statistic          = "ATS",
+  missing_assumption = "MCAR"
+)
+
+fit_miss
+#> $method
+#> [1] "incomplete repeated-measures rank wild bootstrap"
+#> 
+#> $statistic
+#> [1] "ATS"
+#> 
+#> $weights
+#> [1] "rademacher"
+#> 
+#> $B
+#> [1] 1999
+#> 
+#> $seed
+#> [1] 801
+#> 
+#> $missing_assumption
+#> [1] "MCAR"
+#> 
+#> $omnibus
+#>                        effect statistic     value       df p_boot p_asymptotic
+#> treatment           treatment       ATS  8.974405 1.000000  7e-03 2.737877e-03
+#> time                     time       ATS 30.298698 2.518215  5e-04 7.729992e-17
+#> treatment:time treatment:time       ATS  7.153188 2.518215  5e-04 2.459399e-04
+#> 
+#> $effects
+#>   cell treatment time relative_marginal_effect
+#> 1    1   control    1                0.2560976
+#> 2    2   control    2                0.3609756
+#> 3    3   control    3                0.4939024
+#> 4    4   control    4                0.4256098
+#> 5    5   treated    1                0.2527100
+#> 6    6   treated    2                0.5138581
+#> 7    7   treated    3                0.8119919
+#> 8    8   treated    4                0.8299458
+#> 
+#> $covariance
+#>            [,1]       [,2]       [,3]       [,4]       [,5]       [,6]
+#> [1,] 0.11193734 0.03667460 0.03986330 0.08123575 0.00000000 0.00000000
+#> [2,] 0.03667460 0.13455879 0.08159138 0.04537153 0.00000000 0.00000000
+#> [3,] 0.03986330 0.08159138 0.12765129 0.05304923 0.00000000 0.00000000
+#> [4,] 0.08123575 0.04537153 0.05304923 0.10463613 0.00000000 0.00000000
+#> [5,] 0.00000000 0.00000000 0.00000000 0.00000000 0.13541322 0.09153552
+#> [6,] 0.00000000 0.00000000 0.00000000 0.00000000 0.09153552 0.13467780
+#> [7,] 0.00000000 0.00000000 0.00000000 0.00000000 0.02806283 0.05656806
+#> [8,] 0.00000000 0.00000000 0.00000000 0.00000000 0.02982850 0.02961449
+#>            [,7]       [,8]
+#> [1,] 0.00000000 0.00000000
+#> [2,] 0.00000000 0.00000000
+#> [3,] 0.00000000 0.00000000
+#> [4,] 0.00000000 0.00000000
+#> [5,] 0.02806283 0.02982850
+#> [6,] 0.05656806 0.02961449
+#> [7,] 0.03928713 0.02462985
+#> [8,] 0.02462985 0.04889065
+#> 
+#> $p_vector
+#> [1] 0.2560976 0.3609756 0.4939024 0.4256098 0.2527100 0.5138581 0.8119919
+#> [8] 0.8299458
+#> 
+#> $contrasts
+#> $contrasts$treatment
+#>       [,1]  [,2]  [,3]  [,4] [,5] [,6] [,7] [,8]
+#> [1,] -0.25 -0.25 -0.25 -0.25 0.25 0.25 0.25 0.25
+#> 
+#> $contrasts$time
+#>      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8]
+#> [1,] -0.5  0.5  0.0  0.0 -0.5  0.5  0.0  0.0
+#> [2,] -0.5 -0.5  1.0  0.0 -0.5 -0.5  1.0  0.0
+#> [3,] -0.5 -0.5 -0.5  1.5 -0.5 -0.5 -0.5  1.5
+#> 
+#> $contrasts$`treatment:time`
+#>      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8]
+#> [1,]    1   -1    0    0   -1    1    0    0
+#> [2,]    1    1   -2    0   -1   -1    2    0
+#> [3,]    1    1    1   -3   -1   -1   -1    3
+#> 
+#> 
+#> $boot_statistics
+#> $boot_statistics$treatment
+#>    [1] 2.099569e-03 4.743895e-01 7.728832e-01 9.792327e-01 5.852317e-01
+#>    [6] 3.065598e+00 2.744524e+00 5.321584e-01 1.166776e+00 9.188482e-02
+#>   [11] 3.095236e-01 2.059479e+00 1.882885e-01 6.903659e-03 1.649120e+00
+#>   [16] 1.051861e-03 2.009466e-01 3.326302e-01 1.028051e-01 3.547598e-01
+#>   [21] 2.149061e-01 1.531117e-02 5.042369e+00 1.904600e-01 1.062863e-01
+#>   [26] 3.196934e-02 4.176101e-01 1.275666e+00 4.267150e-01 3.685007e-02
+#>   [31] 2.073960e+00 2.151632e+00 1.993501e-02 4.903499e-02 4.597587e-05
+#>   [36] 6.814615e-01 4.187052e-01 6.458388e+00 8.808191e-04 3.706866e-01
+#>   [41] 1.271407e-01 1.694118e-03 2.542435e-01 8.304179e-01 6.627004e-01
+#>   [46] 6.440562e-02 2.832400e-01 7.121072e-01 4.183458e+00 2.981843e+00
+#>   [51] 3.524966e-01 6.766776e-02 1.199358e+00 4.945389e+00 9.066120e-01
+#>   [56] 5.410764e-01 1.615492e+00 3.138178e-01 2.064652e-02 4.998144e-01
+#>   [61] 7.843862e-02 4.049374e+00 1.411016e-01 1.247148e+00 1.851384e+00
+#>   [66] 2.419494e-01 6.873965e-01 1.992474e-02 1.424693e+00 2.002894e+00
+#>   [71] 1.287098e-01 4.470315e+00 8.536287e-02 4.287280e-01 5.946736e+00
+#>   [76] 8.073108e-01 7.619396e-05 3.090373e-02 8.937338e-02 5.305518e-01
+#>   [81] 5.000179e-02 6.134138e-01 2.863713e-01 1.248079e+00 9.649779e-01
+#>   [86] 1.916929e+00 1.445811e+00 8.341083e-02 9.326514e-01 5.590797e-04
+#>   [91] 2.290488e+00 3.129178e-01 1.340615e-01 1.010434e-01 1.234026e+00
+#>   [96] 4.085354e-01 5.279028e-01 2.964810e+00 4.160726e-01 7.481181e-02
+#>  [101] 1.290040e+00 4.758558e-01 1.038567e-01 3.731035e+00 1.175809e-02
+#>  [106] 6.494189e-01 3.992470e-01 5.387394e+00 4.975152e+00 2.708560e-01
+#>  [111] 5.484498e-01 7.929847e-01 1.028703e-02 4.452200e-02 1.662678e+00
+#>  [116] 6.191120e-02 4.069777e-03 7.261026e-03 4.379117e-02 7.798834e-01
+#>  [121] 7.460896e-03 4.182835e-01 1.184677e-01 1.440997e-02 8.655198e-02
+#>  [126] 1.897536e-01 9.478120e-01 4.127948e-03 2.566479e-01 3.569935e+00
+#>  [131] 1.233083e+00 3.166817e-01 6.967797e+00 2.000064e-03 4.379075e+00
+#>  [136] 9.523291e-01 3.195381e-02 6.036407e+00 1.340913e+00 1.235681e-01
+#>  [141] 1.069513e-02 2.953175e+00 3.115558e-01 1.351599e+00 6.634439e-01
+#>  [146] 4.047030e-01 8.601790e-01 2.665195e-02 1.511934e-01 2.050499e-02
+#>  [151] 1.135451e-03 8.952627e-02 3.694911e-01 2.902241e-01 2.043813e+00
+#>  [156] 5.037749e-01 4.317563e-01 2.707142e-01 1.092287e+00 2.026294e+00
+#>  [161] 4.493189e-01 2.294812e+00 1.727874e+00 1.999025e+00 1.665110e+00
+#>  [166] 9.711637e-01 1.408200e-01 1.007453e-01 8.458529e-03 1.123034e-01
+#>  [171] 1.035037e+00 1.211240e+00 1.231386e+00 1.720747e-02 8.867987e-03
+#>  [176] 1.759335e-01 1.283002e-02 4.313711e+00 1.318066e+00 7.344551e-01
+#>  [181] 2.938902e-01 5.759784e-02 1.217404e+00 6.106978e+00 1.908322e+00
+#>  [186] 9.751618e-02 1.099941e-02 4.299612e-01 2.415051e+00 5.976131e+00
+#>  [191] 2.218855e+00 2.380490e+00 1.078607e+00 9.776368e-02 1.782124e-02
+#>  [196] 2.531456e-01 3.515886e+00 9.598971e-01 6.630902e-02 1.309458e-03
+#>  [201] 4.282456e-02 2.289854e-02 2.897281e+00 2.042072e+00 1.169116e+01
+#>  [206] 2.382219e-01 2.386670e+00 2.073498e-02 8.657246e-01 7.187998e-02
+#>  [211] 2.224653e-01 4.613096e-02 4.177751e-01 1.496154e-03 4.690998e-02
+#>  [216] 6.455988e-02 6.886400e-03 1.761480e+00 1.425608e+00 6.736123e-03
+#>  [221] 1.512720e+00 5.560550e-02 2.422325e-02 1.159125e+00 1.119815e-02
+#>  [226] 1.754525e-01 5.026535e-01 1.138736e-01 4.515605e-03 1.843286e-02
+#>  [231] 4.879890e-01 1.864098e-02 5.646909e-02 3.755816e+00 3.811994e+00
+#>  [236] 2.610054e-01 1.904527e-01 6.066951e-01 5.513338e-01 2.761415e+00
+#>  [241] 5.339357e-02 1.375984e+00 2.284789e+00 2.448352e+00 3.038097e-01
+#>  [246] 6.304640e+00 8.531487e-03 3.878446e-01 1.398633e-01 2.794307e-01
+#>  [251] 1.282574e+00 1.417317e-01 1.428026e-01 9.528690e-02 4.168094e-01
+#>  [256] 1.017460e-01 1.816756e-02 1.154075e+00 6.123562e-01 3.860169e-02
+#>  [261] 1.974473e-01 4.840587e-01 1.193992e-03 5.431638e-02 6.399258e+00
+#>  [266] 2.197456e-01 9.974166e-01 1.452856e+00 1.530984e-01 3.962275e+00
+#>  [271] 5.188468e-01 6.732614e-01 1.287745e-06 8.126745e-02 9.397219e-03
+#>  [276] 3.962560e-01 1.074856e-01 2.529289e+00 2.596639e+00 4.031624e+00
+#>  [281] 1.196900e+00 7.513169e+00 3.238023e-01 9.799939e-02 2.548522e+00
+#>  [286] 1.828061e+00 1.428800e-02 1.998166e+00 1.331741e-01 2.147867e+00
+#>  [291] 1.980574e-01 5.931817e-01 3.030696e+00 2.361608e-01 2.838064e+00
+#>  [296] 4.339094e+00 2.780630e-01 1.540497e-01 4.497809e-02 2.074843e-01
+#>  [301] 2.591580e-01 5.197764e-01 3.784443e-01 3.532870e+00 1.918665e+00
+#>  [306] 1.331430e+00 8.750525e-02 1.584250e+00 1.381198e+00 2.177461e-02
+#>  [311] 8.980315e-02 7.527131e-02 9.773552e-03 1.624588e+00 8.339050e-01
+#>  [316] 8.599085e-02 8.081011e-01 1.469737e-01 1.325090e+00 2.190855e-02
+#>  [321] 1.416016e-01 1.700008e+00 7.913434e-01 1.318860e-01 6.267855e-03
+#>  [326] 4.850871e-01 6.849761e-01 1.250630e+00 6.294596e-01 9.279551e-02
+#>  [331] 2.074127e+00 2.623491e+00 2.240967e-02 1.031483e+00 2.054631e+00
+#>  [336] 5.557224e-01 2.387887e-02 1.982450e+00 1.182824e+00 5.619654e-02
+#>  [341] 9.767837e-02 5.251611e-01 5.023544e-04 3.455536e+00 1.446149e-01
+#>  [346] 2.024056e-01 1.178552e+00 2.546127e+00 1.259248e+00 3.034786e+00
+#>  [351] 1.264609e+00 1.070252e+00 1.439466e-03 6.144443e+00 2.785138e-03
+#>  [356] 5.623932e-02 3.718633e+00 5.448846e-02 1.009288e+00 2.113047e+00
+#>  [361] 3.912575e-03 1.061901e+00 2.206426e-01 4.028426e+00 1.111817e+00
+#>  [366] 4.197794e-02 3.302453e-01 2.643882e+00 4.116586e-02 9.882377e-01
+#>  [371] 1.673631e+00 1.101083e+00 2.189741e+00 2.010510e+00 3.975085e-01
+#>  [376] 3.108570e+00 3.721905e-01 4.917900e-01 3.351597e+00 1.355667e+00
+#>  [381] 9.018353e-01 7.636308e-01 3.455688e-02 4.378387e-02 1.573889e+00
+#>  [386] 1.755658e+00 1.261454e+00 4.434241e+00 5.208713e-01 4.419627e-01
+#>  [391] 1.114898e+00 1.467557e-01 3.588804e-01 5.733635e-02 3.465329e+00
+#>  [396] 6.371168e-01 5.150146e-02 6.462289e-02 1.365593e-02 1.828505e+00
+#>  [401] 3.894014e-01 6.101329e-01 1.088902e+00 2.435765e-01 7.945347e-01
+#>  [406] 3.472459e-01 2.176221e-01 4.966217e-01 3.353405e-04 4.395246e+00
+#>  [411] 1.164228e+00 2.495554e+00 1.340094e+00 1.794392e+00 6.887008e-03
+#>  [416] 1.266960e+00 2.756722e-02 8.940056e+00 3.515216e+00 1.732260e+00
+#>  [421] 5.534784e+00 6.364877e-02 9.841130e-01 9.215570e-01 1.082471e-01
+#>  [426] 9.738084e-01 6.602695e+00 4.930318e-01 2.883242e+00 1.370214e-01
+#>  [431] 6.690105e-01 8.401748e-03 6.541035e-01 5.365893e-01 8.379157e-01
+#>  [436] 6.339989e-02 1.804468e-01 9.481658e-02 2.791108e+00 6.253196e-01
+#>  [441] 3.268834e-01 5.898277e-02 1.794398e-02 7.849155e-01 6.154049e-02
+#>  [446] 7.163308e-01 2.074618e-01 9.919277e-04 2.236926e-03 2.738849e-01
+#>  [451] 1.027487e+00 1.726017e-01 1.548649e+00 5.792466e-02 1.986645e-02
+#>  [456] 9.387702e-03 7.859840e-02 5.414178e-01 2.026073e+00 1.099807e+00
+#>  [461] 2.137629e+00 3.329165e-01 1.706345e+00 1.030289e+00 1.110914e+01
+#>  [466] 2.732855e-03 2.373821e+00 5.242874e+00 2.191935e-01 1.046840e+00
+#>  [471] 1.737289e-01 3.556209e-01 1.177482e-01 5.513631e-01 1.322539e+00
+#>  [476] 3.722716e+00 9.871960e-03 1.755377e+00 1.095595e+00 3.144743e+00
+#>  [481] 1.985444e+00 2.019049e-01 6.611978e+00 1.345749e+00 3.245352e+00
+#>  [486] 1.093360e-01 6.101000e-03 1.900455e-01 3.522969e-01 1.207481e+00
+#>  [491] 9.269713e-01 4.155158e+00 9.303681e+00 7.518940e-02 7.932376e-01
+#>  [496] 1.950543e+00 9.363680e-01 1.789805e+00 7.030361e-03 6.769929e-03
+#>  [501] 2.056144e-01 4.051865e+00 1.523742e+00 1.659784e+00 1.923769e+00
+#>  [506] 3.529766e-01 1.286863e-02 2.406698e+00 2.314087e-01 1.222358e+00
+#>  [511] 5.065339e-01 9.305886e-01 6.081763e+00 4.345597e+00 1.101968e-01
+#>  [516] 8.576628e-01 1.948783e-01 4.100949e-01 1.363075e+00 2.219333e-01
+#>  [521] 6.363714e-01 1.639961e-02 4.159324e+00 4.869390e-01 4.344996e-02
+#>  [526] 9.479450e-01 1.877891e-01 6.429254e-01 6.235964e-02 5.559964e+00
+#>  [531] 6.285336e-02 1.617785e-02 1.611830e+00 1.165117e+00 2.587265e+00
+#>  [536] 2.003022e-01 3.239800e+00 4.895478e-01 3.727098e-01 6.415811e-01
+#>  [541] 8.874722e-03 3.218697e-01 3.389249e-03 5.830611e+00 5.754627e-01
+#>  [546] 1.215762e+00 3.399420e+00 3.584501e-01 1.079036e-01 2.622882e-01
+#>  [551] 8.457055e-01 9.487860e-01 1.588525e+00 8.053052e-03 1.144674e-01
+#>  [556] 6.788295e-01 5.638502e-02 1.922678e+00 2.630382e+00 5.596570e-01
+#>  [561] 1.018609e-01 4.307579e-02 8.899770e-05 3.013953e-02 1.254613e+00
+#>  [566] 2.484060e-03 5.861435e-02 3.448621e+00 8.751150e-02 4.920291e-03
+#>  [571] 1.158969e+00 3.955042e+00 2.252764e-04 1.835179e-01 8.781829e-01
+#>  [576] 5.095782e+00 1.954042e+00 5.691186e-01 5.072039e+00 3.714699e+00
+#>  [581] 1.077716e-01 1.491553e-01 9.519176e-02 2.621236e-01 1.171169e+00
+#>  [586] 1.393618e+00 2.526619e-01 2.879081e-02 3.128518e-01 3.891193e+00
+#>  [591] 9.508335e-01 2.329006e+00 3.646254e-01 5.086777e-06 1.190354e-01
+#>  [596] 1.761435e+00 4.427492e-01 7.777504e+00 6.619345e-01 7.123059e-01
+#>  [601] 1.808994e-01 5.845601e-01 3.786825e-01 6.536465e-02 1.325693e+00
+#>  [606] 5.061207e-01 2.989397e-01 1.363386e-01 2.632598e-03 1.080811e-01
+#>  [611] 2.384709e-03 3.437020e+00 6.145630e-01 2.921022e+00 6.467226e+00
+#>  [616] 4.535434e-01 7.337370e-01 5.566027e-02 4.392605e-03 3.481509e-03
+#>  [621] 8.532159e-07 5.182188e-02 7.503994e-01 1.970816e+00 2.805934e-01
+#>  [626] 4.935575e-02 5.041509e-01 3.965893e+00 1.932030e-01 3.500906e-01
+#>  [631] 1.091546e-02 7.021850e-02 4.630230e-01 3.168156e-01 1.150588e+00
+#>  [636] 1.148376e-01 2.208322e+00 1.415166e-02 2.493497e+00 1.539763e-02
+#>  [641] 2.147977e+00 6.760509e-01 6.867637e-01 3.578584e-02 3.965147e+00
+#>  [646] 1.776697e-02 1.062363e-01 1.538967e+00 2.885373e-01 3.345001e+00
+#>  [651] 3.447253e-01 3.379411e-03 2.328175e+00 4.882552e+00 1.338836e-01
+#>  [656] 9.914935e-02 1.205852e+00 1.543525e-02 1.497208e-01 8.681910e-01
+#>  [661] 3.849436e-01 7.345039e-03 2.519803e+00 1.688241e-05 1.142722e-01
+#>  [666] 1.284567e+01 1.434249e-01 1.727303e+00 9.651509e-01 1.702226e-02
+#>  [671] 2.202937e+00 1.173356e-03 1.041967e+00 4.401027e-01 5.840075e-02
+#>  [676] 5.399514e-01 1.855955e+00 2.062468e+00 7.851968e-01 6.097145e-02
+#>  [681] 4.647348e-02 7.919526e-01 4.647870e-01 1.363152e+00 2.530549e-01
+#>  [686] 1.579070e-01 4.468726e-01 3.677542e-01 1.138566e-01 2.691000e+00
+#>  [691] 7.895369e-01 1.632164e-01 9.218328e+00 7.648046e-01 2.886679e+00
+#>  [696] 2.857011e-01 5.686038e-01 1.455672e+00 1.230894e-02 2.288333e-02
+#>  [701] 3.446004e-02 9.574923e-02 1.660494e+00 3.261601e-01 9.484367e-02
+#>  [706] 6.580901e-03 3.386028e-01 6.231094e+00 2.498357e-02 5.412235e-02
+#>  [711] 2.414827e+00 3.264502e-01 2.623727e-02 5.807738e-02 1.738674e+00
+#>  [716] 7.478845e-01 3.425100e-01 1.019418e-02 7.948139e-03 2.073401e+00
+#>  [721] 3.610384e-01 7.299380e-01 2.286314e-02 4.704615e-02 2.199279e+00
+#>  [726] 8.757278e-01 3.575705e-01 1.544269e+00 1.222322e+00 1.134714e-02
+#>  [731] 7.279798e-01 4.616801e+00 2.673913e+00 3.144540e+00 1.296358e-02
+#>  [736] 7.370848e-02 1.159413e-01 2.804968e+00 1.241330e-01 1.845318e+00
+#>  [741] 2.282810e-03 4.598966e-03 1.473034e+00 2.980355e-02 7.703821e-01
+#>  [746] 2.673440e-01 6.262244e-01 4.346436e-02 1.432135e+00 1.521147e+00
+#>  [751] 5.722692e-01 4.663386e-01 8.841027e-03 6.972122e-01 4.950849e+00
+#>  [756] 7.682877e+00 3.461542e-01 4.485185e-01 1.311218e+00 4.597035e-01
+#>  [761] 1.229203e-01 1.219245e-01 6.019126e-01 7.499988e-05 1.539529e-01
+#>  [766] 3.537598e-03 2.625114e+00 9.185475e-02 1.521070e+00 8.238182e-01
+#>  [771] 2.017903e+00 8.251171e-02 6.840246e-02 5.029556e-02 4.935378e+00
+#>  [776] 7.493991e-02 1.000272e+00 4.513381e-04 1.185228e-01 1.453573e+00
+#>  [781] 2.649045e-01 7.450560e-01 3.082730e-02 3.702254e-01 3.393254e-01
+#>  [786] 1.955139e-01 1.383920e+00 3.452676e+00 7.071286e-01 1.712432e-02
+#>  [791] 1.576424e-03 6.174402e+00 3.974244e-01 5.367411e-02 2.732987e-01
+#>  [796] 8.706035e-01 5.272649e-02 2.130865e-01 1.513474e+00 1.382556e+00
+#>  [801] 1.909159e+00 1.238579e-01 5.987502e-01 6.205455e+00 2.353733e+00
+#>  [806] 2.500475e-01 1.420419e-02 1.523543e-01 7.876553e-02 8.910140e-01
+#>  [811] 3.971835e+00 4.107419e-03 3.077215e-01 2.468838e-01 6.068836e+00
+#>  [816] 4.790704e-01 1.583801e+00 3.395435e-03 9.097312e-01 3.843245e-01
+#>  [821] 4.843562e-03 1.254347e+00 6.956809e-01 9.548451e-01 9.190888e-01
+#>  [826] 3.215269e-01 6.719918e-02 5.903499e+00 9.362663e-02 3.006719e-01
+#>  [831] 5.266058e+00 2.424541e-01 1.013150e+00 1.380664e-01 3.170814e-01
+#>  [836] 9.405190e-01 3.232259e-01 1.276010e+00 2.636404e-01 8.319362e-02
+#>  [841] 6.530104e-01 7.715208e-01 4.035213e+00 2.424247e-01 2.132111e+00
+#>  [846] 2.972382e-04 7.150663e-01 2.364965e-01 1.979598e+00 8.415215e-01
+#>  [851] 7.796319e-02 1.779181e+00 2.857921e+00 6.235198e-01 2.682663e+00
+#>  [856] 1.606861e+00 3.723158e-01 2.776177e+00 1.838710e-02 2.722835e-01
+#>  [861] 1.277456e-01 2.221876e+00 2.139416e+00 5.920547e-01 1.438530e-03
+#>  [866] 1.465236e-01 1.311429e+00 1.544377e-04 1.001870e-03 3.199548e+00
+#>  [871] 9.062711e-01 9.983114e+00 1.823024e-04 4.171302e-01 3.092622e-01
+#>  [876] 3.460478e+00 2.044931e-01 4.253911e-02 7.772594e-02 3.187057e-01
+#>  [881] 1.114298e+00 5.035812e-01 9.805632e-01 1.008849e-01 1.030083e-01
+#>  [886] 9.028063e-03 1.061806e+00 5.475172e-03 1.097335e-05 1.000643e-01
+#>  [891] 1.494163e+00 1.616032e+00 8.841036e-01 2.458335e+00 3.173078e-01
+#>  [896] 3.745163e+00 4.828689e+00 1.541142e-01 1.889208e-01 2.599040e-01
+#>  [901] 1.711997e-02 4.163732e-01 1.500237e-01 5.816683e-01 3.315810e-03
+#>  [906] 4.822612e-01 9.894474e-02 1.147502e-01 1.072377e-01 1.261451e+00
+#>  [911] 3.767593e+00 8.985513e-01 6.053330e-02 2.164474e-01 1.715219e+00
+#>  [916] 8.417600e-01 2.258366e-02 3.343687e-02 2.236993e-01 1.363888e+00
+#>  [921] 1.444083e-01 3.435931e-03 2.169461e-03 2.715321e+00 7.081306e-03
+#>  [926] 7.542968e-01 1.414839e-01 4.038418e+00 2.174788e+00 2.629834e-01
+#>  [931] 7.621653e-01 7.771150e-01 2.636620e+00 1.391566e+00 2.491661e-01
+#>  [936] 7.258703e-03 4.407468e-01 7.074552e-01 1.747162e-01 7.734606e-02
+#>  [941] 1.584351e+00 5.743037e-02 1.710995e-01 5.368607e-01 1.130328e-01
+#>  [946] 1.910834e-01 2.789878e+00 3.330834e-01 5.957068e-01 3.731006e+00
+#>  [951] 4.609148e-01 9.396190e-03 2.085306e-02 3.734652e+00 1.545340e-02
+#>  [956] 8.198473e-02 4.250698e-02 6.480350e-02 1.516452e-02 8.423036e-03
+#>  [961] 2.031220e+00 5.043430e-01 8.256899e-02 8.877778e-01 1.011486e-01
+#>  [966] 6.505819e-01 5.681655e-01 3.980412e-01 1.759317e+00 3.720237e-01
+#>  [971] 1.338751e+00 5.903981e-01 2.791245e-01 1.175449e+00 1.291138e-02
+#>  [976] 3.733599e-05 2.235922e+00 9.691228e-01 1.776488e+00 2.172526e-03
+#>  [981] 7.486950e-01 6.081767e-02 6.991980e-01 2.106175e+00 4.923015e-01
+#>  [986] 1.462531e-01 3.593631e+00 4.532714e-02 1.707748e+00 7.969431e-01
+#>  [991] 3.222944e-01 2.924546e+00 3.003630e+00 4.963117e-02 2.036818e+00
+#>  [996] 5.540481e-02 8.748102e-01 6.786054e-01 6.797652e-01 4.148050e-01
+#> [1001] 2.934782e-01 4.661592e-02 2.961824e-01 1.514138e+00 2.271595e-01
+#> [1006] 6.212755e-02 1.837047e+00 4.040903e+00 5.136611e-01 4.841463e-02
+#> [1011] 7.687810e-01 1.366213e+00 2.706258e-02 1.273256e+00 1.208175e-01
+#> [1016] 9.324797e-01 1.008755e+00 7.727659e-01 2.216517e-02 1.927462e+00
+#> [1021] 1.826941e-02 8.243455e-01 7.873424e-01 2.213573e-01 7.634353e-02
+#> [1026] 2.210576e+00 3.093128e+00 9.300814e-01 8.921421e-01 8.853660e-02
+#> [1031] 5.618503e-01 1.006865e-02 2.408387e-01 2.069829e-02 2.382936e-02
+#> [1036] 1.495115e-01 3.842503e+00 9.104289e-01 1.024065e+00 4.451180e-01
+#> [1041] 7.167374e-01 6.175519e-02 1.556406e-02 5.642373e-01 1.865239e-02
+#> [1046] 1.553338e+00 2.033818e+00 5.159720e-01 1.240716e-01 1.430098e+00
+#> [1051] 2.261244e-01 1.251544e-07 1.333415e-01 5.196047e-02 3.432099e-01
+#> [1056] 2.046545e+00 7.637106e-02 1.700875e-02 2.754929e+00 5.246444e+00
+#> [1061] 1.248622e-03 5.611396e-01 2.021608e-02 1.408934e+00 9.086450e-01
+#> [1066] 4.080247e-01 1.470144e+00 3.321794e-03 1.113282e+00 1.080990e-02
+#> [1071] 2.607616e-01 8.017099e-01 9.974451e-02 1.367981e+00 1.799276e+00
+#> [1076] 4.973420e+00 7.950110e+00 1.887443e-01 5.084975e-01 3.873547e-01
+#> [1081] 9.995207e-02 9.910170e-04 8.441273e-03 3.338172e-01 5.218428e-01
+#> [1086] 1.349413e-03 1.114030e+01 8.150034e-02 2.216589e+00 6.942751e-01
+#> [1091] 1.135222e-01 1.985167e+00 4.469640e-02 5.659519e-05 1.706809e+00
+#> [1096] 8.200674e-01 1.760860e+00 6.404774e-03 4.167258e+00 4.953737e-01
+#> [1101] 9.279587e-01 1.946136e+00 9.065807e-01 6.185601e+00 4.472341e+00
+#> [1106] 1.255707e-03 1.102302e+00 1.334133e-02 2.165397e+00 1.023911e+00
+#> [1111] 8.277209e-02 2.583648e-02 1.441064e+00 2.412472e+00 9.416697e-02
+#> [1116] 8.434040e-01 1.338382e-02 3.833431e+00 3.112732e+00 7.343798e-03
+#> [1121] 2.060144e-01 4.368068e-01 1.252093e-01 2.022262e+00 1.608438e-02
+#> [1126] 5.340175e+00 2.742200e+00 7.865163e-01 1.141255e-01 2.464883e-03
+#> [1131] 3.560154e+00 2.449136e+00 1.498035e-01 6.709359e-01 3.623064e+00
+#> [1136] 2.184602e-03 1.470980e+00 5.078727e-01 1.519921e-01 9.925147e-01
+#> [1141] 9.636072e-01 2.588555e-01 5.655669e-02 8.494334e-03 4.908085e+00
+#> [1146] 1.130960e+00 3.503225e+00 9.865988e-02 2.536715e-01 1.021775e-01
+#> [1151] 9.587008e-02 1.649372e+00 3.058848e-01 2.439143e+00 1.007670e+00
+#> [1156] 4.284455e+00 2.275751e-02 2.669905e+00 6.473384e-01 3.793496e-01
+#> [1161] 1.212833e+00 1.872241e-01 8.821348e-11 2.499550e-01 2.254465e-01
+#> [1166] 5.603975e+00 2.510765e+00 5.424850e-03 1.185016e+00 1.724900e-01
+#> [1171] 1.928316e+00 8.564390e-02 2.958227e-01 7.827377e-02 2.492576e-01
+#> [1176] 1.640006e-01 5.273069e-02 1.345520e+00 5.011097e-02 2.680602e-01
+#> [1181] 1.970519e+00 2.573343e-02 9.567115e-01 8.574835e-01 1.207089e+00
+#> [1186] 1.254073e+00 1.410952e+00 3.883938e-01 1.383041e+00 8.579433e-01
+#> [1191] 2.975745e-01 1.977180e+00 2.689439e-01 3.732230e-01 1.588439e-01
+#> [1196] 1.619647e-01 2.347800e-01 1.808906e+00 1.303553e+00 3.760324e-01
+#> [1201] 2.227772e-02 1.286160e+00 3.936120e-02 6.544467e-01 1.293495e+00
+#> [1206] 1.300144e+01 9.590302e-02 1.057336e-01 6.141892e-01 9.887478e-03
+#> [1211] 9.625602e-02 1.190973e+00 2.181007e-03 5.029759e+00 6.441272e-03
+#> [1216] 4.536808e+00 1.992536e+00 1.552399e+00 1.888448e-01 1.001431e+00
+#> [1221] 6.683330e-01 3.998214e-01 5.792583e+00 3.136247e-01 2.422361e-01
+#> [1226] 1.925431e-02 6.436219e-01 4.794378e-01 3.474619e-02 1.462966e+00
+#> [1231] 2.841728e-02 2.061162e+00 8.375083e+00 4.007658e-01 4.014563e+00
+#> [1236] 8.250118e-03 6.596667e-01 1.243706e+00 1.250915e+00 6.203915e-01
+#> [1241] 7.794127e-02 7.803141e-01 1.643339e+00 1.415167e-01 4.412154e-01
+#> [1246] 2.377983e-01 1.700566e+00 3.664145e-02 2.120186e+00 9.471395e-01
+#> [1251] 8.843838e-01 3.188973e-01 1.807228e+00 2.494718e-02 3.682958e-01
+#> [1256] 8.128706e-02 1.172224e-03 8.889487e-01 3.507267e+00 6.298840e+00
+#> [1261] 3.142187e-02 2.452656e-02 1.842945e+00 1.470815e+00 2.343658e+00
+#> [1266] 6.392886e-01 7.112584e-03 1.708812e-01 3.290020e+00 1.748091e+00
+#> [1271] 7.277070e-01 1.149249e-01 2.541188e+00 2.825571e-01 1.637425e+00
+#> [1276] 8.026852e-02 5.516922e-02 9.577192e-01 1.077689e+00 3.021877e+00
+#> [1281] 1.982904e+00 6.753604e-01 1.055404e-06 1.207843e-01 5.265863e-01
+#> [1286] 6.218710e-02 1.382828e-01 8.754759e-01 4.749243e-01 1.194090e+00
+#> [1291] 3.200409e-02 4.883298e-01 2.994119e-02 4.854924e-01 4.063440e-01
+#> [1296] 8.540645e-02 2.030839e+00 1.075093e-01 6.112914e-02 1.351730e+00
+#> [1301] 2.109263e-01 4.837418e-01 6.957703e-01 5.791354e+00 1.635234e+00
+#> [1306] 1.607873e+00 5.191020e+00 7.867113e-02 6.335107e+00 3.893861e-01
+#> [1311] 1.976298e+00 6.216927e-02 1.996365e-01 1.285244e-02 7.493460e-03
+#> [1316] 2.423393e-02 1.624169e+00 2.808674e-01 4.816427e-02 8.029452e-01
+#> [1321] 7.352757e+00 4.219481e-01 7.329210e-02 9.547313e-01 1.446311e-01
+#> [1326] 1.014676e-01 2.366873e-01 4.370816e-02 5.451054e-02 2.961000e-01
+#> [1331] 3.554632e-01 3.559449e-02 3.237855e-02 1.074200e-01 2.505210e+00
+#> [1336] 8.322960e-01 1.931849e-01 2.622526e-01 8.530196e-02 3.855686e-01
+#> [1341] 1.422154e-02 7.613569e-03 9.738907e-01 3.687580e-01 9.155090e-01
+#> [1346] 1.630594e+00 1.378021e-01 1.898836e-02 7.020885e-05 9.425431e-01
+#> [1351] 4.188265e-03 2.497142e-01 6.949112e-01 9.293430e-05 6.141562e-01
+#> [1356] 8.409757e-01 5.258635e-02 9.471908e-01 2.871999e-02 1.804595e+00
+#> [1361] 5.708961e-01 1.735633e-02 9.618564e+00 5.156165e-01 5.370016e-01
+#> [1366] 1.526829e-01 6.695372e-01 1.034044e+01 4.843050e-02 2.602292e-01
+#> [1371] 8.451477e-01 8.213022e-01 1.394283e-01 1.877833e-01 2.223171e+00
+#> [1376] 7.637574e-01 4.163463e-01 4.371138e-01 5.973235e+00 1.947634e-01
+#> [1381] 1.045356e+00 1.733030e+00 2.317003e-03 8.315379e-03 9.347937e-01
+#> [1386] 6.878937e-02 3.393723e-01 9.482307e-02 4.384634e-03 4.667581e-02
+#> [1391] 3.544508e-01 8.533828e-01 9.492491e-01 4.158948e-02 3.268880e+00
+#> [1396] 2.987218e+00 2.100288e+00 7.537991e-01 5.294946e+00 2.623162e-01
+#> [1401] 7.688573e+00 1.271721e+00 2.029497e-05 2.531747e-01 2.758783e-01
+#> [1406] 1.494624e+00 6.355834e-01 1.691524e+00 2.806378e+00 1.451973e+00
+#> [1411] 4.096546e-02 2.780312e+00 1.736709e+00 2.533254e-03 5.379090e-01
+#> [1416] 3.853447e-01 5.852484e-01 1.495730e+00 2.753318e-01 1.105087e-02
+#> [1421] 1.057776e-01 6.624225e-02 3.823150e-01 1.152807e-01 4.880308e+00
+#> [1426] 4.863400e+00 2.693851e-01 3.974994e-02 6.680955e-01 1.527688e-01
+#> [1431] 9.687061e-01 4.639613e+00 5.226627e+00 1.493193e+00 6.906257e-03
+#> [1436] 1.461614e-01 3.664986e-01 9.768293e-01 7.415981e-01 1.071481e+00
+#> [1441] 7.931896e-02 4.807360e+00 5.583499e+00 2.345782e-01 1.797257e-04
+#> [1446] 4.178462e-02 3.825347e+00 1.147021e+00 4.364043e+00 1.615285e-01
+#> [1451] 4.934483e-02 1.894181e-01 4.694145e-01 2.279170e-01 4.434423e-04
+#> [1456] 6.544800e-02 9.029008e-01 2.826111e+00 7.671154e-01 6.887207e-02
+#> [1461] 4.731121e+00 1.352668e+00 2.764664e+00 2.560816e+00 6.498398e-01
+#> [1466] 6.728218e-05 2.025701e-01 1.322407e+00 1.428794e+00 2.336937e-01
+#> [1471] 4.845308e-01 1.129970e-03 1.015882e+01 2.428609e-01 5.421230e-01
+#> [1476] 7.237370e-01 6.482232e-01 6.855956e-01 3.241522e-01 1.777217e-01
+#> [1481] 1.022497e+00 6.865161e-01 1.177144e+00 2.915211e+00 9.986008e-01
+#> [1486] 5.673687e-01 4.264677e-01 2.443221e-01 3.034939e-03 1.546583e-01
+#> [1491] 1.062559e-02 5.490541e-03 2.508309e+00 3.812827e-01 9.577300e-01
+#> [1496] 3.222008e-01 5.223935e-04 8.993931e-01 8.493592e-01 1.474706e-01
+#> [1501] 1.436768e-01 2.768272e-01 2.392566e-01 6.072674e-03 2.053810e+00
+#> [1506] 2.083989e-02 3.083357e+00 2.393478e-03 2.668662e-02 1.268388e+00
+#> [1511] 8.080056e-02 1.111510e+00 1.295653e-01 1.156971e-01 2.271623e-01
+#> [1516] 1.171085e+00 3.047844e-01 1.047021e+00 6.519446e-02 6.739418e-01
+#> [1521] 1.593438e+00 5.790247e-02 3.696792e-02 2.603032e-01 7.384110e-02
+#> [1526] 2.889026e+00 1.850860e+00 4.850100e+00 8.391413e-02 2.069255e+00
+#> [1531] 5.920688e-01 2.675287e-01 2.004827e+00 3.216938e-04 1.688537e+00
+#> [1536] 2.058617e-01 3.780866e-01 2.830662e+00 2.591645e-02 4.700705e+00
+#> [1541] 6.288328e-01 3.928761e-01 1.840960e-01 6.131043e-01 1.179580e-01
+#> [1546] 1.751060e+00 2.322498e-01 4.781476e-02 3.093093e-01 1.702315e+00
+#> [1551] 1.613048e-01 3.115104e-02 4.556785e-03 2.614750e-01 4.329328e-01
+#> [1556] 6.046061e-01 2.239642e-02 6.312909e-02 1.795719e-03 3.907954e-03
+#> [1561] 4.231412e+00 5.892067e-01 6.383763e-01 2.169507e-02 2.965066e-02
+#> [1566] 4.355515e-01 4.445258e-01 1.370270e-01 1.528764e-02 1.346713e+00
+#> [1571] 1.232714e+00 5.167628e-01 1.157527e+00 3.380323e-01 1.127577e+00
+#> [1576] 1.986205e-02 4.476190e-01 1.646551e+00 4.216211e-01 3.620041e-01
+#> [1581] 5.230255e+00 1.236254e-03 3.827788e-01 4.222396e+00 1.153766e+00
+#> [1586] 4.580627e-02 5.377676e-01 2.047793e+00 1.052924e+00 4.065851e+00
+#> [1591] 2.151907e+00 3.830861e-01 1.722606e-01 8.417375e+00 3.666658e-02
+#> [1596] 5.235529e-03 2.816284e-01 2.030563e+00 8.952083e-01 2.218181e+00
+#> [1601] 1.131211e+00 9.738163e-01 2.443635e+00 1.178108e+00 1.731721e-01
+#> [1606] 7.831467e-03 7.048161e-01 6.112821e-01 7.341747e-03 6.965968e-01
+#> [1611] 7.005858e-01 9.595323e-01 1.655779e-01 5.006107e-01 7.749710e-01
+#> [1616] 1.261674e+00 1.100128e-01 2.082653e-01 1.757709e+00 4.213058e-01
+#> [1621] 4.653535e-01 2.841134e+00 5.284838e-01 5.136885e-01 5.558132e+00
+#> [1626] 2.100294e-01 5.794436e-01 7.245192e-03 3.563007e+00 2.037772e-01
+#> [1631] 4.583309e-01 1.151397e+01 1.115761e+00 1.793987e+00 1.618094e-01
+#> [1636] 2.042655e-01 8.966494e-01 9.314639e-01 3.577398e+00 1.364694e-03
+#> [1641] 7.178494e+00 1.228315e-02 1.215439e+00 1.651797e+00 3.148184e+00
+#> [1646] 3.354059e-01 3.101743e-02 1.898027e+00 1.586984e+00 1.770471e-01
+#> [1651] 4.379495e-01 1.809940e-01 1.111892e+00 7.689984e+00 1.483162e+00
+#> [1656] 1.919868e-01 1.808041e-01 2.070934e-01 8.225373e-02 4.350658e-01
+#> [1661] 2.799250e+00 1.165247e+00 4.619904e-01 2.647943e-01 4.141836e-02
+#> [1666] 1.612385e-01 7.690801e-02 4.815696e-01 3.921646e-02 2.251747e-01
+#> [1671] 1.519275e-02 6.488662e-02 3.849551e-01 5.415287e-01 4.393768e-02
+#> [1676] 4.510378e-01 1.775880e-01 1.182804e-01 1.281114e+00 8.911233e-01
+#> [1681] 4.106111e-01 4.198139e-01 1.411713e+00 1.010721e+00 1.789581e+00
+#> [1686] 4.135362e+00 2.251544e+00 1.654944e+00 1.112218e-02 1.099462e+00
+#> [1691] 2.183296e-01 1.334453e-01 6.258233e-03 3.194255e-01 3.079673e-01
+#> [1696] 1.545244e+00 6.170907e-02 2.734217e-01 1.595711e-02 3.676597e+00
+#> [1701] 8.770885e-01 1.164118e-01 4.337802e-01 3.878374e+00 9.978627e-04
+#> [1706] 1.968062e-01 2.234242e+00 1.980546e+00 1.566482e+00 8.835276e-02
+#> [1711] 9.193854e-01 9.066226e-01 1.865709e-01 1.609950e-01 8.848339e-02
+#> [1716] 4.668643e-02 2.419497e-02 1.121743e+00 5.970038e+00 8.202137e-02
+#> [1721] 6.560586e-01 2.864166e+00 1.001536e+00 7.185280e+00 1.300171e+00
+#> [1726] 2.369604e+00 3.927000e+00 1.445666e+00 2.616433e-01 1.103426e-01
+#> [1731] 1.135737e+00 5.739664e+00 8.713761e-01 3.708701e-02 9.088316e-05
+#> [1736] 4.063781e-02 6.305890e-01 2.259493e-01 6.542956e-02 3.786988e-01
+#> [1741] 2.831356e-01 9.924183e-03 1.074191e-05 6.272302e-01 6.392302e-02
+#> [1746] 9.054730e-01 9.083125e-01 4.761019e-01 6.578916e-01 5.353847e+00
+#> [1751] 2.650099e-03 6.077861e-01 5.983810e-01 7.744183e-01 9.836176e-03
+#> [1756] 2.865096e+00 2.877529e-01 2.653617e-01 7.271258e-01 4.228515e-01
+#> [1761] 3.626900e+00 5.440431e-01 7.907907e-03 7.188833e+00 5.910958e-01
+#> [1766] 1.923354e-01 8.841482e-02 1.633568e+00 1.591907e+00 1.612303e+00
+#> [1771] 5.428372e-01 1.946088e+00 4.993142e-01 2.059798e-01 2.970250e-01
+#> [1776] 8.397353e-02 5.173117e-02 1.809469e+00 9.705096e-01 1.758509e+00
+#> [1781] 1.031252e+00 2.837164e+00 1.347308e+00 9.968809e-01 2.239693e+00
+#> [1786] 1.665885e-01 6.100701e-01 7.197660e-01 2.746681e-02 3.779416e-01
+#> [1791] 2.316421e+00 6.656046e-01 1.508391e+00 2.674363e-01 1.326999e-02
+#> [1796] 4.040396e-01 4.513659e+00 1.587892e-01 5.329502e+00 7.212888e-01
+#> [1801] 1.756019e+00 1.505316e-02 7.603151e-02 6.155204e-02 4.721141e-02
+#> [1806] 2.640723e+00 5.059628e-01 1.421433e+00 4.288866e-01 7.554736e-03
+#> [1811] 4.832341e-02 1.444719e+00 2.931154e-01 3.405552e-01 8.861500e+00
+#> [1816] 4.084647e-01 1.285138e+00 2.339292e+00 5.751079e-01 1.934028e+00
+#> [1821] 1.135073e-01 4.144026e-01 2.362993e+00 5.301304e-02 5.472143e-01
+#> [1826] 3.621156e-02 2.638808e+00 2.354590e-01 3.096076e-01 3.048044e-01
+#> [1831] 7.081217e-01 1.742481e+00 2.822116e+00 1.940704e+00 1.099427e-01
+#> [1836] 2.668818e+00 3.950365e-03 1.203469e-01 1.749374e+00 2.876865e+00
+#> [1841] 7.783838e-01 7.844859e-01 6.097371e-02 9.362873e-01 4.638737e+00
+#> [1846] 9.755254e-01 4.512502e-01 1.368014e-02 4.000446e-02 1.046435e+00
+#> [1851] 8.117396e-03 1.080875e-01 1.089597e+01 4.789338e-02 6.037222e-01
+#> [1856] 3.256467e-01 2.084995e+00 2.217634e-01 4.802905e-01 1.670611e+00
+#> [1861] 3.270439e-01 3.611698e-01 3.420577e-02 2.040054e+00 2.953141e-01
+#> [1866] 8.327639e-01 4.155626e+00 3.569723e-02 3.338825e+00 5.694876e-01
+#> [1871] 1.761385e-01 3.665477e-01 5.617812e+00 7.360865e-01 3.740358e-04
+#> [1876] 1.213560e+00 1.918363e-01 3.255602e+00 6.991524e+00 6.369440e-01
+#> [1881] 1.187717e-01 1.096745e-01 1.343866e+00 1.036649e-02 1.600065e+00
+#> [1886] 3.958038e-01 9.303143e-01 3.826095e-01 3.814476e-02 3.131811e-01
+#> [1891] 2.994313e+00 3.442814e-01 4.502405e-02 1.640760e-02 2.685039e-01
+#> [1896] 2.265973e-03 3.110897e-02 1.658874e-01 2.786881e-01 4.579573e-04
+#> [1901] 1.924705e-01 8.849938e-01 5.058439e-01 9.672316e-01 3.711639e-01
+#> [1906] 7.553271e-01 1.308566e+00 2.162952e-02 3.824490e+00 1.830899e-01
+#> [1911] 5.870719e-02 5.873179e-01 5.212459e-03 8.134030e-01 1.669616e-06
+#> [1916] 4.531810e-01 5.194249e-01 1.512397e+00 8.631020e-01 1.085387e+00
+#> [1921] 1.033305e-01 2.027723e-04 2.217048e-02 6.698957e-02 2.110703e+00
+#> [1926] 1.691990e+00 6.201594e+00 1.680270e-01 4.336895e-01 1.637168e+00
+#> [1931] 2.793617e-02 1.295125e+00 6.582554e-01 2.289665e-02 1.678235e+00
+#> [1936] 2.864554e-01 2.857703e-02 4.457876e-02 4.898393e-02 4.296135e+00
+#> [1941] 1.179209e-01 1.771164e+00 2.347932e-01 1.029248e+00 1.837274e-01
+#> [1946] 1.440771e+00 6.153776e-03 2.877529e-01 2.014414e+00 4.335414e-03
+#> [1951] 2.764765e+00 1.274007e-01 1.927735e-01 4.642398e-01 3.118234e-01
+#> [1956] 1.356685e+00 5.873259e-01 4.398397e-01 1.634047e+00 5.317391e-05
+#> [1961] 1.114452e+00 5.809718e-01 4.756097e-01 2.335550e+00 8.964188e-03
+#> [1966] 4.611678e-01 1.843989e+00 1.449635e+00 4.691821e-02 1.441039e+00
+#> [1971] 3.246283e+00 4.236666e-01 1.426614e+00 1.241611e+00 3.244283e+00
+#> [1976] 4.163891e+00 6.041035e-01 1.425014e+00 1.369235e+00 1.042305e+00
+#> [1981] 3.539947e+00 5.673973e-01 2.379343e+00 1.314719e-01 2.685324e-03
+#> [1986] 1.234960e-02 4.446682e-01 3.086087e-01 9.912022e-02 1.030890e+00
+#> [1991] 6.129892e-01 1.140209e+00 1.444403e+00 3.205356e-01 3.939949e-01
+#> [1996] 6.890434e-02 7.812873e+00 3.611430e-01 5.751319e-01
+#> 
+#> $boot_statistics$time
+#>    [1] 0.805455150 6.816542935 1.040951852 0.604008252 1.506747873 1.025157543
+#>    [7] 0.351956614 0.957665651 1.388708180 1.076812283 0.486320823 0.799722848
+#>   [13] 1.830005448 0.487888239 0.101496833 0.393287721 2.738591233 0.792921389
+#>   [19] 3.054234934 0.222793869 2.496950530 2.201614489 2.311739270 1.268377849
+#>   [25] 0.016885695 2.501365756 1.101133914 1.713668845 0.140950345 1.900966207
+#>   [31] 0.549095614 1.939624427 0.805424465 1.482078023 1.876364879 0.739215745
+#>   [37] 1.111332473 3.536398535 0.405787238 0.553766523 0.675205144 0.800927227
+#>   [43] 0.575332553 0.336896586 1.455703115 2.302274059 0.193317322 0.538913019
+#>   [49] 1.191435496 0.611657494 0.973195384 0.449785742 1.770949869 0.953086815
+#>   [55] 0.859559347 1.051094005 0.433964048 0.540955935 1.744013591 1.591820264
+#>   [61] 0.451269871 1.456646684 0.932288883 1.825326499 0.081151013 1.705257221
+#>   [67] 0.309441466 0.143842825 0.654533176 1.409783623 0.462947010 1.542275723
+#>   [73] 1.320972693 4.606351927 0.489755056 0.320771842 1.615119043 0.988369502
+#>   [79] 1.296084411 1.954451676 1.316322743 1.401019494 0.427191990 2.488280688
+#>   [85] 0.372052754 0.072927724 0.957105190 0.569257528 2.690118080 0.781047582
+#>   [91] 2.208123501 1.189044490 1.248197653 1.497473082 0.159427377 2.805653024
+#>   [97] 1.124104984 1.087730457 1.164409228 0.868082284 0.408643335 0.823811351
+#>  [103] 1.008104938 0.693067089 1.769310569 0.960826549 0.246538371 1.160987842
+#>  [109] 0.254736935 0.803858314 0.800569122 0.463056460 1.355833769 0.918760543
+#>  [115] 2.776584828 0.480744532 0.404385323 0.916064067 1.883919924 1.027417190
+#>  [121] 1.250148774 0.068215722 1.935937578 0.610528240 0.658611071 1.123735375
+#>  [127] 0.522725427 0.628785296 0.383722565 0.381475271 0.219859581 0.448299567
+#>  [133] 0.083359615 0.655827569 0.037093762 2.273162280 3.349559362 0.955769415
+#>  [139] 0.892009972 0.460935694 0.569734175 1.246316093 1.114899467 0.199476044
+#>  [145] 0.439658573 1.148007834 0.788584042 0.691120046 1.221318776 0.640645006
+#>  [151] 0.114551603 0.614393773 1.926789196 0.339450561 0.278330267 1.399168744
+#>  [157] 1.435706181 1.420815744 0.166480113 2.494649137 0.178722601 3.435671435
+#>  [163] 0.404494044 1.121860570 0.784436833 0.262903757 0.982090268 1.118313364
+#>  [169] 0.848648974 1.579838855 1.068975781 0.618710550 1.529264647 0.740639777
+#>  [175] 0.812249706 0.183202222 3.315162783 0.641182856 0.287888515 0.855990473
+#>  [181] 1.630240816 0.556864004 1.232538852 1.392506610 1.715208998 0.456332933
+#>  [187] 1.351747597 1.057441600 0.486397274 1.329556304 0.216856018 2.325655016
+#>  [193] 1.925577559 0.800822056 0.590655723 2.691989058 0.296376768 1.289164493
+#>  [199] 1.140497745 1.350464071 0.158116004 2.000930831 0.811309416 0.243774837
+#>  [205] 1.377739563 0.316759557 1.833019024 0.807582988 0.220876221 0.748325035
+#>  [211] 0.592125720 1.261475271 0.984579742 0.454362710 0.806143066 1.027376522
+#>  [217] 0.879258222 0.734673122 0.748450002 0.357054679 0.963964609 1.898439825
+#>  [223] 1.262476326 3.030420233 0.483584899 0.784654735 1.716524682 0.320127264
+#>  [229] 0.346996528 0.077518786 1.140037257 2.688516501 0.770552899 0.553936621
+#>  [235] 0.612764623 0.089931889 0.284766435 1.360199317 0.999594964 0.567085788
+#>  [241] 0.389378566 0.387589872 2.086230904 0.640164984 2.591867788 0.935188410
+#>  [247] 2.454645455 0.168141005 0.420591752 0.808798534 1.225932400 1.067002015
+#>  [253] 0.466241613 0.619289519 1.118211835 0.933249882 0.187367800 2.262344579
+#>  [259] 0.668835880 0.206694479 0.033193931 0.314907976 1.532969123 0.426050161
+#>  [265] 0.303982408 0.588796401 0.671650945 2.998172930 2.032871285 2.436321561
+#>  [271] 1.997534686 0.784835302 0.116115840 0.306620767 2.491942158 2.251775218
+#>  [277] 0.562913690 0.199935200 0.550180868 1.015655947 1.225092522 1.367369358
+#>  [283] 1.691588709 0.199209147 1.154680369 1.263900426 1.760378383 0.829337708
+#>  [289] 0.130518795 0.697266414 2.241447092 0.441895320 0.624734493 0.885972580
+#>  [295] 0.967598562 0.766991758 1.699886188 1.279431313 0.521669457 1.242326072
+#>  [301] 3.721123387 0.883596186 0.471966791 2.648645309 1.095917057 4.932602335
+#>  [307] 0.696630255 2.239214653 1.393756003 0.133485518 0.339577060 0.988787116
+#>  [313] 0.644207427 0.461725599 0.533422637 0.425205542 1.402223445 0.532102419
+#>  [319] 0.678892507 1.401605874 0.523677108 1.260300023 1.810438776 0.892241230
+#>  [325] 1.363680619 0.467400826 2.007834132 2.844601040 0.620848441 1.274908206
+#>  [331] 0.463184409 3.285799631 0.163653213 3.108006953 2.312490708 0.001375008
+#>  [337] 0.343528979 0.626439589 0.525833865 1.830811907 0.150143018 0.016571263
+#>  [343] 0.916945229 0.506475130 0.057407075 0.541315097 2.460396937 0.142970229
+#>  [349] 1.311939859 0.640978865 0.037051714 0.189655489 2.437612407 3.132540513
+#>  [355] 0.872527576 0.662126136 2.261970054 0.931057490 1.758438491 0.498733454
+#>  [361] 3.080449860 1.375006879 0.125469077 0.867228146 0.390903668 0.391908043
+#>  [367] 2.932441476 0.077989109 0.145119186 0.555901312 0.932449325 0.619588271
+#>  [373] 0.028894772 0.625545385 0.110266786 0.861097208 0.285114589 0.948368242
+#>  [379] 0.716849215 0.236433363 1.281640138 1.815157009 0.779961285 0.213329904
+#>  [385] 0.649803945 0.449505290 0.882130868 0.088419487 1.026543064 2.018828515
+#>  [391] 2.244976749 0.610890943 1.273706036 0.822523115 1.213548741 0.816736384
+#>  [397] 2.389008166 1.954592218 2.092939906 2.121268779 0.232218341 0.513464462
+#>  [403] 1.325259331 0.837845805 1.700708337 1.244871502 1.574938818 2.118613462
+#>  [409] 1.441805988 0.449318682 2.877052917 1.384430713 1.567330610 1.505285311
+#>  [415] 0.247265968 0.144114347 0.296558856 0.347440738 0.327283271 1.048332335
+#>  [421] 1.952276194 0.591484729 0.096356208 0.661643189 0.732505294 0.476606975
+#>  [427] 1.983148959 1.066587613 0.769683844 2.246952985 0.061844509 0.118898609
+#>  [433] 1.003403484 0.568078841 0.305149485 0.269709447 1.234947971 1.410371644
+#>  [439] 0.203782108 1.121792646 0.628676150 0.689688300 1.199065370 0.995040840
+#>  [445] 0.181422186 3.011965664 1.717221695 1.034776291 1.941855645 1.399695420
+#>  [451] 0.374885376 0.801722953 3.276175472 0.456526889 2.727093555 2.719074475
+#>  [457] 4.090508033 0.626460366 0.107397995 0.131270664 0.795477108 1.559170902
+#>  [463] 1.030689820 0.874602112 0.185460705 1.029002565 0.178926618 1.242427512
+#>  [469] 0.313824973 0.365119808 0.802592109 0.281109860 0.189926607 0.888905138
+#>  [475] 0.224006868 0.097861133 2.133155258 1.162158977 1.611580728 0.419886176
+#>  [481] 1.162144682 0.306623571 0.419558556 1.635592835 2.161946777 0.243933403
+#>  [487] 0.294643742 2.032420140 0.714749094 1.158293780 1.114108267 0.940441999
+#>  [493] 0.186402669 1.516213109 0.470860311 0.302552331 0.415169303 1.468421342
+#>  [499] 2.167037921 2.459079659 0.690507092 0.354841636 1.583329530 1.560954121
+#>  [505] 2.648041806 0.020022885 2.235291583 1.307829750 0.787617901 0.782489150
+#>  [511] 1.364474599 0.782072081 0.954645652 0.058164235 2.254809107 0.886996105
+#>  [517] 1.071713106 1.638627062 1.840805497 1.009021639 3.053331415 0.663226763
+#>  [523] 1.718066192 0.058139916 0.444510779 2.138744620 1.956033896 0.650298157
+#>  [529] 0.652409522 0.274728813 0.927767286 0.766016480 0.134266501 0.826159987
+#>  [535] 2.391449818 0.853875727 1.824592893 0.349766639 0.261819419 2.238884905
+#>  [541] 0.433174936 0.981457805 1.004782819 0.694994784 0.131112920 0.221325725
+#>  [547] 0.465228915 1.040152474 1.579019475 0.424094140 0.560675053 0.141092209
+#>  [553] 0.794470419 0.788652401 0.549378381 1.068580187 0.859269731 0.125484222
+#>  [559] 0.669463677 1.182020260 0.393860911 0.075908451 3.215008689 0.560729000
+#>  [565] 0.441702240 0.146989453 0.163433323 0.100937600 2.420349861 2.551132931
+#>  [571] 0.741921255 0.318696550 0.907698830 0.334169267 1.801818508 1.773913863
+#>  [577] 0.057486003 0.265519809 0.961189883 0.421258929 1.580976338 2.472278743
+#>  [583] 1.510597184 0.914579899 0.353742487 0.828992604 2.513094003 1.512407904
+#>  [589] 0.701863324 2.217640119 2.597545212 2.236657665 0.092119080 1.734059725
+#>  [595] 0.579535173 0.027660369 0.734341498 0.949491201 0.065781067 0.690792079
+#>  [601] 0.302324737 4.090588290 0.189960509 0.207534991 0.535604821 2.241127457
+#>  [607] 0.322906898 1.323627361 0.515515404 0.519119260 0.052908229 1.703474600
+#>  [613] 1.009826900 0.833592927 0.438826360 0.195248788 2.491108497 0.294111073
+#>  [619] 0.625057904 0.372036669 0.119689424 1.373192738 2.584101943 0.255165466
+#>  [625] 0.032503061 0.928437112 1.330501982 0.248858818 0.316711325 0.239626436
+#>  [631] 1.762577445 3.364682154 2.967424329 0.595490948 0.683472637 1.122768939
+#>  [637] 0.215497660 2.771949839 1.119752975 0.408576439 0.150603216 1.204096455
+#>  [643] 0.973013889 1.222734922 1.266458726 0.531344799 0.576560567 0.449964278
+#>  [649] 1.018280143 1.020673956 0.545696364 0.195515232 1.190770694 0.667561982
+#>  [655] 0.446176724 0.205482565 1.237857187 3.435177647 1.813395703 1.222666244
+#>  [661] 0.873801232 0.886026914 0.689519921 3.087305116 1.040678297 0.863660325
+#>  [667] 1.752773277 0.819773885 2.385401361 4.066553374 0.857751565 2.235666283
+#>  [673] 1.136465543 1.547621549 0.175437093 1.051808764 0.245041249 0.963079836
+#>  [679] 1.288158926 0.734245997 1.318551500 0.581812994 0.381389701 0.846194855
+#>  [685] 1.378706240 1.138347992 0.397490161 1.031440190 0.426014930 0.047029811
+#>  [691] 2.726154751 0.288779851 1.047926779 0.543245336 3.171316756 0.663056931
+#>  [697] 1.800730695 0.838142503 0.992458841 0.572814127 1.420915489 0.636055559
+#>  [703] 1.323873434 0.580367223 0.606288466 0.589154774 1.173691933 0.404297715
+#>  [709] 1.098730195 0.648186991 0.388629130 3.410777771 0.689567422 0.796937834
+#>  [715] 0.212610089 2.459225612 0.780219720 1.817292921 0.479767384 1.560353053
+#>  [721] 0.471186990 0.615353753 0.783986743 1.247882127 1.710809167 1.092762022
+#>  [727] 0.939338969 0.238072893 0.533850163 0.874726715 0.815304593 2.627120900
+#>  [733] 0.387881904 0.989308636 2.583123360 0.547980147 0.447514147 1.691460447
+#>  [739] 0.472697878 0.460935705 3.001940097 3.441028427 0.311864004 0.133789934
+#>  [745] 0.601921838 0.769406085 0.463537463 0.398009885 2.931569459 0.913825475
+#>  [751] 0.491694383 1.317788735 2.709544522 2.102178874 0.783590547 0.788096390
+#>  [757] 0.829804730 4.117666439 0.902703811 2.038027163 0.715500775 0.965807532
+#>  [763] 0.969012061 0.666871147 0.503617088 0.400075625 2.412214425 0.129575378
+#>  [769] 1.961297746 0.963670255 0.816965944 0.505089469 0.402567925 2.841309163
+#>  [775] 1.223565293 0.173105890 1.450059164 1.471128223 2.323191007 0.420767341
+#>  [781] 0.292261596 0.636143251 0.898523581 0.503277387 1.019470305 0.656651712
+#>  [787] 0.944717275 1.574970643 0.731423033 2.435772809 1.749372336 0.672986562
+#>  [793] 0.164251269 0.523872400 2.127472636 1.359711477 1.770485409 0.543080743
+#>  [799] 1.664320902 1.292903524 1.261846176 0.331657935 0.321225926 0.301477120
+#>  [805] 1.475945762 0.761412413 0.091364166 0.197959066 0.183571484 0.642452558
+#>  [811] 0.903535485 0.299728494 1.390395719 1.735568395 0.917763853 0.167091234
+#>  [817] 0.879728242 1.458377954 0.303823948 1.092104628 1.629345947 0.034672952
+#>  [823] 0.349123825 0.676732101 0.744061678 0.094116789 0.807126758 1.680078621
+#>  [829] 1.518708033 0.677618755 0.209584852 1.438309990 2.973349551 1.172445164
+#>  [835] 0.173927383 1.075853910 1.015822796 0.715339135 0.465798721 1.057841240
+#>  [841] 0.641506282 0.882822958 0.647608791 0.304552052 2.439495844 0.924233105
+#>  [847] 0.786189902 1.440056080 1.874073052 0.158355305 0.001818380 0.949189468
+#>  [853] 0.476830062 1.330847620 2.376917614 0.274676991 0.305957254 0.774628110
+#>  [859] 2.422735716 0.541842924 0.385234292 1.708286850 2.077836130 0.098508359
+#>  [865] 0.098846267 0.578754331 0.506463628 0.091202161 0.277625626 1.456901246
+#>  [871] 1.761293418 2.358137755 1.858906343 0.897323776 0.026207264 2.248896050
+#>  [877] 0.554922442 0.270983485 0.172226243 1.659314461 0.157066269 1.627123465
+#>  [883] 0.484833283 0.701528430 0.583726021 0.207952974 1.607057008 1.397443622
+#>  [889] 0.705362747 2.120892573 0.268851987 1.018923731 0.219669387 0.625675505
+#>  [895] 2.164572610 0.110089199 0.954553183 0.319192691 0.724536222 0.767599950
+#>  [901] 2.608663139 0.304039054 0.569467892 2.801855110 0.196928722 1.807226381
+#>  [907] 2.845068622 0.629138819 0.259892776 0.473563956 0.368068195 1.215108500
+#>  [913] 0.362753261 0.341405148 1.275465680 0.378157446 1.033070573 4.975369567
+#>  [919] 0.200930333 1.155935867 1.579372193 2.242699058 0.389308246 0.361487276
+#>  [925] 0.219795557 0.740189154 0.378924052 1.134625624 1.452600714 2.029580253
+#>  [931] 0.184021674 1.612639201 0.844801648 2.576712096 0.873698676 0.340896559
+#>  [937] 0.910853023 2.579347638 0.511384907 2.339845605 0.411472890 0.105894775
+#>  [943] 0.752130537 0.310327865 4.246380888 0.640413385 0.178825943 0.306236915
+#>  [949] 0.842212943 0.971998659 0.674508669 2.819642067 2.627839922 1.300867593
+#>  [955] 0.742640277 1.804617148 0.511553529 0.161393938 1.622631423 1.984101252
+#>  [961] 1.251215644 0.059313209 1.408930745 0.379035662 0.780141976 0.163178876
+#>  [967] 2.090438763 0.024594287 0.217827494 0.293424987 0.905046964 0.673141603
+#>  [973] 0.948967784 0.703549823 1.112968393 2.025089659 0.361855480 0.626750628
+#>  [979] 1.323122875 0.472958551 0.296828996 0.676820421 2.562951469 0.127248459
+#>  [985] 1.269364417 1.658214510 1.955900189 0.706093011 1.049110184 0.679186116
+#>  [991] 1.461533469 0.501772196 0.876658837 1.567563098 0.373394282 2.670931670
+#>  [997] 1.120861864 2.490201117 1.837973496 0.670361896 2.132123767 0.786910982
+#> [1003] 0.166990875 0.683652463 1.381398072 1.227195278 1.436995090 0.412793693
+#> [1009] 2.416388055 1.269189492 0.706611955 0.069339843 0.420540263 0.591363586
+#> [1015] 1.782360524 0.110284341 0.053646631 0.472782084 0.018545067 2.406422465
+#> [1021] 0.934961135 0.415838034 2.724132768 1.116242382 3.196179915 0.791974967
+#> [1027] 0.097433810 0.906453337 0.310220336 2.589599338 1.125181597 0.605567935
+#> [1033] 1.065019195 0.171949802 2.825691678 1.343369930 2.603909837 2.591957832
+#> [1039] 1.019186501 0.634402218 1.069571996 1.297500536 3.621947523 0.972607474
+#> [1045] 1.974864253 0.192737534 0.296783664 0.144638715 1.117499866 0.553191479
+#> [1051] 1.255206672 4.376090806 1.158005219 0.440978847 0.682163152 0.360344963
+#> [1057] 2.134596911 0.846968479 2.831044654 0.582707246 1.345110560 0.853756785
+#> [1063] 0.595826870 1.028196307 0.442697184 1.284147223 2.172388136 1.551211093
+#> [1069] 2.811138001 1.141738113 1.090398427 1.220252454 0.166263905 2.302564183
+#> [1075] 1.905305216 0.935906975 0.486959183 0.807290932 1.540517085 1.187087490
+#> [1081] 1.163928359 0.954590743 2.763153995 1.262766873 2.860145938 0.992897556
+#> [1087] 1.044207733 0.911417104 0.635937191 1.031390761 0.129233018 1.198596428
+#> [1093] 0.743035996 1.938936943 0.931954796 0.241947609 1.667545241 5.781445224
+#> [1099] 0.921658206 0.711793198 0.661000968 0.097675864 2.710006633 1.302130178
+#> [1105] 0.639703517 2.780811638 0.045953443 0.098719234 0.764976343 1.361212846
+#> [1111] 1.576779305 0.705061786 0.585821367 0.462217705 1.409179692 1.141279027
+#> [1117] 0.654347185 1.277447334 1.294511288 1.068020689 0.644987592 0.644183654
+#> [1123] 0.053930507 0.371895709 0.165827188 2.237402854 0.088261041 0.250102673
+#> [1129] 1.650403549 0.353611774 2.003030486 0.683934194 0.140356192 1.656622224
+#> [1135] 0.398611521 0.115636816 0.963715271 0.371418317 0.070319842 1.289798567
+#> [1141] 0.157640738 0.333311861 0.320614834 0.297761071 0.290444681 0.886893127
+#> [1147] 1.398009593 2.475973599 0.941472505 0.452052690 1.659402647 0.179824304
+#> [1153] 1.043889278 1.260313856 3.150487289 2.748263314 1.115108706 0.406910273
+#> [1159] 1.100351319 1.638711416 0.136393278 0.448685094 0.560442346 0.735801329
+#> [1165] 2.022787462 3.239127959 0.788785472 4.218091535 1.981158085 1.078224193
+#> [1171] 0.392410958 0.677402418 0.584140025 0.511689112 0.522360337 0.331669769
+#> [1177] 0.182700276 2.799016945 0.739850189 0.788087930 1.292878392 1.081342857
+#> [1183] 0.184512906 0.444988542 0.668513473 0.915771674 1.411505462 0.761898623
+#> [1189] 1.700697450 0.659075841 1.762495477 1.166238813 0.971760550 0.066664346
+#> [1195] 0.073589805 1.295470112 2.546984912 1.014801666 0.131096955 1.151706498
+#> [1201] 0.697333932 0.058039788 0.248699710 1.761387266 0.876196888 0.167074925
+#> [1207] 1.272364539 2.821901755 0.658576336 0.346394130 0.638625108 0.601360364
+#> [1213] 0.352481780 0.727163519 1.925258949 1.179161443 0.507368876 0.391895671
+#> [1219] 1.182863408 1.547536339 2.519262417 1.085394660 0.403486882 0.883673918
+#> [1225] 0.280347469 2.116859852 1.788232122 1.028230796 2.560349372 0.759941535
+#> [1231] 0.745843881 0.789627190 0.749419205 0.283801283 0.939822229 0.386584534
+#> [1237] 1.116332419 0.309464268 0.776146465 0.287349006 2.860432309 0.602081202
+#> [1243] 2.136802331 1.342274111 1.017545211 0.525431281 3.412264556 0.537892184
+#> [1249] 0.875765580 0.114102921 2.823000979 0.433778560 0.591035796 0.621991320
+#> [1255] 0.247210594 2.313607429 1.098399352 1.142875435 3.830344444 0.227662154
+#> [1261] 2.381801339 0.772483030 2.119684247 0.306790273 0.517071463 0.556146639
+#> [1267] 1.915561539 0.132285851 1.754692954 2.673510168 1.792806783 0.321139534
+#> [1273] 0.200516968 0.368680907 0.450501287 0.697115593 1.212265016 0.712230087
+#> [1279] 0.079238550 0.541939488 1.931632321 0.945724395 0.160757766 2.633930816
+#> [1285] 0.777636212 0.265226037 1.136682386 1.420854936 0.399742016 0.456449616
+#> [1291] 1.888065159 0.291498609 0.649261068 0.071887666 0.143704846 0.363307970
+#> [1297] 0.102934247 0.800203879 1.520937846 0.261689215 0.590454196 0.227085683
+#> [1303] 0.516367957 0.848451981 1.728440385 0.434868938 0.610546083 0.785287305
+#> [1309] 0.356190329 0.700544895 1.059375338 1.841836411 0.880088261 0.199982073
+#> [1315] 0.305884147 0.876381831 1.730270242 1.067623720 2.152819876 0.337300436
+#> [1321] 2.241567649 0.842795342 0.125174754 0.654234830 0.665905413 1.060257323
+#> [1327] 1.440484456 0.736052111 1.413131293 1.210983931 1.015891584 0.905312006
+#> [1333] 0.225653928 0.197680954 0.348029118 0.021036702 0.247518082 0.773588845
+#> [1339] 0.891352612 1.329998536 0.025210522 0.219724462 0.227013661 0.064390771
+#> [1345] 3.036615447 0.620105446 1.537515274 0.024051620 0.783125867 0.205092445
+#> [1351] 0.187528678 2.031770440 0.727863979 0.069303931 0.319475459 0.548847953
+#> [1357] 1.582750942 1.414994911 1.404435831 0.952476967 1.891737676 3.140896473
+#> [1363] 1.770838314 0.652791191 1.355469071 0.353630706 1.039720533 0.353924192
+#> [1369] 1.324475053 0.689426145 0.713442871 1.076971235 0.966533397 0.049833082
+#> [1375] 0.357345781 3.080428978 0.506946579 5.805086753 0.271341255 1.995942367
+#> [1381] 1.776494310 0.400858810 0.615223717 1.713786055 0.734625297 1.910791591
+#> [1387] 0.816207033 0.990064954 0.274769568 1.056375276 2.634585872 1.398509445
+#> [1393] 0.229462310 0.936308557 0.477800123 0.181361607 0.726390366 1.018687911
+#> [1399] 0.325057787 0.681072081 1.155412817 1.248200622 0.395545158 0.504370096
+#> [1405] 0.721876411 1.998446930 0.908457338 1.105179216 1.351364118 0.470753002
+#> [1411] 1.987697390 1.408395112 2.565004450 0.678883624 0.259115637 0.310595395
+#> [1417] 1.763722977 1.227930327 3.454707215 1.057504190 0.100432242 0.844648042
+#> [1423] 0.705136435 2.599444094 1.298682343 2.867523481 1.493652970 0.274585840
+#> [1429] 3.081299271 0.650161250 0.026074707 1.274282989 1.261638499 2.235679621
+#> [1435] 1.301734284 0.167858959 1.078323429 1.410245763 1.057457449 0.440348760
+#> [1441] 0.984831260 1.047170061 1.451472702 0.360389537 0.467427368 2.755140655
+#> [1447] 0.140100280 0.948981838 0.873144624 1.186019574 1.739090218 0.373756143
+#> [1453] 0.477337264 1.469848296 2.628330032 0.282023791 0.348067128 1.329185305
+#> [1459] 0.036321453 0.672341434 0.236135358 0.070941199 0.307786937 0.680613072
+#> [1465] 1.001378828 0.074282364 1.144849712 0.243482943 1.885336081 0.522934109
+#> [1471] 0.192197003 2.593339259 1.288551121 1.829013000 0.438249586 0.161563672
+#> [1477] 0.318483465 0.752593684 1.084967885 2.403808804 0.827214227 0.046341579
+#> [1483] 0.885024620 0.920177522 0.564299976 1.704829916 2.686140933 0.702812878
+#> [1489] 1.514532460 0.063384152 0.686754626 1.487333868 0.966459347 0.557402700
+#> [1495] 0.415655661 1.360569399 0.742077593 0.535564383 0.663458604 0.506133831
+#> [1501] 0.445123554 1.438057519 1.588655962 1.105657495 0.113735075 2.553987684
+#> [1507] 1.641259184 0.607753719 0.900101889 0.272469857 1.047819894 0.558576305
+#> [1513] 0.457716029 0.315380951 0.576546696 1.825904155 0.249896511 1.341113654
+#> [1519] 0.941556180 0.879341665 1.147957730 0.406343239 1.932672354 0.259266731
+#> [1525] 0.545504997 0.226941261 0.512362569 0.842939696 0.135067736 0.753492642
+#> [1531] 1.296466491 2.849742810 0.534703735 0.848169483 2.636518204 0.812359607
+#> [1537] 2.321249259 1.323501312 0.479830297 0.826290220 3.369306087 0.528490219
+#> [1543] 0.850545041 0.288061037 0.273333965 0.086978281 1.259851304 0.403587945
+#> [1549] 1.425097113 2.070921499 0.327633600 0.568052446 0.434408317 0.457250190
+#> [1555] 0.238380199 0.800202888 2.631790935 2.059218512 3.725915013 0.214891126
+#> [1561] 1.077948254 0.828751173 0.410799710 0.340513856 1.338486464 1.293625866
+#> [1567] 1.411435387 0.594277313 0.574323151 0.788810095 1.216544694 0.108931956
+#> [1573] 0.448071897 0.343041462 1.267985730 0.659672794 1.138817159 1.898170920
+#> [1579] 0.393038133 0.152281581 1.066824073 0.445401190 0.362449409 0.472822854
+#> [1585] 1.126722615 1.799095037 0.737767854 1.072641980 2.061936429 0.319390015
+#> [1591] 0.114381798 0.388293309 1.105054689 0.643242636 2.049276416 0.564709458
+#> [1597] 0.318987206 0.382498262 0.689378487 0.124841653 0.794723522 0.896470705
+#> [1603] 1.876534859 0.219733725 1.317387388 0.372223972 1.153402289 1.089980135
+#> [1609] 1.417523116 0.116112402 0.986894994 2.357934475 2.234163296 1.388622538
+#> [1615] 1.614838182 1.842289116 1.810089163 0.621493055 1.780965300 1.584612169
+#> [1621] 0.433212339 0.774303262 0.033689413 1.069371814 0.055657140 0.741580590
+#> [1627] 1.064653192 1.000306344 2.630313990 0.626186524 0.339880131 1.364904679
+#> [1633] 0.655540095 4.267586112 1.130821868 0.310667682 1.530009801 0.186306076
+#> [1639] 1.239435150 1.320497055 2.363278830 3.092508952 1.834158445 0.438125529
+#> [1645] 0.505244151 1.250254182 0.436069241 3.334081175 1.479263049 1.292124054
+#> [1651] 1.320947631 1.545428885 0.516765949 1.290322745 1.126168630 0.849865653
+#> [1657] 0.153911165 0.228412075 1.094225856 0.542520011 0.506613444 0.015787465
+#> [1663] 1.106838331 0.797538986 3.497480678 4.146845143 0.743719693 0.811821548
+#> [1669] 0.235558350 1.056575416 1.720544513 2.389104303 0.993106859 1.667929903
+#> [1675] 1.487412150 3.670268379 0.167167019 0.243950341 0.898489154 0.461369045
+#> [1681] 0.704260932 1.544758772 0.423963824 0.747718225 1.984009615 1.587838988
+#> [1687] 0.286771921 1.954672054 0.991203402 2.801017964 1.156343369 0.113273234
+#> [1693] 2.540850765 0.434985975 1.118431214 1.779295516 1.932537822 0.540886112
+#> [1699] 4.863110960 0.854336671 0.736054667 1.525071499 1.911979161 0.297041553
+#> [1705] 2.063509335 0.342796067 0.480977729 1.532988892 0.406234498 1.826955616
+#> [1711] 0.301317985 0.245209305 0.566174285 0.237093706 1.060587085 1.560130906
+#> [1717] 0.827770847 1.549066476 0.828696299 0.456805909 0.214000871 0.238608701
+#> [1723] 0.948664668 1.420594693 0.530129789 0.419884512 1.718293042 1.176469600
+#> [1729] 0.468579478 1.469900451 0.307637889 0.811244680 0.481631466 0.416929767
+#> [1735] 0.623932539 0.977104783 0.083140286 0.482043396 0.961305115 0.349015396
+#> [1741] 2.156667822 0.445092608 0.606710605 0.015328641 1.946256237 0.194333299
+#> [1747] 0.605367936 0.078678581 1.823204151 0.667555240 2.505340916 0.158974613
+#> [1753] 2.675083938 1.279510878 1.616128488 0.850181139 5.366719163 1.037887052
+#> [1759] 1.026524560 2.042245088 0.857808744 1.721598445 2.096491918 0.726448256
+#> [1765] 0.078686579 1.508868120 0.364174453 0.356864270 0.195767675 0.096447719
+#> [1771] 1.106268507 0.393675558 0.918478283 1.059900276 1.262334095 0.581291789
+#> [1777] 1.196723230 1.384706143 0.017318728 0.860207155 0.164656059 1.019414128
+#> [1783] 0.753993763 0.124065711 1.419230831 0.455603872 1.390941635 1.895684632
+#> [1789] 0.946902985 0.550462476 1.139402616 0.496107070 0.858519827 0.675813993
+#> [1795] 0.118091021 0.594678421 0.569742411 0.839576580 1.105002639 0.738787972
+#> [1801] 2.542462758 0.253902040 0.789593626 0.629544575 0.602957231 1.065504469
+#> [1807] 0.201496118 0.426932417 1.613144283 1.293258133 1.555118374 1.210106915
+#> [1813] 1.701394851 2.324664860 0.086246463 0.227204660 2.459347691 0.340666177
+#> [1819] 2.359930748 1.987746853 0.596241796 1.306876099 1.516780916 3.839619158
+#> [1825] 1.702790184 0.444473215 1.357442452 4.568405281 2.114020987 1.724707740
+#> [1831] 0.572324588 1.274917417 1.903095389 0.046460063 0.321359065 3.279334159
+#> [1837] 0.999675953 0.061517143 1.286028213 0.314863894 0.555592145 0.230342810
+#> [1843] 1.726332138 2.187241537 0.054382471 0.805896330 0.937692400 0.171464308
+#> [1849] 1.774637130 1.734549946 0.380850658 2.871512220 0.717168051 0.356376846
+#> [1855] 1.383543662 1.012056098 0.749815914 0.606568493 1.740175764 1.592197893
+#> [1861] 1.192735466 0.137553299 1.160575942 0.353187946 0.760775226 0.624576646
+#> [1867] 0.473259523 2.219916482 0.191421685 2.327245526 0.934153721 0.101379285
+#> [1873] 1.516692648 0.819329648 0.789405940 0.364954877 0.846294598 2.741206312
+#> [1879] 0.503748955 0.559928274 0.249811400 0.175608410 0.183595660 1.650581560
+#> [1885] 1.788292249 0.666735633 0.130087510 0.484710802 0.842942460 0.441696809
+#> [1891] 0.211331857 1.617669316 0.226547041 0.361518633 1.631613769 1.228196697
+#> [1897] 1.506475816 0.557654876 0.319080151 1.340027201 1.663500472 0.542035165
+#> [1903] 2.240941461 1.679731700 1.717737979 0.555474045 0.842737628 0.834028899
+#> [1909] 0.750276425 0.662139991 0.278331085 0.950785290 3.859316485 0.461234280
+#> [1915] 1.223509140 0.976117375 1.404455583 0.454174998 1.094559140 0.342816313
+#> [1921] 0.067364571 0.100233786 0.605635337 0.846967602 1.204057574 2.622346407
+#> [1927] 0.668015139 1.445924323 1.662998845 0.309892022 1.526423524 0.997416651
+#> [1933] 1.986981687 1.576715961 1.095614322 0.220948539 0.541526186 1.661350718
+#> [1939] 0.522448271 1.803570891 0.799527513 1.017152474 1.403687321 1.000657142
+#> [1945] 0.565066175 1.057390267 0.049970316 1.290763780 2.496031209 0.313909352
+#> [1951] 0.637128267 1.319951392 0.489929077 1.231491440 3.298611783 0.600663865
+#> [1957] 0.979133832 1.626559860 0.561363154 1.316091324 0.045292992 1.716340370
+#> [1963] 0.711564780 0.313112532 2.355563311 0.357033344 2.036361634 1.293676629
+#> [1969] 0.683496584 1.726759237 0.531280901 1.016584808 0.177389725 0.249426261
+#> [1975] 2.525681956 1.254602050 1.222154005 0.484128926 0.445696203 0.167511979
+#> [1981] 0.249167089 0.403703814 0.473414845 0.289620826 1.569291407 0.393807681
+#> [1987] 1.295198932 0.156919838 1.379422724 1.117516808 0.247834092 1.916806517
+#> [1993] 0.656730226 0.438251245 1.297969614 0.591319376 0.457390252 0.850585593
+#> [1999] 0.683097116
+#> 
+#> $boot_statistics$`treatment:time`
+#>    [1] 4.5066143752 2.9218709469 0.3408808502 0.7315633200 0.0527667963
+#>    [6] 0.1638154383 0.6992983711 1.4006567374 0.0597016462 0.5758243699
+#>   [11] 0.2716396506 0.0377845556 1.5220766124 0.3973218664 0.1503214067
+#>   [16] 2.5028921245 0.6869645944 0.3534249254 0.1674151860 0.6906414203
+#>   [21] 0.7853232177 0.7251195118 2.8871022527 0.7829549826 0.6335349780
+#>   [26] 0.0726916854 1.0543411992 1.6181873578 0.8541958487 0.1998681495
+#>   [31] 0.5879054525 0.9183746209 1.6635703652 0.9754776913 1.3806983787
+#>   [36] 0.8164384804 0.1735578505 0.3954794688 1.0152486154 0.3295670153
+#>   [41] 0.9708370560 0.1270101830 2.3609862660 0.8551045213 3.0254362193
+#>   [46] 1.0125185296 0.7154338378 0.5368298138 1.0493762476 0.2447377716
+#>   [51] 2.2214600450 0.8634347292 1.5163468789 0.5485836047 0.3794975460
+#>   [56] 0.7636040149 1.5048205373 1.3335297352 1.8703076166 0.0598538402
+#>   [61] 0.3240721928 1.8041697683 0.0968880749 2.5599478286 0.7867069241
+#>   [66] 0.3312917832 3.1181182963 0.2911136405 0.5270084436 0.3679608871
+#>   [71] 0.2691259247 0.2236936211 0.2567766944 0.6254314901 1.7806121621
+#>   [76] 0.7778446315 0.2726369297 0.9943916811 0.9773045006 0.0117719071
+#>   [81] 1.3701421348 0.1780045987 3.0797771876 0.4864308252 1.0785388993
+#>   [86] 0.2704219418 0.3335915752 0.8681304041 0.5923534545 1.6355233089
+#>   [91] 0.7660453775 1.5559784914 2.8385858463 0.1613967650 0.3117312269
+#>   [96] 1.1615354138 0.6173120954 0.6651548478 0.1553675471 1.6200452517
+#>  [101] 0.3321153044 2.0296472119 0.6790019644 0.1194866019 0.1750700262
+#>  [106] 1.8178767566 1.4931804125 0.4369425953 0.4964866283 1.7105579334
+#>  [111] 0.0361521021 0.7169903805 4.0640408725 0.4704063965 1.8732844545
+#>  [116] 0.8220650666 0.2183904213 0.4034376954 1.1387611675 0.2069720834
+#>  [121] 0.9656197899 1.1560773110 1.9729460085 2.4260745290 0.2012416132
+#>  [126] 1.0165773572 2.4246135947 1.7334217791 2.2135644502 1.3449011795
+#>  [131] 1.6854213658 3.0167105545 2.5522284931 0.4208339854 0.9397033393
+#>  [136] 1.6592151329 5.3923438029 0.6580191412 0.6185669530 0.2535707872
+#>  [141] 0.6518614395 1.7620047174 0.6458619481 1.2257820739 0.3630667174
+#>  [146] 0.9282714309 1.0374571680 0.2027988184 2.3678280875 0.1041346807
+#>  [151] 0.6707221839 0.6355175476 0.5854628569 1.7356342155 0.5555848597
+#>  [156] 0.1536603513 0.6603562748 0.5727966757 1.0855639680 1.8713215970
+#>  [161] 0.6900670519 0.8084259612 2.9064134879 0.5421771362 0.5373533752
+#>  [166] 0.1473640700 3.2044511751 1.3212604265 0.9591355251 0.8700884663
+#>  [171] 1.2672479502 0.2462894559 0.6316066417 0.4701163526 4.5313048166
+#>  [176] 0.6320638747 0.8966349400 0.6384538856 0.5497245109 2.2289224303
+#>  [181] 0.2768337999 2.8828123271 0.9044223986 0.5456953624 0.6442156285
+#>  [186] 0.6294434679 0.4980087565 1.2242337165 0.4232730413 0.5665073249
+#>  [191] 0.5089086792 1.8230084014 1.8702532984 0.4321255843 1.0561623252
+#>  [196] 0.5772242924 0.1604569564 0.6057849391 0.1037612145 1.9179861556
+#>  [201] 0.1840333615 0.6910988155 0.1642631241 1.7463235694 2.2188244349
+#>  [206] 1.4256472517 0.1098673267 1.3269275257 0.2250339548 2.1165006115
+#>  [211] 0.0704801154 1.1846745431 1.8943424577 1.1805171376 0.3212243209
+#>  [216] 0.1882224381 1.2406257709 0.8561514949 3.1469302283 1.4783927850
+#>  [221] 1.8228591532 0.4461947467 3.6639762426 0.3972725149 0.2570683047
+#>  [226] 1.5173501139 2.1007805236 0.4062777164 1.0634845606 1.2975422735
+#>  [231] 0.0216774315 0.0128745930 4.7091045317 1.1246773244 0.9114782508
+#>  [236] 2.5564816127 0.5696732809 2.8185373736 0.9555449302 1.3970311109
+#>  [241] 0.0631241363 1.0004397132 0.1342148668 0.4079739061 1.4359174442
+#>  [246] 2.2222923321 1.0268046421 1.1081749030 0.6791180873 1.3924858727
+#>  [251] 0.6441023337 0.8093177545 0.5407562718 0.6622941518 1.2891961047
+#>  [256] 1.3959469507 0.1599527303 0.7242984383 2.5116178472 1.2075369748
+#>  [261] 1.2717629191 0.6007593334 1.5890948236 1.8276555052 0.3298331950
+#>  [266] 0.1207585026 0.0974684072 0.5491565632 0.8255258455 0.2352960561
+#>  [271] 0.6564936812 0.5129041538 3.8317289027 0.7644975942 1.0540790732
+#>  [276] 0.2807000440 0.1703039176 0.9382206794 0.3350610052 0.6657419315
+#>  [281] 0.2897946033 0.8675228318 0.9376280747 0.7281418781 2.3397087844
+#>  [286] 0.2214293827 0.5215404801 0.8804213484 1.0636902469 0.2442623183
+#>  [291] 0.5092085975 1.2839794703 2.2016429368 0.5049677655 1.2446152485
+#>  [296] 0.9600563445 0.5048545689 0.8542610877 0.8524798692 0.0520272825
+#>  [301] 1.4958111223 0.7033869600 0.7173593028 0.7560477373 1.5516771324
+#>  [306] 1.2051205894 0.7721191002 0.1208837854 1.1352656372 0.9427736292
+#>  [311] 0.4521302462 0.5627588936 0.7749267082 0.3342527888 0.3965922033
+#>  [316] 0.4831050172 2.2778480593 0.4816885905 1.2775155117 0.1801123771
+#>  [321] 1.5810145211 0.4067718821 0.4104726388 1.0140196162 0.7263002946
+#>  [326] 2.0930818187 0.7930649812 1.9186667298 1.0040813373 0.7898738743
+#>  [331] 1.4935602836 0.3533511384 0.5936056492 1.0979672285 1.4044908885
+#>  [336] 2.0928195307 4.7480180357 1.2534537359 0.4860008483 0.1512877714
+#>  [341] 0.5166938725 1.1161031656 1.7097741905 0.8688968250 1.4256738515
+#>  [346] 0.4771403638 2.3858650555 0.8876922282 0.1810605346 0.2110279530
+#>  [351] 1.6585480241 1.1833563116 0.1411789925 0.3675871867 2.7039012997
+#>  [356] 0.3642241365 0.8273984626 0.7942512547 0.3467054360 1.1918906445
+#>  [361] 0.9600918995 1.4785673921 1.4001509204 0.3163391473 0.7022948816
+#>  [366] 0.4999942884 2.0793580569 0.9943526799 0.2375131834 0.4810674398
+#>  [371] 0.4898318113 1.5808551948 0.3010648975 0.7412689008 0.1016848103
+#>  [376] 0.3008000504 1.9285684798 0.9811536501 1.5743545370 0.1933602851
+#>  [381] 2.4832549041 0.0681678963 0.3927535027 0.2844302279 1.0871092880
+#>  [386] 0.1144277109 1.5899843975 0.3224155623 1.5917725986 1.5231313566
+#>  [391] 1.3411218649 0.2185271937 0.3601487320 0.5389003565 0.8513232732
+#>  [396] 1.5588072524 1.5045812429 2.0016733170 2.1159120831 0.7327507248
+#>  [401] 1.7457499548 0.9170440489 1.9786754113 0.9639415642 0.7462795771
+#>  [406] 0.9010572119 1.1146404077 3.8461850901 0.8759460673 0.2726242067
+#>  [411] 0.0613543871 0.5091514168 0.8312153581 1.5684053536 0.5968234143
+#>  [416] 2.1272628770 1.1501916560 0.6769664346 0.7393443818 2.4716574554
+#>  [421] 0.4710061037 0.3668732943 1.0118011758 0.0860477551 1.7437412796
+#>  [426] 0.5493926449 0.1812987563 1.0147002174 0.4717001089 2.4416986440
+#>  [431] 0.2508924909 1.3621060562 1.0191142515 1.3723871180 0.3212116932
+#>  [436] 1.0171812779 0.3875185196 1.8091454009 1.2138484683 2.2366884288
+#>  [441] 4.8592182547 0.4033823568 0.6736251810 0.1899911921 2.4391857313
+#>  [446] 0.5318088926 2.8059041099 1.2172036374 0.3936445255 0.5325568924
+#>  [451] 1.5171319744 0.6509476898 0.4202912897 0.8222347802 1.0567306198
+#>  [456] 1.1350390157 2.2500446496 0.8425144865 0.9539604989 0.7329653213
+#>  [461] 2.2512403241 0.5890904754 2.8538430463 2.0558249495 1.0479054419
+#>  [466] 0.5607297552 0.3721934977 3.3898387355 0.5636740582 0.3189543840
+#>  [471] 1.2795399593 0.2366801527 0.1724096574 0.2898742985 1.0715573586
+#>  [476] 1.3135718937 0.8974435545 0.6073539854 1.5210346387 0.1539233054
+#>  [481] 0.5328201982 0.4721433996 0.9664161592 2.0796714358 0.2037348510
+#>  [486] 1.2496458525 0.9475136853 1.0803040653 1.1360146487 1.2286134081
+#>  [491] 0.2475547428 0.5603791897 0.7716293762 0.5525860069 0.1177346588
+#>  [496] 2.2340538804 1.7380530593 0.1340476481 1.0497413426 0.4289101081
+#>  [501] 0.5475505632 1.6883415325 2.5851963096 2.3072978321 0.8760214214
+#>  [506] 1.5724500314 2.2758012136 1.4160763416 2.2947873039 1.9374293232
+#>  [511] 0.9004139173 0.2031284880 1.0991938668 1.6981423940 1.0752465741
+#>  [516] 0.2552582532 0.4613593971 0.3187038850 1.7526175830 0.1816580342
+#>  [521] 0.8783314023 0.2261389229 0.8400722015 0.1628981071 0.8705253406
+#>  [526] 0.5494250802 1.5959260316 0.8653582245 0.5996759100 1.5775336316
+#>  [531] 1.0747675064 1.0898732494 0.4358406571 0.8126829958 1.0626237687
+#>  [536] 0.5002351281 3.0482521196 1.1377630970 0.4078315480 0.7700283468
+#>  [541] 0.7772578170 0.2335832957 1.6052805852 0.2163234380 0.6650301080
+#>  [546] 0.5750590436 0.4598470682 1.5943414533 0.3602163154 1.9680031970
+#>  [551] 3.5573617395 0.0400747379 0.7715239498 2.1762020828 1.4934163251
+#>  [556] 2.7593045279 3.1070354384 0.4386857306 0.5972870613 0.8081313792
+#>  [561] 0.7181507191 0.2348865866 0.9346622037 0.7989145603 0.2753694793
+#>  [566] 0.4636432285 0.7614482552 0.8450121683 2.2615113172 0.7998277133
+#>  [571] 0.8316316904 0.5060581932 0.2764982662 0.5294692525 0.9961084908
+#>  [576] 0.3114805202 1.2857081555 0.8730231133 0.6245438283 0.2527617704
+#>  [581] 1.2445027023 2.2010752264 1.1250097804 0.4342850333 4.8785010078
+#>  [586] 0.2599051732 0.2951190499 1.4404565288 1.7543868128 1.5254296282
+#>  [591] 0.4300347102 3.8805444045 1.9349783735 2.2049655084 0.4852585806
+#>  [596] 0.7332126718 0.5597727741 0.9481519125 0.2919056808 0.3496605300
+#>  [601] 0.5710929804 0.4204432073 0.8610579577 0.1308421721 0.1020778003
+#>  [606] 0.6925426513 2.5342252902 2.1251068932 1.5382829022 0.3859999687
+#>  [611] 0.7850260766 1.6021018580 1.0319654323 1.1984471937 0.6023300896
+#>  [616] 1.6670376355 1.5252713050 0.5003208047 1.5038920422 0.3893845666
+#>  [621] 1.4254357781 0.0502387565 0.7764624294 0.6083764219 0.2335527878
+#>  [626] 1.0561434951 0.4500229174 3.0954810832 2.5380880621 0.3859042840
+#>  [631] 0.7174459972 0.1442497670 0.2585865764 2.1578787942 0.5612523895
+#>  [636] 1.0629460844 0.5714324132 0.4328930930 1.4758670912 0.4851748161
+#>  [641] 0.4735963029 0.9004190890 0.2608357585 0.7238671637 0.8452346329
+#>  [646] 2.3532887641 0.1556370648 1.8308201997 0.1404457470 0.5728841817
+#>  [651] 1.8300360905 0.9445827923 0.2633669943 2.1164994942 0.9003327912
+#>  [656] 0.6722330288 0.5688077981 1.5488473358 2.2467557074 0.9540909392
+#>  [661] 0.2814692847 0.7275320509 2.8729400373 0.7289550111 0.2987697379
+#>  [666] 0.8147712307 0.3551575664 0.2336489722 0.9050997506 2.2217787212
+#>  [671] 2.6452692388 0.7628308320 0.2446661161 1.2521283389 0.1952031781
+#>  [676] 0.1119809501 2.2021411956 0.2140888261 0.3063633823 0.5668773536
+#>  [681] 0.7714167108 3.6607422737 1.6935649398 1.1570723507 0.8326060802
+#>  [686] 1.7495994277 0.1913210004 0.1823115982 0.4394858736 0.7855194513
+#>  [691] 0.2712581810 0.1916574949 0.7251252364 0.2405526181 1.0114598650
+#>  [696] 0.5296291582 0.3991196893 0.7588107280 0.0812960841 1.6324457357
+#>  [701] 0.1246010221 0.4546267673 2.0653941398 0.7919506799 0.3063582934
+#>  [706] 0.8085047014 1.1902021145 0.1752868890 3.0198284476 0.5733053787
+#>  [711] 5.2609284817 2.1345883157 0.5531266128 1.4114305316 1.1161593290
+#>  [716] 0.3896044718 0.5444944422 0.3445878476 1.0436399596 3.4128816663
+#>  [721] 0.5667300788 1.5402760727 1.8258973254 1.0519093272 0.3163206119
+#>  [726] 0.1550586946 1.2986271927 1.3428572205 0.0428581682 2.3419303969
+#>  [731] 1.8637522681 1.2835029964 3.3986691888 1.3883742616 0.9286788060
+#>  [736] 2.2194395669 0.4766614792 0.6261762617 1.1863824660 0.0215369748
+#>  [741] 0.6258734209 0.8851938007 0.9897988492 0.2328506355 0.9168406462
+#>  [746] 0.2083367979 0.1174149087 3.4135652115 0.6383669103 0.1742261017
+#>  [751] 2.2152099572 0.0851407586 0.5335003296 0.3918110139 0.8868877876
+#>  [756] 1.3555498476 2.0375999379 0.6996709729 1.3637285242 0.3612840391
+#>  [761] 2.2889093408 0.2474749417 0.6817097936 2.6919495633 0.7740324493
+#>  [766] 4.1147839153 0.4335463270 1.4258760153 0.7416180012 0.4154953805
+#>  [771] 0.4647502352 0.6843737273 1.1271465789 1.7133616352 0.5191947284
+#>  [776] 1.9064797281 1.1050554317 1.8623320041 0.4653133942 1.5670908236
+#>  [781] 1.7097788414 0.2276924812 0.0190700213 0.7861927907 0.5071191527
+#>  [786] 0.9857707306 1.2512345949 0.2195197978 0.4811550224 0.6696709201
+#>  [791] 0.8543454934 1.5176220429 0.7854304705 0.9978080346 0.4244066438
+#>  [796] 3.7695801230 0.6363214738 0.1947869880 0.4550231033 2.1607391509
+#>  [801] 1.1974778129 0.6373228376 1.9381302357 1.3495881283 1.1463821156
+#>  [806] 0.1933560050 2.1771732022 0.7971257670 0.2115087540 0.7409641928
+#>  [811] 0.1133624132 0.7580322289 2.1270364295 1.4058076101 1.3115874907
+#>  [816] 0.2632826904 0.0965665003 0.8981678297 1.4621270387 1.0832233664
+#>  [821] 2.0007325948 1.3221948925 0.9579090941 0.5237954818 1.8575629409
+#>  [826] 0.7818293439 1.4479312986 0.4855068399 0.0818987936 0.5881423498
+#>  [831] 0.8589138990 0.3520974770 0.6795949854 0.7898656091 0.7336436835
+#>  [836] 2.6135152062 0.1115674292 1.1590881228 3.6664896825 0.6943827801
+#>  [841] 1.7941864935 0.1928261449 0.6063953655 3.2255579844 0.6778351614
+#>  [846] 0.5934147718 0.2280616049 1.3332569469 0.0792398320 0.5212513666
+#>  [851] 0.4236328871 0.1077831417 1.0638555769 0.7295074971 1.3378828648
+#>  [856] 0.3902443019 0.4918111745 0.8633709721 2.2263880985 0.5322764201
+#>  [861] 1.0805466919 0.2316633551 2.3609809077 0.9920889722 1.0661072134
+#>  [866] 2.9811066841 1.4966781106 0.4275412757 2.5235700303 0.5111369929
+#>  [871] 0.4406875580 0.8804299328 2.0876769477 0.4761661727 0.5482909226
+#>  [876] 0.6539002481 3.6615494021 0.3963791091 0.3939224833 0.3386106382
+#>  [881] 1.9034489028 0.3711077827 0.2976706580 1.3411927973 1.9615670845
+#>  [886] 0.9911723659 2.2531442266 0.4232718060 1.0712596374 1.0357855331
+#>  [891] 0.6415756624 0.7868531698 1.9859094780 0.7874172305 0.5296883955
+#>  [896] 0.3526091438 0.2381342099 0.1957833808 0.3411755759 0.2727876080
+#>  [901] 0.2014279854 0.7783407373 0.5616568612 1.2100682873 0.3177435980
+#>  [906] 0.2106931649 1.6120364611 0.1800936725 1.0539503386 0.3237909048
+#>  [911] 0.1965998018 0.5521718258 0.1745651679 0.1059911107 0.0680261291
+#>  [916] 1.5410449496 0.2464182114 0.1090995944 0.1497815260 1.4353692591
+#>  [921] 0.4637101227 1.5917868861 1.0108152516 0.4849649139 0.2455464354
+#>  [926] 0.9574722826 0.7252213612 1.0298212448 4.6766951522 0.6600904772
+#>  [931] 2.3541571004 0.4951906371 2.7508318603 0.6548307546 2.4596603187
+#>  [936] 1.2487788363 1.0787243707 0.5349622674 0.6840018898 0.1630281488
+#>  [941] 1.1903830258 0.8991550910 3.7184668261 0.4533567141 0.4058726637
+#>  [946] 1.9594106096 0.1459127971 0.8974884954 0.7805945439 1.5399649151
+#>  [951] 0.5110744977 0.4075966839 4.4824379270 0.7587815040 0.5473651239
+#>  [956] 4.1184717235 2.6623833673 0.8057755896 1.1134099113 0.7283374755
+#>  [961] 0.0826031132 0.8665737521 0.5277961410 0.4622852647 0.3325021188
+#>  [966] 0.9126408796 0.4944507534 0.5089729967 0.7793654349 0.3477883429
+#>  [971] 2.1212151384 0.3667080758 0.4915294685 1.1458537170 1.3811877721
+#>  [976] 1.4672456858 1.7077209626 0.9475394466 2.5733676413 3.2784219944
+#>  [981] 1.0318517875 1.5181823138 3.6518327890 0.2304219109 0.1726669252
+#>  [986] 0.7172608236 0.9173912495 0.7674340720 2.7484094800 0.7038810341
+#>  [991] 1.3059503066 0.3587063179 0.3262869312 0.5904048578 1.6285948526
+#>  [996] 1.4337175186 1.1599495018 0.8667498910 2.5180377645 0.6110170064
+#> [1001] 0.7893040724 0.2048052016 0.2412963393 0.2145543832 0.5050585670
+#> [1006] 0.2329176208 1.5231141457 1.6126674313 1.3183817777 0.4341869110
+#> [1011] 0.5036865157 1.5382326265 0.8755372634 0.9891113701 2.1710606373
+#> [1016] 0.8525882200 0.0167623469 0.8665182882 0.0894556252 0.9458381634
+#> [1021] 0.7052167922 0.8460565206 1.2054036625 0.2574212977 0.6956817778
+#> [1026] 1.9368547567 0.4308489247 1.1859299761 1.3824749236 0.9116033518
+#> [1031] 1.4096653527 5.0769838624 0.7178825343 0.9430465598 0.5157285878
+#> [1036] 0.6966293990 0.4975485560 0.8594577282 0.9196663844 1.0263933871
+#> [1041] 0.6653773395 0.5966974211 0.0712483069 0.8070936876 0.3837431913
+#> [1046] 0.7196333683 1.2299834765 2.1948528944 2.1320556991 0.5980225334
+#> [1051] 1.8931548304 2.5532625763 1.5230333875 1.7363674249 0.9010375040
+#> [1056] 2.6948629737 0.5536717957 0.6553369015 2.7571002980 0.0579521007
+#> [1061] 0.5555746349 1.2024976339 0.2729879175 1.3807702510 1.1176359332
+#> [1066] 0.4846052240 0.7631044618 0.3598564171 0.4564807683 0.0559053764
+#> [1071] 4.6233963031 2.9886041354 1.3063544083 0.2985298538 0.9767723032
+#> [1076] 1.9432770864 0.3583228513 0.4935881201 0.3114410480 0.8447399947
+#> [1081] 3.1563343388 2.0272493651 0.0757214068 1.2437956862 2.4413574391
+#> [1086] 1.5263535365 1.4510990878 2.2921188582 0.8739014832 0.0388223187
+#> [1091] 0.7777000870 1.0782074279 0.0388192023 0.6266692897 0.0893496885
+#> [1096] 0.1803146972 0.1068947045 1.1612913979 0.8184459944 0.4354243819
+#> [1101] 4.3358809203 0.3020467092 0.0392453274 1.1393285944 0.9750620722
+#> [1106] 0.2512075722 1.5089458878 0.8412344569 1.2313062742 2.0698078494
+#> [1111] 0.1270221245 1.3989928439 2.9139274326 0.4164093963 0.2334977348
+#> [1116] 0.6415806745 0.1166497191 0.8185970626 4.2981815169 0.4176781235
+#> [1121] 0.2900928917 0.6821943522 1.2079035773 0.0424260223 0.5789887608
+#> [1126] 0.9931199377 0.7655904746 0.1040554864 1.0483848826 0.7889553197
+#> [1131] 0.1302300725 0.5399699393 1.7187785411 2.2740709522 2.7714948851
+#> [1136] 1.6566070852 0.7876751421 0.7995577271 1.0385138636 3.1062219725
+#> [1141] 1.2043535084 2.0635794420 0.7353724970 2.6144455096 0.4233593028
+#> [1146] 0.4923961247 0.5782661960 0.3183764617 1.1658716363 0.4744973259
+#> [1151] 1.4460174639 0.1061789810 1.2738678545 0.6490514882 0.2243726342
+#> [1156] 1.8804948703 0.7301695104 0.4465293481 1.2564834589 1.1466444050
+#> [1161] 0.0403092859 1.1871689030 1.9196671606 0.9859596101 1.0871625746
+#> [1166] 2.0426919807 1.2376104187 2.8164379876 1.2066627424 1.3439328808
+#> [1171] 0.0483931667 0.6070814366 0.4333244072 0.5698815016 0.1424583255
+#> [1176] 2.8625558144 1.8324231848 0.9918015625 0.1884355058 0.7151698171
+#> [1181] 2.0674269907 1.5549154065 0.7102167007 0.2694177498 0.2310098546
+#> [1186] 0.2546101259 0.7837056597 0.2009019185 1.6383786419 0.2924938821
+#> [1191] 0.3864458170 1.0551332376 0.9127561040 0.3993748224 0.4514008013
+#> [1196] 0.9395701803 1.1872151898 2.5704295776 0.2352836841 0.5758675291
+#> [1201] 0.5584481113 0.8398684395 0.2416134486 0.2488137861 2.0151602414
+#> [1206] 1.0297478727 0.1743613597 0.0618636328 0.8040321636 0.2905530356
+#> [1211] 2.0289436961 1.2198557809 2.0452963576 0.7694787069 1.0828375728
+#> [1216] 0.2442019471 0.5549112956 0.8438691337 0.8166734572 1.4341044108
+#> [1221] 2.6048830898 0.4598408037 0.5871192778 1.8628379650 0.2899253861
+#> [1226] 0.9539182267 0.3592316358 0.1655105380 0.1882011630 0.0824746431
+#> [1231] 0.9009750416 0.9375225967 1.1855541166 0.8990285641 1.0267738800
+#> [1236] 0.1353784529 0.7122141387 1.6829665505 0.4297311643 0.7343628883
+#> [1241] 0.2833890477 0.8784370610 0.9094093937 0.3567690032 1.1055016614
+#> [1246] 0.6884452111 0.3679538027 0.6106223345 0.3554641922 0.7230652709
+#> [1251] 0.9644787866 0.0499611166 2.1061807688 1.1802912217 0.3311961756
+#> [1256] 0.1597969393 1.3342476329 2.1282757371 3.3251903209 0.0261200316
+#> [1261] 1.2425590736 0.3205361459 1.1891142934 0.2539186185 0.0579205695
+#> [1266] 0.3553227497 0.0650417268 0.1852663954 2.4385843264 0.9231810445
+#> [1271] 1.1055030466 1.3177683267 1.4915181153 2.5739419778 0.7909007584
+#> [1276] 0.3154887413 0.8586044474 1.5428096895 1.4265264974 0.4801943296
+#> [1281] 1.0925629691 1.5322133842 0.5482602417 1.2880960409 0.0179837763
+#> [1286] 1.0030448963 1.3014488337 1.6830837109 0.1893469609 1.0336953695
+#> [1291] 0.6987009271 1.1229462477 1.8351014904 0.6133412415 1.0144842084
+#> [1296] 0.0689079065 0.5743454298 0.2974999655 1.6586883777 1.2867564666
+#> [1301] 1.7458252085 0.5942373579 0.4528856318 0.6334189524 0.2683568753
+#> [1306] 1.8394484868 1.3557914737 0.7660302955 1.1481839461 1.3233955662
+#> [1311] 0.7277254994 0.2776682139 2.2432539054 0.7163396680 0.9074465846
+#> [1316] 1.0855809621 0.7761093306 0.1191087829 0.0901089018 0.8603643222
+#> [1321] 2.2403947833 0.6391225585 0.9103779069 2.0970282292 1.5494210021
+#> [1326] 0.6432422403 0.5008099906 0.6667943835 0.7187341433 0.5142934324
+#> [1331] 0.9109980635 0.3094212681 1.5238052453 4.1552463192 0.7450170432
+#> [1336] 1.3246382583 0.5368254905 0.5266418598 2.1026480130 0.7429223903
+#> [1341] 0.2449698995 1.8702500295 0.5771734028 2.6399268036 0.1047764751
+#> [1346] 1.3252730382 0.2947462499 1.5285760912 0.4777534901 0.3268209263
+#> [1351] 0.2036034391 1.5709548771 0.7209768518 1.7226754045 0.4979239174
+#> [1356] 1.0974717748 0.4667277809 1.3137528834 0.2272551886 1.9612585162
+#> [1361] 0.1903784172 0.0791303284 0.8572579147 1.7831291364 1.1708840060
+#> [1366] 1.0650183951 0.4381428380 0.6292672277 0.3440500451 1.7099776324
+#> [1371] 0.7789251365 1.1563275778 0.9987628793 1.3100098646 0.2168967161
+#> [1376] 0.3930361870 0.4702287107 0.5675592365 0.2402330575 0.5769621620
+#> [1381] 3.4304686725 0.7705108234 1.0865037708 0.5382997668 0.4169085212
+#> [1386] 0.7204819991 1.8081894035 0.6547440474 1.7894378942 1.2151645405
+#> [1391] 0.9811915061 1.5554692065 0.1982379962 0.3672593430 0.4944536709
+#> [1396] 0.9799515206 1.1998296697 2.0760858754 0.1730588932 0.7899556000
+#> [1401] 0.4407483587 0.2890081156 1.2228975183 0.7086579914 2.1169306377
+#> [1406] 0.5807825857 0.5220294960 0.6349844242 2.8207964238 0.6192047648
+#> [1411] 0.2478298711 0.7975777523 0.9224018718 1.1043840577 1.0043062770
+#> [1416] 0.8903932930 0.4813392919 2.0192101414 0.4984305927 0.0561052971
+#> [1421] 0.2074040846 0.5370865093 2.4700889951 3.2066845451 0.7178703595
+#> [1426] 0.3149034034 0.4391077146 0.4935120335 0.4592364720 0.7999462643
+#> [1431] 0.5660736936 0.9439265415 0.2397186417 1.4972189747 0.3742584566
+#> [1436] 0.2394594989 1.6980369443 0.5805045008 1.2247809645 1.4820944933
+#> [1441] 1.1134490207 0.5623999099 0.5320369015 0.8421114977 0.5326439036
+#> [1446] 0.1679622998 0.5256923477 0.9196614568 0.9164132927 0.5139200855
+#> [1451] 0.5485691925 1.7156508181 0.4425278637 0.9914289048 0.4217208062
+#> [1456] 4.7379810619 0.4808761372 1.0839371042 0.9274965458 1.3985007686
+#> [1461] 1.1904067338 0.1626034747 0.3136220753 0.4129572972 1.3549525877
+#> [1466] 1.1370170382 4.6366234299 0.6431044628 0.2672852423 0.0453431657
+#> [1471] 0.5472834749 0.2156894231 1.1235826141 0.4468246445 1.1906629823
+#> [1476] 1.8318765996 0.3432880833 0.3601280120 1.5802457730 0.2156825779
+#> [1481] 2.2241453107 2.9010188695 1.0341209803 0.8636795898 0.7418623934
+#> [1486] 1.8384678452 0.2707317707 2.0668418151 1.2970363528 1.4812358720
+#> [1491] 1.5456059739 0.1700398255 0.8656216580 0.3726344792 1.1057877591
+#> [1496] 0.3900462882 1.6233676960 0.8217722274 0.4741378496 1.0904401619
+#> [1501] 0.8859470238 0.6186842497 1.0302449957 1.3519433485 1.3620872570
+#> [1506] 0.4037630871 0.3557872779 1.2270241318 0.7149005662 0.9717258463
+#> [1511] 1.9505248673 0.6658848261 1.2265902857 0.2888601445 1.3799895386
+#> [1516] 0.3796611280 0.7264068293 1.5725592316 0.0540722362 0.1795326053
+#> [1521] 0.6749965922 0.1053793222 0.7165887624 1.6437529568 0.6003825828
+#> [1526] 0.7602067291 0.1417402250 2.7766816718 0.3044938383 1.5158220846
+#> [1531] 0.6849200105 2.0135016151 0.1147169850 0.0538520738 0.3007296482
+#> [1536] 0.5091868008 0.4360315565 0.9648180906 0.7812137059 0.5791575393
+#> [1541] 0.4590750781 0.3552598156 0.6959624226 0.1378716069 0.6754931326
+#> [1546] 3.4301100052 0.8384083479 0.1984036352 0.8578146577 1.0671528052
+#> [1551] 0.1932644488 1.9577213888 0.2021638866 0.1783660684 0.8025464156
+#> [1556] 0.4975510028 1.9581622961 2.3426884678 0.7031713098 1.4687328733
+#> [1561] 0.1517076691 1.3442379534 1.5491813974 0.2031872960 0.6011896825
+#> [1566] 1.0890276349 1.4594682418 1.0076118704 3.1090818687 2.9693798336
+#> [1571] 0.5193172953 1.5115063522 0.7291905619 1.0025831358 0.3336118723
+#> [1576] 0.3758583448 0.1881500291 0.6876314461 0.3775240077 0.2944595744
+#> [1581] 1.2431417975 0.6619429623 2.2679484390 2.1446954804 0.2485778072
+#> [1586] 0.3202340071 0.7619699675 0.5165861428 0.0701643348 2.4394691437
+#> [1591] 0.3221843739 0.9771417503 0.6291165689 1.0473190700 0.7488814468
+#> [1596] 1.5446320569 0.8971417201 0.8542997139 0.8216551607 0.6389441749
+#> [1601] 1.2383824546 0.7530099754 1.8132173378 0.7676963908 0.1885459419
+#> [1606] 0.2103452427 0.7773511680 0.2537409775 0.6372912300 0.5469206692
+#> [1611] 0.1007270425 0.7426265035 0.3763291094 1.1682704228 0.4520469549
+#> [1616] 0.5202614291 2.4541458044 0.9921150038 1.3321464789 0.4598476177
+#> [1621] 0.9635081327 0.7873032745 0.9626151816 2.9600623697 0.1706960270
+#> [1626] 1.6393643734 1.6729162750 1.4777348391 0.3727833694 3.1503437182
+#> [1631] 0.9132585785 0.3587579132 1.1266058613 0.4726200161 0.4364367806
+#> [1636] 0.2491463040 0.6752963314 0.3351604453 0.2120098741 0.2690806167
+#> [1641] 1.5222059192 0.8951691935 0.4069015893 0.9407550337 3.2217297824
+#> [1646] 1.6795237097 0.3759465667 0.1243087227 2.3403641302 1.8828132259
+#> [1651] 1.0090546901 0.7414126912 1.2584458185 0.4560909446 0.3784680824
+#> [1656] 1.7810799023 0.9754214089 0.5621233283 1.1600160756 0.8134326885
+#> [1661] 1.9130254828 0.7629093126 0.3016324857 0.1558526696 0.2650713682
+#> [1666] 0.9519835630 0.1866046225 1.0046190016 0.8919636057 0.4054646388
+#> [1671] 1.4210759032 0.1861557929 0.7224289784 0.4784833125 2.1195466674
+#> [1676] 3.3428313757 0.4156938614 0.3230481657 2.4752311088 0.7149561471
+#> [1681] 1.3006560524 2.1881518561 0.3884020640 1.5569126889 0.4992438140
+#> [1686] 1.0884286752 2.1429739219 1.5920530709 0.6210983865 0.5538556572
+#> [1691] 0.4591351436 0.7132342324 0.1306962344 0.1322074892 0.2680750910
+#> [1696] 1.1748510376 0.8465544658 0.8625124490 0.5501865020 1.2367168550
+#> [1701] 1.8327860626 0.7847812797 0.3652188458 0.6331936217 0.4015912595
+#> [1706] 0.4028125311 0.5446422231 1.2303355100 0.5526489889 0.2666302938
+#> [1711] 1.1549461171 1.3296926412 1.5153417458 1.4920627182 1.0469407912
+#> [1716] 0.7493632036 0.8422682344 0.8214419289 0.7267681466 0.4461356258
+#> [1721] 0.5387496879 0.3670038712 0.1537668881 0.9943332454 1.1778733218
+#> [1726] 0.9480538291 2.1172113712 3.1945829006 0.2892744822 2.9666330363
+#> [1731] 0.3809469273 1.2941835346 0.5794233592 0.7586643515 0.6573110551
+#> [1736] 1.3288324550 0.0706815592 0.2963392088 0.1469309023 2.0938983866
+#> [1741] 2.6193661313 0.7996808780 0.7318117668 0.2314086014 0.7193119721
+#> [1746] 1.7575854463 0.6994354330 1.8130522466 0.2954615666 0.1201407115
+#> [1751] 3.9669848492 0.7204087744 0.4485707588 2.3530058266 1.8169179792
+#> [1756] 1.2805441453 0.7254106803 0.8399918063 0.6891788703 0.1999922297
+#> [1761] 0.3602703733 0.4829932419 1.5234102631 0.8083404063 0.6058276496
+#> [1766] 2.3185989009 0.8063190086 1.5957640734 0.7902581843 0.1162546714
+#> [1771] 2.1245811186 0.5636063040 0.2079304389 0.1992519348 1.8947759565
+#> [1776] 0.0962733389 1.1538101588 0.4137697224 3.8548863624 2.7104902440
+#> [1781] 0.7593587464 1.2238841265 1.0170538521 0.5323547157 6.7034413469
+#> [1786] 0.8185716051 1.6812787836 0.8871309247 0.0210239562 1.0799697062
+#> [1791] 1.6846132863 0.3248235264 0.5606007424 0.4748136374 1.0482681263
+#> [1796] 1.3481290989 0.2029319880 1.4303020975 0.3810162872 2.5638340557
+#> [1801] 0.4730929780 0.8972508027 0.2246862170 2.1176802134 2.0938597944
+#> [1806] 0.3779699554 1.3487357717 0.6444297504 0.5693992951 0.4618538905
+#> [1811] 0.5894302613 0.2495318551 0.3902532665 1.4681064072 0.8381731842
+#> [1816] 0.3979737414 1.9217801412 0.0624641222 0.3321105542 0.5029080793
+#> [1821] 3.9409394602 0.6098394506 0.9397718200 0.5179647760 0.6547031556
+#> [1826] 1.1216240134 2.3247337340 2.8992565495 2.7087721940 0.3429171093
+#> [1831] 0.2565266098 1.0078513899 1.9679823741 0.0473719430 1.6544979470
+#> [1836] 0.6830960684 0.9369089883 0.6741213852 1.4944039456 0.9282856333
+#> [1841] 0.1178276125 0.3923683168 0.1677414596 1.9327876032 1.0837845155
+#> [1846] 0.0002923034 0.7678561717 0.5924472069 0.3790683178 0.5635769517
+#> [1851] 1.0799284801 0.8328125804 1.0247554683 0.6158055107 2.5286839906
+#> [1856] 2.8012943613 1.3192836872 1.4232161910 1.3982778972 1.4691425047
+#> [1861] 0.4281811903 0.3590439587 0.0426788658 0.2715234291 0.6685343720
+#> [1866] 0.1767737504 1.8336709915 1.9283100720 1.3121042185 0.7324295033
+#> [1871] 0.4137757162 1.2774745055 0.9318181315 0.1628626175 0.6596885212
+#> [1876] 0.1551073137 0.4744326738 1.5947011928 2.5763606667 0.6083935827
+#> [1881] 0.9195202881 0.1376094905 0.6175961909 0.4358305278 0.1841056510
+#> [1886] 0.8675055350 0.7146678808 1.1613102325 0.5497795871 1.1284226291
+#> [1891] 1.4230109433 0.4211120676 1.4232230056 1.7689589482 0.6931862140
+#> [1896] 0.0081109765 0.3979457596 2.7273993840 1.2030994729 1.5607984640
+#> [1901] 0.2686078650 1.3920285576 0.8824255051 1.7171325356 0.6948541762
+#> [1906] 2.2068060099 1.4769959329 0.1945485637 0.9162167239 0.6266491610
+#> [1911] 3.3585872283 0.9707027088 1.2677320753 1.4600118802 0.3174423232
+#> [1916] 0.9284534325 0.3456270253 0.9094925323 0.2138536360 2.1503383387
+#> [1921] 0.3947994457 0.7256324305 0.2589445788 0.1850946504 3.8948492555
+#> [1926] 3.3137400717 0.7780315798 0.8659869410 1.0065229256 0.2495642578
+#> [1931] 0.9055610035 0.9684722151 0.0699013499 0.7709116322 0.2063448924
+#> [1936] 0.3276263456 0.2771959095 0.9502601140 1.1577449632 0.3660754931
+#> [1941] 0.2520562968 2.7897699456 4.9607394074 2.0492818454 1.8089029911
+#> [1946] 0.0907668063 0.2175187694 0.9651594586 0.3991550680 1.1556257122
+#> [1951] 0.5174105898 3.4703003103 0.7917996012 4.2407454464 3.1914972470
+#> [1956] 4.7098489249 1.0152266891 0.9064362433 0.9492677986 0.5044968208
+#> [1961] 2.0875827432 0.9894527230 1.0400837590 0.5367409611 1.4671220290
+#> [1966] 1.0632415218 0.7875802752 0.2503554839 0.2979437808 0.2458385278
+#> [1971] 0.1648525626 0.4009918179 0.5147873438 1.2469839588 0.2088884499
+#> [1976] 0.2381280363 0.6984974151 0.5384965772 2.3453031596 2.5870199338
+#> [1981] 0.6621200385 0.4914205042 3.2014659421 0.7303770129 1.8184644462
+#> [1986] 0.9106616175 0.1034744379 0.5457089878 0.2066895838 2.1572378140
+#> [1991] 0.7168064104 0.3008961312 3.0920278776 0.6064613597 3.8573618898
+#> [1996] 0.0744440578 2.1170151372 0.8441854563 0.6009661547
+#> 
+#> 
+#> $missing
+#> $response
+#> [1] "height"
+#> 
+#> $n_rows
+#> [1] 96
+#> 
+#> $n_missing
+#> [1] 14
+#> 
+#> $missing_rate
+#> [1] 0.1458333
+#> 
+#> $missing_rows
+#>  [1]  6 17 20 22 33 47 48 52 60 65 66 76 77 89
+#> 
+#> $assumption_note
+#> [1] "The missingness mechanism cannot be established from observed data alone. MCAR/MAR/MNAR assumptions require scientific justification and sensitivity analysis."
+#> 
+#> $repeated
+#> $repeated$n_subjects
+#> [1] 24
+#> 
+#> $repeated$n_occasions
+#> [1] 4
+#> 
+#> $repeated$complete_subjects
+#> [1] 13
+#> 
+#> $repeated$incomplete_subjects
+#> [1] 11
+#> 
+#> $repeated$subjects_with_no_observed_response
+#> [1] 0
+#> 
+#> $repeated$observed_by_occasion
+#>  1  2  3  4 
+#> 19 21 23 19 
+#> 
+#> $repeated$missing_rate_by_occasion
+#>          1          2          3          4 
+#> 0.20833333 0.12500000 0.04166667 0.20833333 
+#> 
+#> $repeated$pattern_counts
+#> patterns
+#> 1111 0111 1110 1011 0011 0110 1100 
+#>   13    3    3    2    1    1    1 
+#> 
+#> $repeated$monotone_subjects
+#> [1] 17
+#> 
+#> $repeated$nonmonotone_subjects
+#> [1] 7
+#> 
+#> $repeated$observation_matrix
+#>                 1     2     3     4
+#> control@@1   TRUE  TRUE  TRUE  TRUE
+#> control@@2   TRUE FALSE  TRUE  TRUE
+#> control@@3   TRUE  TRUE  TRUE  TRUE
+#> control@@4   TRUE  TRUE  TRUE  TRUE
+#> control@@5  FALSE  TRUE  TRUE FALSE
+#> control@@6   TRUE FALSE  TRUE  TRUE
+#> control@@7   TRUE  TRUE  TRUE  TRUE
+#> control@@8   TRUE  TRUE  TRUE  TRUE
+#> control@@9  FALSE  TRUE  TRUE  TRUE
+#> control@@10  TRUE  TRUE  TRUE  TRUE
+#> control@@11  TRUE  TRUE  TRUE  TRUE
+#> control@@12  TRUE  TRUE FALSE FALSE
+#> treated@@13  TRUE  TRUE  TRUE FALSE
+#> treated@@14  TRUE  TRUE  TRUE  TRUE
+#> treated@@15  TRUE  TRUE  TRUE FALSE
+#> treated@@16  TRUE  TRUE  TRUE  TRUE
+#> treated@@17 FALSE FALSE  TRUE  TRUE
+#> treated@@18  TRUE  TRUE  TRUE  TRUE
+#> treated@@19  TRUE  TRUE  TRUE FALSE
+#> treated@@20 FALSE  TRUE  TRUE  TRUE
+#> treated@@21  TRUE  TRUE  TRUE  TRUE
+#> treated@@22  TRUE  TRUE  TRUE  TRUE
+#> treated@@23 FALSE  TRUE  TRUE  TRUE
+#> treated@@24  TRUE  TRUE  TRUE  TRUE
+#> 
+#> 
+#> attr(,"class")
+#> [1] "agri_missing_report"
+#> 
+#> $prep
+#> $prep$groups
+#> $prep$groups[[1]]
+#> $prep$groups[[1]]$Y
+#>                     1         2        3         4
+#> control@@1  10.507456 11.175421 11.58718 12.532270
+#> control@@2  10.443145        NA 12.89586 11.398975
+#> control@@3   7.201917  8.249454 10.50214 10.872152
+#> control@@4   7.440707  8.386312 10.11754  8.798423
+#> control@@5         NA 11.751801 20.45428        NA
+#> control@@6  13.820300        NA 12.13128 15.241642
+#> control@@7  11.509548 11.650842 11.44364 10.704438
+#> control@@8  11.516598 11.950074 11.74507 11.746734
+#> control@@9         NA  8.696390 10.64383 10.603295
+#> control@@10 10.216952 14.379738 14.48379 11.912297
+#> control@@11  8.229888 11.951667 11.05988 10.667700
+#> control@@12  9.550545 10.001575       NA        NA
+#> 
+#> $prep$groups[[1]]$n
+#> [1] 12
+#> 
+#> $prep$groups[[1]]$level
+#> [1] "control"
+#> 
+#> 
+#> $prep$groups[[2]]
+#> $prep$groups[[2]]$Y
+#>                     1         2        3        4
+#> treated@@13  8.837410  8.589190 12.03576       NA
+#> treated@@14 11.238333 13.117006 13.72101 12.01655
+#> treated@@15  9.758080 11.785013 14.52522       NA
+#> treated@@16 12.251915 14.475982 16.70177 15.83977
+#> treated@@17        NA        NA 16.18386 19.27473
+#> treated@@18  8.541455  9.647528 11.85867 14.02686
+#> treated@@19  6.492470 13.205680 17.19227       NA
+#> treated@@20        NA 13.602193 17.74553 16.14795
+#> treated@@21 11.955345 14.364238 18.75291 19.94939
+#> treated@@22  5.936957  9.830355 14.69022 13.46321
+#> treated@@23        NA 11.762079 14.65133 14.87729
+#> treated@@24 10.626836 12.284680 15.05015 17.13581
+#> 
+#> $prep$groups[[2]]$n
+#> [1] 12
+#> 
+#> $prep$groups[[2]]$level
+#> [1] "treated"
+#> 
+#> 
+#> 
+#> $prep$cell_grid
+#>   treatment time
+#> 1   control    1
+#> 2   control    2
+#> 3   control    3
+#> 4   control    4
+#> 5   treated    1
+#> 6   treated    2
+#> 7   treated    3
+#> 8   treated    4
+#> 
+#> $prep$between
+#> [1] "treatment"
+#> 
+#> $prep$within
+#> [1] "time"
+#> 
+#> $prep$all_factors
+#> [1] "treatment" "time"     
+#> 
+#> $prep$a
+#> [1] 2
+#> 
+#> $prep$d
+#> [1] 4
+#> 
+#> $prep$response
+#> [1] "height"
+#> 
+#> 
+#> $components
+#> $components$p
+#> [1] 0.2560976 0.3609756 0.4939024 0.4256098 0.2527100 0.5138581 0.8119919
+#> [8] 0.8299458
+#> 
+#> $components$Vn
+#>            [,1]       [,2]       [,3]       [,4]       [,5]       [,6]
+#> [1,] 0.11193734 0.03667460 0.03986330 0.08123575 0.00000000 0.00000000
+#> [2,] 0.03667460 0.13455879 0.08159138 0.04537153 0.00000000 0.00000000
+#> [3,] 0.03986330 0.08159138 0.12765129 0.05304923 0.00000000 0.00000000
+#> [4,] 0.08123575 0.04537153 0.05304923 0.10463613 0.00000000 0.00000000
+#> [5,] 0.00000000 0.00000000 0.00000000 0.00000000 0.13541322 0.09153552
+#> [6,] 0.00000000 0.00000000 0.00000000 0.00000000 0.09153552 0.13467780
+#> [7,] 0.00000000 0.00000000 0.00000000 0.00000000 0.02806283 0.05656806
+#> [8,] 0.00000000 0.00000000 0.00000000 0.00000000 0.02982850 0.02961449
+#>            [,7]       [,8]
+#> [1,] 0.00000000 0.00000000
+#> [2,] 0.00000000 0.00000000
+#> [3,] 0.00000000 0.00000000
+#> [4,] 0.00000000 0.00000000
+#> [5,] 0.02806283 0.02982850
+#> [6,] 0.05656806 0.02961449
+#> [7,] 0.03928713 0.02462985
+#> [8,] 0.02462985 0.04889065
+#> 
+#> $components$V_list
+#> $components$V_list[[1]]
+#>            [,1]       [,2]       [,3]       [,4]
+#> [1,] 0.05596867 0.01833730 0.01993165 0.04061788
+#> [2,] 0.01833730 0.06727940 0.04079569 0.02268577
+#> [3,] 0.01993165 0.04079569 0.06382564 0.02652462
+#> [4,] 0.04061788 0.02268577 0.02652462 0.05231806
+#> 
+#> $components$V_list[[2]]
+#>            [,1]       [,2]       [,3]       [,4]
+#> [1,] 0.06770661 0.04576776 0.01403141 0.01491425
+#> [2,] 0.04576776 0.06733890 0.02828403 0.01480724
+#> [3,] 0.01403141 0.02828403 0.01964357 0.01231492
+#> [4,] 0.01491425 0.01480724 0.01231492 0.02444533
+#> 
+#> 
+#> $components$R_list
+#> $components$R_list[[1]]
+#>              1  2  3  4
+#> control@@1  22 30 36 53
+#> control@@2  20 NA 54 32
+#> control@@3   3  6 21 28
+#> control@@4   4  7 18 11
+#> control@@5  NA 40 82 NA
+#> control@@6  60 NA 50 71
+#> control@@7  34 37 33 27
+#> control@@8  35 45 38 39
+#> control@@9  NA 10 25 23
+#> control@@10 19 63 65 44
+#> control@@11  5 46 29 26
+#> control@@12 13 17 NA NA
+#> 
+#> $components$R_list[[2]]
+#>              1  2  3  4
+#> treated@@13 12  9 49 NA
+#> treated@@14 31 55 59 48
+#> treated@@15 15 42 66 NA
+#> treated@@16 51 64 75 72
+#> treated@@17 NA NA 74 80
+#> treated@@18  8 14 43 61
+#> treated@@19  2 56 77 NA
+#> treated@@20 NA 58 78 73
+#> treated@@21 47 62 79 81
+#> treated@@22  1 16 68 57
+#> treated@@23 NA 41 67 69
+#> treated@@24 24 52 70 76
+#> 
+#> 
+#> $components$lambda_list
+#> $components$lambda_list[[1]]
+#>  1  2  3  4 
+#> 10 10 11 10 
+#> 
+#> $components$lambda_list[[2]]
+#>  1  2  3  4 
+#>  9 11 12  9 
+#> 
+#> 
+#> $components$meanR_list
+#> $components$meanR_list[[1]]
+#> [1] 21.5 30.1 41.0 35.4
+#> 
+#> $components$meanR_list[[2]]
+#> [1] 21.22222 42.63636 67.08333 68.55556
+#> 
+#> 
+#> $components$N
+#> [1] 82
+#> 
+#> $components$n
+#> [1] 24
+#> 
+#> 
+#> $reference
+#> [1] "Amro L, Konietschke F, Pauly M (2024). Biometrical Journal 66:e70008. doi:10.1002/bimj.70008"
+#> 
+#> $status
+#> [1] "experimental: formula-level implementation requires independent benchmark validation before confirmatory use"
+#> 
+#> attr(,"class")
+#> [1] "agri_incomplete_wild" "agri_engine_fit"
+```
+
+### 9.1 What it does
+
+The engine implements rank-based quadratic-form inference for
+incompletely observed repeated measurements, with a wild-bootstrap
+reference distribution. It uses the observed cells directly rather than
+imputing the absent ones, which is what makes it applicable when a
+subject has some but not all occasions.
+
+Note that `missing_assumption` is a **required** argument with no silent
+default behaviour. The engine will not proceed without an explicit
+statement of what is being assumed, which is the point.
+
+### 9.2 The statistic
+
+| `statistic` | Is                   | Behaves                                   |
+|-------------|----------------------|-------------------------------------------|
+| `"ATS"`     | ANOVA-type statistic | conservative, robust in small samples     |
+| `"WTS"`     | Wald-type statistic  | liberal in small samples unless resampled |
+
+For agronomic sample sizes, `"ATS"` with resampling is the safer
+default.
+
+------------------------------------------------------------------------
+
+## 10. Sensitivity to the assumption
+
+``` r
+
+sens_miss <- agri_missing_sensitivity(
+  des_miss,
+  B         = 999,
+  seed      = 802,
+  statistic = "ATS"
+)
+
+sens_miss
+#> $comparison
+#>           effect value_all_available p_boot_all_available
+#> 1           time           30.298698                0.001
+#> 2      treatment            8.974405                0.007
+#> 3 treatment:time            7.153188                0.001
+#>   value_complete_subjects p_boot_complete_subjects
+#> 1               16.286105                    0.001
+#> 2                6.962871                    0.018
+#> 3                3.979319                    0.019
+#> 
+#> $all_available
+#> $method
+#> [1] "incomplete repeated-measures rank wild bootstrap"
+#> 
+#> $statistic
+#> [1] "ATS"
+#> 
+#> $weights
+#> [1] "rademacher"
+#> 
+#> $B
+#> [1] 999
+#> 
+#> $seed
+#> [1] 802
+#> 
+#> $missing_assumption
+#> [1] "MCAR"
+#> 
+#> $omnibus
+#>                        effect statistic     value       df p_boot p_asymptotic
+#> treatment           treatment       ATS  8.974405 1.000000  0.007 2.737877e-03
+#> time                     time       ATS 30.298698 2.518215  0.001 7.729992e-17
+#> treatment:time treatment:time       ATS  7.153188 2.518215  0.001 2.459399e-04
+#> 
+#> $effects
+#>   cell treatment time relative_marginal_effect
+#> 1    1   control    1                0.2560976
+#> 2    2   control    2                0.3609756
+#> 3    3   control    3                0.4939024
+#> 4    4   control    4                0.4256098
+#> 5    5   treated    1                0.2527100
+#> 6    6   treated    2                0.5138581
+#> 7    7   treated    3                0.8119919
+#> 8    8   treated    4                0.8299458
+#> 
+#> $covariance
+#>            [,1]       [,2]       [,3]       [,4]       [,5]       [,6]
+#> [1,] 0.11193734 0.03667460 0.03986330 0.08123575 0.00000000 0.00000000
+#> [2,] 0.03667460 0.13455879 0.08159138 0.04537153 0.00000000 0.00000000
+#> [3,] 0.03986330 0.08159138 0.12765129 0.05304923 0.00000000 0.00000000
+#> [4,] 0.08123575 0.04537153 0.05304923 0.10463613 0.00000000 0.00000000
+#> [5,] 0.00000000 0.00000000 0.00000000 0.00000000 0.13541322 0.09153552
+#> [6,] 0.00000000 0.00000000 0.00000000 0.00000000 0.09153552 0.13467780
+#> [7,] 0.00000000 0.00000000 0.00000000 0.00000000 0.02806283 0.05656806
+#> [8,] 0.00000000 0.00000000 0.00000000 0.00000000 0.02982850 0.02961449
+#>            [,7]       [,8]
+#> [1,] 0.00000000 0.00000000
+#> [2,] 0.00000000 0.00000000
+#> [3,] 0.00000000 0.00000000
+#> [4,] 0.00000000 0.00000000
+#> [5,] 0.02806283 0.02982850
+#> [6,] 0.05656806 0.02961449
+#> [7,] 0.03928713 0.02462985
+#> [8,] 0.02462985 0.04889065
+#> 
+#> $p_vector
+#> [1] 0.2560976 0.3609756 0.4939024 0.4256098 0.2527100 0.5138581 0.8119919
+#> [8] 0.8299458
+#> 
+#> $contrasts
+#> $contrasts$treatment
+#>       [,1]  [,2]  [,3]  [,4] [,5] [,6] [,7] [,8]
+#> [1,] -0.25 -0.25 -0.25 -0.25 0.25 0.25 0.25 0.25
+#> 
+#> $contrasts$time
+#>      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8]
+#> [1,] -0.5  0.5  0.0  0.0 -0.5  0.5  0.0  0.0
+#> [2,] -0.5 -0.5  1.0  0.0 -0.5 -0.5  1.0  0.0
+#> [3,] -0.5 -0.5 -0.5  1.5 -0.5 -0.5 -0.5  1.5
+#> 
+#> $contrasts$`treatment:time`
+#>      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8]
+#> [1,]    1   -1    0    0   -1    1    0    0
+#> [2,]    1    1   -2    0   -1   -1    2    0
+#> [3,]    1    1    1   -3   -1   -1   -1    3
+#> 
+#> 
+#> $boot_statistics
+#> $boot_statistics$treatment
+#>   [1] 1.224706e+00 3.055627e-01 1.926749e-02 1.282587e-02 1.876226e+00
+#>   [6] 1.475927e-01 2.407437e-01 1.579773e-02 4.874114e-02 7.996768e-02
+#>  [11] 2.441361e+00 1.808342e-01 6.107603e-01 3.737181e-01 1.971136e-01
+#>  [16] 3.928123e-01 3.217822e-01 4.818141e-02 4.942573e-01 2.367924e-01
+#>  [21] 3.472310e+00 6.267708e-01 2.594053e+00 6.604074e+00 6.331666e-01
+#>  [26] 3.534404e-01 1.665311e-03 3.512187e-01 1.993958e+00 2.440276e-02
+#>  [31] 2.553887e-01 2.124533e+00 4.248144e-01 1.425223e-02 1.847503e+00
+#>  [36] 1.837208e+00 1.125031e+00 4.973785e+00 1.086170e-01 4.209235e-01
+#>  [41] 2.558697e-01 1.728071e+00 2.624175e-01 5.717724e-01 7.997686e-01
+#>  [46] 3.182030e-01 4.909592e-03 1.327449e-02 2.219397e+00 4.024412e-01
+#>  [51] 1.037022e-01 4.710511e-02 1.561882e-02 3.110468e+00 1.905975e-01
+#>  [56] 1.505516e+00 4.591248e-02 1.443854e+00 4.803822e-02 1.099918e-01
+#>  [61] 7.205229e-01 1.480234e+00 6.069953e-01 3.474157e-02 9.492077e-03
+#>  [66] 1.246713e-01 1.448603e+00 1.008589e+00 1.655635e+00 4.435049e+00
+#>  [71] 7.860782e-02 2.482225e+00 3.500591e+00 3.989005e-01 1.129712e+00
+#>  [76] 2.283934e-01 1.667103e-01 4.443155e-01 1.373368e-01 4.966394e-02
+#>  [81] 1.182366e+00 3.133686e-02 1.846917e+00 7.519160e-02 3.160913e+00
+#>  [86] 6.013934e-01 3.755711e-02 1.541822e+00 2.071202e-01 2.627516e-02
+#>  [91] 7.965937e+00 1.047142e+00 1.970859e+00 2.750498e-02 1.123632e+00
+#>  [96] 3.034397e-01 9.502127e-04 6.954782e-01 2.685024e-02 3.017225e-02
+#> [101] 1.833682e-01 5.206809e+00 9.552733e-02 3.580837e-01 1.146371e-02
+#> [106] 7.853825e-03 1.266924e+00 1.144530e+01 3.747708e-02 2.335384e+00
+#> [111] 3.631833e+00 5.525807e-03 1.182627e-01 4.709906e-03 1.226718e+00
+#> [116] 3.196708e-01 4.490504e+00 1.872248e+00 1.623161e-01 4.974333e+00
+#> [121] 1.389982e+00 3.556497e-01 3.214388e-02 1.742463e+00 1.017594e-01
+#> [126] 3.788171e+00 1.292583e-03 2.283100e+00 7.675058e-01 5.629618e-01
+#> [131] 3.484540e+00 9.588172e-01 3.739997e+00 1.786190e-02 3.391946e-02
+#> [136] 9.388551e-01 5.363963e-01 1.827391e-02 3.792032e-01 1.720212e-01
+#> [141] 2.640550e-02 3.298442e-01 1.623384e+00 2.324344e+00 1.130907e+00
+#> [146] 5.905342e+00 5.571434e-02 3.069562e-01 1.972259e+00 9.974660e-01
+#> [151] 2.636731e-01 6.730716e+00 7.815618e-01 6.227651e-01 1.464143e-01
+#> [156] 5.718054e-01 3.279239e-01 1.966947e+00 2.976778e+00 4.696041e-02
+#> [161] 4.872931e+00 1.860265e+00 5.972273e-01 2.620176e-01 1.447378e-01
+#> [166] 2.892044e-01 4.681897e-01 9.787433e-02 6.255339e-01 1.696913e-01
+#> [171] 4.005277e-01 9.472188e-02 7.304875e-01 3.310020e+00 2.567707e-02
+#> [176] 3.309394e+00 6.219166e-01 6.270909e-01 1.200270e+00 6.754817e-02
+#> [181] 1.390525e+00 1.869709e-01 1.363375e+00 3.954353e+00 7.836983e-01
+#> [186] 1.749528e-01 8.040842e-02 1.888099e-01 9.869978e+00 4.545069e-02
+#> [191] 2.234088e-03 4.566333e-01 7.546268e-01 2.156786e-01 7.968942e-01
+#> [196] 1.112218e+00 1.347725e-01 9.328491e-01 2.861419e-01 2.801141e-04
+#> [201] 7.597684e-01 8.737889e+00 3.588541e+00 2.331756e-02 2.152506e+00
+#> [206] 3.820418e-01 8.687790e-01 1.873496e+00 4.127694e-01 2.788390e+00
+#> [211] 3.800951e+00 3.374311e-01 7.394824e-01 1.098546e+00 4.108975e-03
+#> [216] 8.534251e-02 4.253351e-02 2.106795e+00 1.064187e-01 3.901648e-01
+#> [221] 9.063971e-02 5.823845e-01 2.828010e+00 1.076201e-01 2.099735e-04
+#> [226] 5.572265e-01 7.524824e+00 2.116285e+00 3.282174e+00 2.932874e-01
+#> [231] 3.817612e-01 7.102466e-01 5.886487e-02 2.037315e-01 3.649046e+00
+#> [236] 4.605637e-02 6.753618e-01 2.112729e+00 5.614907e-01 1.325437e+00
+#> [241] 2.612956e+00 5.441246e-02 2.387377e-01 1.157142e+00 1.273214e+00
+#> [246] 8.635142e-01 1.214146e+00 5.419941e+00 9.147505e-01 5.148359e-01
+#> [251] 5.745990e-01 6.430011e-01 4.137344e-01 1.520883e-03 2.223202e+00
+#> [256] 1.723787e+00 8.946911e-01 2.993420e-02 3.320066e-01 1.055649e-03
+#> [261] 1.109584e-01 1.182100e+00 3.896649e-02 3.121375e+00 8.766508e-02
+#> [266] 1.442920e+00 2.292918e-02 2.256242e-03 1.570873e-02 1.715171e-02
+#> [271] 6.915613e-01 2.335834e+00 3.801164e-01 9.721427e-01 4.888589e-01
+#> [276] 8.396429e-01 1.863642e-03 2.332920e+00 6.092004e-03 4.549525e-03
+#> [281] 6.688470e-01 1.508918e+01 2.452809e-02 3.917189e-01 6.647224e+00
+#> [286] 3.021475e-01 4.620703e-01 6.860777e-02 1.560334e+00 9.575312e-01
+#> [291] 5.979003e+00 2.480134e+00 7.061212e-01 2.607030e+00 2.694654e+00
+#> [296] 3.166337e-02 3.362675e-01 5.746418e+00 5.413905e-01 5.127418e+00
+#> [301] 1.246253e-02 7.311384e+00 7.675066e-01 5.347120e-01 7.544688e-01
+#> [306] 1.235993e-03 1.795695e-01 5.843052e-01 9.584692e-01 5.488314e+00
+#> [311] 4.700770e-01 2.240359e-03 1.764864e-02 2.633896e-01 2.242851e-01
+#> [316] 1.198126e+00 7.454910e-02 2.385909e+00 1.464489e+00 4.919673e-01
+#> [321] 7.555753e+00 1.000749e+00 6.225019e-01 4.473365e-01 1.410582e-03
+#> [326] 3.148973e+00 1.313352e-01 4.847842e-01 2.563806e-01 1.038220e+00
+#> [331] 8.134209e+00 2.300536e-01 5.531411e-02 1.149802e-01 2.324357e+00
+#> [336] 6.876073e-01 2.536421e-01 4.136189e-01 1.609462e+00 1.109936e-01
+#> [341] 7.920699e-02 5.027308e-01 4.005965e-03 5.379347e-01 3.061395e+00
+#> [346] 6.420567e-01 5.286760e-03 3.678391e-01 3.362940e-02 5.686242e-02
+#> [351] 3.481944e-01 2.187360e-01 5.568612e+00 2.125291e-04 1.474746e+00
+#> [356] 6.394506e-02 2.832496e-02 7.297191e-02 1.534570e-01 3.788093e-03
+#> [361] 8.152947e-01 2.314167e-01 5.916410e-01 1.367766e+00 1.962303e+00
+#> [366] 2.278259e+00 4.387338e-03 2.672867e+00 1.643174e+00 4.530649e-04
+#> [371] 9.541233e-02 1.956967e+00 4.988141e-01 1.408163e+00 1.781247e-01
+#> [376] 3.943620e-01 9.805015e-02 1.689299e+00 1.362352e+00 3.094974e-02
+#> [381] 1.214133e-01 6.815112e-01 7.558810e+00 3.789810e+00 2.101940e-02
+#> [386] 1.659919e+00 1.036628e+00 8.313471e-02 5.987906e-01 4.876385e-05
+#> [391] 1.181930e-01 1.533035e+00 3.418446e-01 4.719880e+00 5.864456e-03
+#> [396] 7.601904e-01 8.137571e-02 5.110390e-01 8.060961e-01 1.480402e-01
+#> [401] 8.106442e-01 4.847686e-02 8.837750e-01 6.547497e+00 6.687410e-01
+#> [406] 1.407615e+00 2.665808e-02 3.338697e-01 9.588209e-02 2.506230e-01
+#> [411] 7.629968e-01 8.676912e-01 1.772807e-02 4.443199e+00 1.762744e-02
+#> [416] 4.310664e-01 1.502745e+00 3.405728e-02 7.031100e-01 6.720010e-01
+#> [421] 1.337708e-01 2.669774e-01 5.755655e+00 1.773815e-01 4.286967e-02
+#> [426] 3.102763e-01 4.983080e-01 5.945984e-03 7.582243e-01 4.660163e-01
+#> [431] 2.276062e+00 8.941500e-02 1.009272e-01 1.585284e-01 2.314266e-02
+#> [436] 5.719265e-01 2.656944e+00 3.240059e-01 2.483479e-03 3.857718e-03
+#> [441] 5.167325e-01 2.366301e-01 1.099238e-01 3.316548e-01 1.499680e-01
+#> [446] 1.199374e-01 4.060320e-01 7.739203e-01 4.424679e-01 1.984929e-01
+#> [451] 8.298950e-01 7.969043e-02 4.140249e-01 1.836744e+00 5.948318e-01
+#> [456] 1.516586e+00 1.429153e-04 6.508871e-01 3.436969e+00 1.277703e-01
+#> [461] 1.302378e+00 2.853388e+00 8.512702e-02 1.016848e+00 1.254921e+00
+#> [466] 1.611137e-01 5.173017e+00 7.713200e-01 4.266615e-01 2.467155e-02
+#> [471] 3.393709e-01 2.004542e-02 2.701624e+00 9.420198e-01 3.770990e-01
+#> [476] 3.560432e+00 4.920490e+00 1.691336e-02 5.729318e+00 1.921279e-01
+#> [481] 2.010764e+00 4.972479e-01 4.795842e+00 5.423739e+00 1.567739e+00
+#> [486] 3.367928e-01 1.109609e+00 9.877150e-02 8.431327e+00 2.110398e+00
+#> [491] 3.006529e-01 8.909904e-02 1.330608e+01 8.240047e-01 1.515902e-01
+#> [496] 2.195712e+00 9.863342e-01 5.057920e-02 4.557991e-03 3.231717e-01
+#> [501] 1.039607e+00 2.635963e-02 4.990154e+00 7.747248e-02 3.993248e-01
+#> [506] 5.137314e-02 5.584730e-01 7.022628e-02 1.814054e-05 3.820425e-01
+#> [511] 1.955342e+00 1.305070e+00 2.136261e-01 1.886043e+00 4.710858e-04
+#> [516] 2.978046e-04 9.547092e-01 2.670940e+00 7.609593e+00 6.588069e-02
+#> [521] 4.049640e-01 1.866731e-02 1.651329e+00 5.051394e-01 5.710356e-01
+#> [526] 1.980791e+00 2.486707e+00 9.862945e-04 1.178489e-01 2.321548e-01
+#> [531] 8.215676e-01 4.896080e-02 2.615625e-01 4.041014e-01 6.846397e-01
+#> [536] 8.771489e-01 5.719567e-01 3.925536e-01 4.893010e-02 3.341691e-01
+#> [541] 2.835706e+00 2.553307e+00 5.280405e-02 6.803722e-01 1.538460e+00
+#> [546] 1.047149e-01 2.299804e-01 1.862950e-03 2.491167e+00 4.035225e-02
+#> [551] 7.438461e-01 3.197808e+00 4.239390e-01 8.338258e-02 5.274191e-02
+#> [556] 1.856193e-01 2.803874e-01 1.805328e+00 5.551352e+00 4.539426e-02
+#> [561] 7.820412e-01 1.218739e+00 2.898031e-01 3.144387e-01 2.083061e+00
+#> [566] 1.782657e-01 1.058738e-01 1.166272e-01 6.053578e-01 2.569724e+00
+#> [571] 6.369814e-03 9.057450e-01 1.061662e+00 5.233928e-02 1.276755e-01
+#> [576] 7.087811e-01 5.090307e-01 3.051261e-01 1.136192e-02 6.535455e-01
+#> [581] 2.444302e-01 2.547598e+00 1.449999e-01 4.620395e-01 1.272302e-01
+#> [586] 9.948570e-01 1.714684e+00 7.879890e-01 5.198066e+00 1.009434e+00
+#> [591] 3.123420e-01 3.215811e-01 2.058940e+00 2.498940e-01 1.201546e-01
+#> [596] 3.179696e-01 1.977592e+00 5.633877e-02 6.095288e-01 2.623819e+00
+#> [601] 3.226671e+00 3.118281e+00 1.137118e-01 5.063329e+00 3.467461e+00
+#> [606] 2.132244e+00 4.429077e+00 7.812872e-02 5.455473e-01 2.128753e-01
+#> [611] 4.978141e-02 1.252929e+00 4.765796e-01 9.350679e+00 8.538146e-05
+#> [616] 4.366968e+00 8.843994e-01 3.934103e-01 1.805016e-02 2.434222e-03
+#> [621] 9.754816e-03 3.434118e+00 8.657441e-01 4.365189e+00 4.221123e-01
+#> [626] 2.079823e-01 5.139343e-01 1.619544e-02 1.996480e+00 1.765052e-01
+#> [631] 1.150070e+00 5.289232e-01 4.518919e-01 2.150294e+00 2.694328e-01
+#> [636] 2.657950e-02 1.195506e-02 6.150044e-02 1.451523e-02 2.323036e-01
+#> [641] 4.450225e-01 7.243549e-01 5.332112e-01 5.169241e-02 7.989166e-01
+#> [646] 1.199792e-02 1.685696e-01 7.195435e-02 2.776076e-01 1.329533e-01
+#> [651] 4.880656e+00 1.099856e-01 9.886068e-01 2.384380e+00 7.036712e-02
+#> [656] 6.870457e-02 3.013950e-01 5.147847e-01 8.714579e-01 1.098018e-01
+#> [661] 3.234044e-03 4.088024e+00 3.757036e-04 1.303645e-01 6.192761e-01
+#> [666] 6.359685e-01 2.324429e-01 2.689578e+00 1.449097e-03 8.574598e-01
+#> [671] 3.129802e-01 1.758565e-01 9.744493e-01 2.041790e+00 1.009095e-02
+#> [676] 6.103850e-01 2.731083e-01 8.949376e-01 1.055758e+00 1.477697e+00
+#> [681] 1.384980e-01 2.489440e-02 2.740982e+00 4.839031e-01 2.782158e-01
+#> [686] 7.927755e-02 3.465843e+00 3.671157e-02 1.007337e+00 2.385110e-01
+#> [691] 3.589428e+00 7.785121e-01 2.547444e-01 1.032650e-01 2.285394e+00
+#> [696] 2.700303e+00 3.531266e-02 5.488320e-01 6.775869e-02 7.467397e-01
+#> [701] 3.949883e-03 1.619408e-01 4.947595e-01 5.346944e-04 2.971463e+00
+#> [706] 4.721506e+00 1.078878e-01 1.071169e-01 1.348987e-01 2.297964e-02
+#> [711] 2.912766e-02 1.140298e+00 9.283242e+00 3.209091e-02 7.113776e-02
+#> [716] 8.742535e-07 1.072246e+00 1.727945e+00 1.323567e+00 2.792807e-01
+#> [721] 5.260870e-02 3.908175e-01 2.696772e+00 3.267568e-01 9.080194e-05
+#> [726] 2.466406e-01 6.332355e-01 1.795122e+00 6.951165e-02 1.473146e-01
+#> [731] 1.601650e+00 5.856350e-01 1.190829e-02 1.448513e-04 2.052335e+00
+#> [736] 7.494301e-02 2.171785e+00 3.585420e-02 8.574595e-03 6.416414e-01
+#> [741] 5.436904e-01 5.125179e+00 8.382499e-02 7.859637e-01 1.521689e-01
+#> [746] 1.543635e+00 1.601968e+00 1.629333e-02 4.143228e-02 4.363330e+00
+#> [751] 1.025699e+00 3.368618e+00 5.547628e-01 2.374586e-01 9.004318e-01
+#> [756] 1.275844e-02 4.964020e-02 1.128644e+00 2.514798e-01 4.052546e-01
+#> [761] 7.754290e-02 4.354381e+00 2.618719e-02 1.639852e-01 1.581395e+00
+#> [766] 8.908551e-02 7.324875e-01 1.039157e+00 5.699029e-01 6.683095e-03
+#> [771] 1.156166e+00 4.229684e+00 6.081666e-01 4.737429e+00 1.934871e-01
+#> [776] 4.263679e+00 8.458319e-02 1.587673e+00 2.901930e+00 6.933149e-01
+#> [781] 1.718694e+00 2.641349e+00 1.450431e+00 5.332588e+00 6.951480e-01
+#> [786] 8.223106e-01 2.624681e+00 1.630181e-01 6.345797e-03 2.513049e+00
+#> [791] 1.921871e-01 1.590960e-04 1.541903e-01 8.006849e-03 1.838244e+00
+#> [796] 4.586605e+00 2.897627e+00 2.952420e-01 7.892398e-01 2.775942e+00
+#> [801] 9.301450e-02 1.029432e-03 3.371386e-03 3.371371e+00 2.014447e+00
+#> [806] 7.753324e-01 3.671394e-01 4.507149e-01 3.237838e-01 7.743791e-01
+#> [811] 8.150019e-02 1.271011e+00 1.815721e-02 6.843187e-02 6.966125e-01
+#> [816] 2.091082e+00 1.092770e-01 9.277764e-01 3.375135e-01 1.265594e-01
+#> [821] 1.502481e-01 1.145147e-02 6.958751e+00 2.481908e-01 1.288190e-01
+#> [826] 1.628710e-02 4.112578e-01 6.597185e-02 2.994679e+00 1.326675e-02
+#> [831] 3.623246e-01 6.220637e+00 6.665080e-02 5.030891e-02 1.537937e+00
+#> [836] 4.830947e-01 5.825868e+00 3.274806e+00 5.066902e-01 2.298647e-01
+#> [841] 5.492817e-01 5.894661e-01 7.551468e-01 1.503718e-03 2.681549e-01
+#> [846] 3.264160e+00 4.210965e-01 4.673109e-01 8.713715e-01 3.407845e-01
+#> [851] 8.653210e-01 2.690659e-01 1.546020e+00 5.368100e+00 1.688588e+00
+#> [856] 1.783772e-01 5.143892e-01 1.144536e-01 1.048099e-01 1.711492e+00
+#> [861] 1.343238e+00 6.873866e-01 5.739179e-02 1.352801e+00 2.167944e+00
+#> [866] 2.338330e-01 6.596154e-01 1.428491e+00 2.811398e-02 7.323866e-01
+#> [871] 9.606459e-05 1.697041e-01 7.311783e+00 1.878539e-02 2.928879e-01
+#> [876] 4.326290e+00 2.252071e-01 4.668917e+00 7.117211e-01 1.404878e+00
+#> [881] 2.459083e-01 7.060615e-01 2.028270e-01 3.337882e-01 2.862058e+00
+#> [886] 1.853261e+00 5.632406e+00 1.252006e-01 2.272944e-01 7.845049e-02
+#> [891] 2.193588e+00 1.672398e-02 9.707242e-03 1.343412e+00 5.889221e-01
+#> [896] 6.843771e-01 1.685687e-01 3.183067e-01 3.260466e+00 1.357210e+00
+#> [901] 1.481461e+00 1.141631e-01 2.266577e-01 9.708265e-01 7.813722e-03
+#> [906] 1.881104e+00 1.989642e-01 2.009648e-02 2.617096e-02 3.145468e+00
+#> [911] 3.163645e+00 3.977943e-01 5.886002e-02 2.500051e+00 7.466754e-03
+#> [916] 2.760983e-05 1.034288e-01 5.482100e+00 4.996673e-01 1.236403e+00
+#> [921] 3.351766e+00 3.034760e-01 1.151925e+00 1.311105e+00 1.908352e-01
+#> [926] 1.864005e-02 9.851807e-01 5.164502e-01 5.138665e+00 3.747249e-05
+#> [931] 4.976103e-04 4.620064e-03 1.163029e-02 3.592582e-05 2.565318e+00
+#> [936] 1.353074e-01 2.896203e-02 5.140350e-01 2.775836e+00 3.461676e-02
+#> [941] 4.204977e-01 1.208370e+00 8.025634e-02 2.772519e+00 8.137810e-01
+#> [946] 1.973737e-01 2.642716e-02 2.367271e-02 6.232333e-01 2.311997e-01
+#> [951] 7.658400e-02 1.031704e-03 1.551808e-01 3.681704e-01 4.945110e-01
+#> [956] 3.635000e-01 9.206530e-03 5.272667e-01 3.916261e-01 2.267064e-06
+#> [961] 4.171758e+00 1.067571e-01 1.255427e+00 2.113824e+00 1.247770e+00
+#> [966] 5.270347e-01 2.848080e-02 6.413588e-01 2.032159e-02 1.532600e-01
+#> [971] 8.997300e-02 6.944600e-01 1.260235e-01 2.070030e+00 3.587682e+00
+#> [976] 4.568017e-01 2.985780e-02 5.641751e-01 2.112040e+00 4.699751e-01
+#> [981] 3.853430e-02 1.622823e-01 2.116647e-02 5.909079e+00 2.504533e+00
+#> [986] 1.208284e-01 1.969874e-01 2.863551e+00 6.324717e-01 2.666575e-01
+#> [991] 4.939467e+00 7.035122e-01 1.073766e+00 1.722786e-02 7.548111e-01
+#> [996] 2.889510e-01 9.573228e-01 1.344070e+00 1.001481e+00
+#> 
+#> $boot_statistics$time
+#>   [1] 1.156618348 0.693021798 0.365891107 0.189504751 1.709843434 1.325367718
+#>   [7] 0.851889383 0.632346718 1.392393885 0.673568748 0.816597795 1.827390920
+#>  [13] 0.129155228 0.537336432 1.131395163 0.027891988 0.808646864 1.269469831
+#>  [19] 0.943225253 0.317766383 0.261854674 0.653327315 0.028394415 1.366635699
+#>  [25] 0.792179106 0.111163794 0.842219425 2.594056627 0.277018587 1.665992664
+#>  [31] 0.873137206 1.399044199 0.656936244 1.224914455 1.077174541 0.318025963
+#>  [37] 2.022614786 0.175389956 0.741234529 0.266298130 1.787739622 2.817149790
+#>  [43] 1.135199146 2.398142821 3.445448781 1.956672576 1.456110578 0.198416469
+#>  [49] 0.778084832 2.322360654 1.059354909 1.153939860 0.438550984 0.356274647
+#>  [55] 2.594589365 3.236896673 2.368526132 0.245706412 0.593666404 0.985714224
+#>  [61] 0.861480750 1.126991444 3.049800521 0.749792578 0.551739089 0.666909688
+#>  [67] 0.549424003 0.496539556 2.286308342 2.346502043 1.848575184 0.997365533
+#>  [73] 0.820340566 0.290893186 0.562062519 2.771609983 0.766796120 0.497371782
+#>  [79] 2.779990612 1.905565294 0.475297364 2.635950410 0.480808338 1.191292892
+#>  [85] 0.563192408 0.338742421 0.978623621 3.816701317 0.142779870 1.807422294
+#>  [91] 1.573721903 2.596284208 0.930998153 0.218368564 1.213632786 2.800984755
+#>  [97] 0.447812231 1.443568217 1.009241872 1.366733525 0.716971939 1.450042786
+#> [103] 0.665088866 1.740689583 0.223803228 0.514636704 1.434504452 1.218966155
+#> [109] 0.876577999 0.384246428 0.395438069 3.854804768 0.606013259 4.767165386
+#> [115] 0.188224419 1.882962962 0.304980049 0.346775126 1.359486508 1.697187088
+#> [121] 1.153501675 0.344381628 0.748118663 0.337818329 1.352539828 0.336224196
+#> [127] 2.298746174 0.878611605 0.280130880 0.662552606 0.326115922 2.781451701
+#> [133] 0.316653929 0.220213759 0.548299934 0.259495710 1.212815114 1.032912320
+#> [139] 5.423626542 0.589265095 1.701996592 0.510867149 1.800454806 0.193546403
+#> [145] 1.335419196 2.160050569 0.803798701 0.431187073 1.320816791 1.335798824
+#> [151] 0.256763633 0.036616645 0.914016561 0.120620551 0.637731451 0.781086816
+#> [157] 0.232217743 0.168944662 0.238625444 1.554963667 1.301263155 1.599063076
+#> [163] 1.155796839 0.422175870 0.899040101 3.970911617 0.075821303 1.098965016
+#> [169] 0.241519712 2.437956505 3.545816745 0.726889988 0.928994785 1.347195196
+#> [175] 1.016161328 0.812758176 0.441836756 2.061439418 2.024481872 0.443562619
+#> [181] 0.917278531 0.751497407 1.232216424 0.413802924 0.022115348 0.103577393
+#> [187] 1.141919998 0.160602029 0.598396879 0.079183760 0.615462527 1.287787268
+#> [193] 0.476809533 0.601008611 2.997166261 3.024425528 1.491989249 2.693003475
+#> [199] 1.776929388 0.272251352 1.531589859 0.096115139 0.277296106 0.085591543
+#> [205] 0.331339200 0.638760881 1.762828693 0.943940723 1.955291401 2.612916543
+#> [211] 0.681868316 1.174486529 0.974491528 0.406496123 0.775666341 0.626439589
+#> [217] 0.171471609 3.138580363 0.722040258 1.244951917 0.293146571 0.632518323
+#> [223] 1.209989571 1.563214593 1.046006508 0.150774150 0.517761867 1.526278510
+#> [229] 0.765772775 0.461058994 0.975622752 0.246871301 1.558917013 1.555067776
+#> [235] 0.239862302 1.698156605 0.422391059 0.489510609 1.782296361 0.478546185
+#> [241] 0.968222125 0.810668824 2.345437309 1.786417023 1.248055550 0.424746717
+#> [247] 0.533752021 1.998629080 1.193437158 0.190400753 1.468585867 1.790678788
+#> [253] 1.952820503 2.329299451 1.362025362 0.864954733 0.221602818 0.279108163
+#> [259] 0.398146335 0.266257122 2.377460911 1.780302144 1.699886188 0.417082799
+#> [265] 0.256564328 0.250725298 1.820166915 0.416567870 1.538958718 1.725084658
+#> [271] 0.594867826 1.115217804 0.568077981 0.310562391 1.861673485 1.158169101
+#> [277] 0.054659321 0.523442851 0.445760170 0.494936008 2.668622349 2.301104577
+#> [283] 0.360879611 0.109421637 2.216871720 0.188560176 0.171328003 1.532271103
+#> [289] 1.468408215 1.952877477 0.610287528 0.682515759 1.183095489 0.786681843
+#> [295] 2.062902846 0.557394045 1.486479569 0.434430793 0.881390328 0.722565613
+#> [301] 2.531404170 1.229738750 0.368387375 0.094345043 0.515449840 0.791317439
+#> [307] 0.411841998 0.479924528 1.170015782 1.079694371 0.544604579 0.200587420
+#> [313] 1.905963131 0.206539894 0.191396504 1.624328052 0.975088468 0.790822054
+#> [319] 0.727788630 1.829136731 1.190211183 1.400907006 0.157311845 0.555033368
+#> [325] 0.773732669 0.984810385 0.888529870 1.089079520 0.623656959 0.229135564
+#> [331] 1.541805329 0.772278107 0.593646897 0.144983056 0.795069207 0.064557228
+#> [337] 1.030390273 0.442538177 0.452109437 0.696133496 0.400247921 1.618256838
+#> [343] 0.550008815 0.193105527 2.726023317 1.093806272 2.889985900 0.441171546
+#> [349] 0.906655324 0.421533850 3.083015553 0.327199336 0.211290063 0.834606884
+#> [355] 2.017400067 1.200563112 0.687021696 0.680407634 0.928483808 0.512754737
+#> [361] 0.414617908 1.883732743 1.611366662 3.044896340 0.309412025 2.327006617
+#> [367] 1.703496558 0.368629379 1.832268166 1.043815038 2.006764094 1.154362225
+#> [373] 1.528729357 1.503332635 0.693130305 0.165524606 2.178118761 0.291758768
+#> [379] 1.278713764 0.556764634 0.845041834 1.046953533 1.095278138 0.226176439
+#> [385] 2.419846951 0.200309600 1.502442554 0.810964631 0.032535691 2.410838019
+#> [391] 0.236570770 0.098152670 0.617968322 0.527377198 0.168983136 0.191152808
+#> [397] 1.954940135 0.110835249 0.651872294 1.419930610 1.398345206 0.902017688
+#> [403] 1.503098096 0.264057256 0.100270220 0.211450017 1.748270568 0.772392818
+#> [409] 0.318406329 0.790592620 0.489003107 1.257009937 1.143698404 2.822364051
+#> [415] 1.094769535 0.382379414 2.613404178 2.235329662 0.101484887 0.322356603
+#> [421] 0.461214117 0.445783500 1.536484988 0.655278890 1.013678257 2.376029994
+#> [427] 0.632390213 0.379567000 0.571950518 2.091053267 0.526410473 2.042302209
+#> [433] 0.284949715 1.962887445 0.698797765 0.563977320 1.274635515 0.705783051
+#> [439] 0.397971736 1.548562479 0.150241848 2.355274799 1.389654792 1.102033465
+#> [445] 0.303385763 1.618776834 0.516243758 0.002792772 1.165548229 0.740179122
+#> [451] 0.364257227 0.424850068 0.858111442 1.525343813 0.241242586 1.161818896
+#> [457] 3.211488658 1.523124037 0.661341225 1.022345099 0.437797395 4.109027511
+#> [463] 1.221195221 0.824027040 0.541497247 0.492449753 0.117382569 2.673535023
+#> [469] 0.232542729 0.911521774 3.515049892 0.070241137 1.095050200 0.792674985
+#> [475] 0.595231685 2.035568914 1.624552435 1.238358502 1.570474616 1.067321253
+#> [481] 0.669716171 3.200548981 1.163987214 0.387996882 1.168199891 0.473708433
+#> [487] 1.026687110 0.098568525 0.651478303 0.246808682 0.015116055 1.250182638
+#> [493] 0.214482984 0.597870627 1.096935265 0.292187104 0.259438039 0.667690235
+#> [499] 1.129130349 0.544067188 0.566116334 0.458563358 1.705635827 0.413361967
+#> [505] 0.149598029 0.439112258 2.060201346 1.619340497 0.718974651 1.609237585
+#> [511] 3.147678621 0.583922703 0.099027720 1.451449902 0.861440529 1.861090436
+#> [517] 1.588501949 0.917117790 1.674333326 0.294084937 0.817410596 2.104253593
+#> [523] 3.014166793 1.964499030 1.677082900 0.446402260 1.214042995 0.572750310
+#> [529] 0.999764388 1.732562161 1.029499730 0.434574337 0.436116911 2.185249788
+#> [535] 1.769201327 2.971812985 0.884649999 0.203457947 0.749668575 0.730884776
+#> [541] 2.894826680 0.250378716 0.288480516 1.767600667 1.493784189 1.297286241
+#> [547] 1.301971927 0.631720592 0.888133384 0.734464550 0.468385421 2.170114362
+#> [553] 2.523004647 1.757630881 0.735397661 0.107263577 0.844083547 0.125711142
+#> [559] 1.210668041 1.058316134 1.394753375 0.163073167 1.064264229 0.544838697
+#> [565] 1.689427151 0.693783419 1.408712665 0.733685247 1.803169393 1.782333509
+#> [571] 1.060845533 0.312422500 1.622065615 2.827637814 2.672041162 0.250778541
+#> [577] 0.695150982 0.762932399 0.485439526 0.117418461 0.631368695 0.519991696
+#> [583] 0.262403490 0.266343009 1.102044911 2.755605728 2.268930826 1.043132799
+#> [589] 1.647557197 0.623750321 3.188653672 0.022361116 0.287160655 1.258740503
+#> [595] 1.553835804 1.395413379 0.041343327 1.555836131 1.235623889 3.473172029
+#> [601] 4.515625245 0.499703049 0.034423503 0.410286998 1.422692917 0.794085445
+#> [607] 0.257090875 1.527310311 0.901620185 2.986866416 3.389384369 0.833499130
+#> [613] 0.348466119 1.726391237 0.426461080 0.483963163 1.144120688 0.724971220
+#> [619] 0.394171708 0.029955057 0.364164060 1.009372468 0.512910241 0.594285356
+#> [625] 3.310724809 0.228943862 0.105925665 1.254085668 1.434854790 1.207895009
+#> [631] 1.259188331 1.304846920 0.904069138 0.749821239 0.676693662 0.592183642
+#> [637] 1.372045397 0.713638611 0.582088973 1.708213927 1.870173269 0.466246202
+#> [643] 0.188027985 2.163959323 0.300158137 2.824585780 0.656602999 0.475363262
+#> [649] 1.004716728 1.852347441 0.055896775 0.714110072 0.480389522 1.400989150
+#> [655] 1.692659248 1.558072511 0.521550800 0.794509179 2.023579629 0.787035420
+#> [661] 2.043655059 1.464674016 1.304717177 0.208602518 0.810917410 2.552763780
+#> [667] 0.606731954 2.099648728 0.922154732 0.052323442 0.455126439 1.285353216
+#> [673] 0.692740114 0.374386440 0.875041260 0.848480770 0.302306483 0.924911706
+#> [679] 0.933409714 0.217567823 0.727994720 1.944233258 2.166119169 0.106355568
+#> [685] 2.503739362 0.427865813 1.678384681 0.748366312 0.558655011 0.636536003
+#> [691] 3.049837275 3.594226433 0.588937321 2.981135304 2.731035467 0.472599232
+#> [697] 1.944020060 1.705561982 0.619614748 2.314178061 0.903480314 0.419658641
+#> [703] 1.985463433 0.895379754 0.111749508 1.577922843 1.167551194 1.844341673
+#> [709] 0.716981768 0.990278332 1.751431432 1.217202303 0.469092648 0.530513547
+#> [715] 0.560782699 0.404773310 0.824787922 0.976847815 0.793923736 0.043895335
+#> [721] 0.699729148 3.352691999 1.239105618 5.343415164 1.190239248 0.285417888
+#> [727] 0.011461432 0.704728769 0.283127499 0.803118681 1.339316027 0.487746899
+#> [733] 0.227876509 2.187412670 0.519298946 0.338577552 0.701545391 0.622113550
+#> [739] 0.430759254 0.090559306 0.089253730 0.395813381 1.357985769 0.599535013
+#> [745] 2.997330388 0.443236918 0.340967129 0.057721702 1.474106210 0.121697527
+#> [751] 0.707677453 1.285695885 0.487724849 2.442068899 2.757073472 0.191594493
+#> [757] 0.405094100 2.519134572 0.591516906 1.018562611 0.631015301 0.855978134
+#> [763] 1.563100148 0.128722654 0.560425268 0.979837388 1.476340186 2.018962268
+#> [769] 1.564838979 0.612854428 0.187637629 1.339595183 2.220610083 1.419108231
+#> [775] 1.278868834 0.421483254 0.101477474 0.130669022 0.853141633 0.108350542
+#> [781] 2.403249529 1.249002638 0.446251645 0.072663614 4.607175111 0.951636099
+#> [787] 1.064851190 0.074801450 1.259870471 1.563031656 0.779290963 0.590438824
+#> [793] 0.858681814 1.178156328 0.640794637 0.104320143 0.332526766 2.119362242
+#> [799] 2.410183977 0.573118613 0.733406468 0.496636793 3.705972288 0.614382205
+#> [805] 0.249363713 1.003427513 0.423167202 1.740925232 0.824770528 1.197446886
+#> [811] 0.770414524 2.822100693 1.443168329 0.680224328 0.513429588 0.352666062
+#> [817] 0.036543358 1.765499254 0.228297492 1.288050058 0.791199255 5.352884105
+#> [823] 2.398586658 1.148918555 0.254742651 0.705276744 0.350249590 0.566474830
+#> [829] 0.916800413 3.222743978 2.114724623 0.337084817 0.966520503 0.721183833
+#> [835] 1.509192016 1.578947791 0.763218213 0.648112238 1.175505257 3.455045636
+#> [841] 0.354392461 0.920254660 1.824037867 1.274454157 0.197750734 0.927410639
+#> [847] 0.002942229 1.728572246 0.325471878 0.056905496 0.411769846 1.143596302
+#> [853] 0.078614906 0.316753197 0.800273013 2.304065877 0.540834958 1.190397292
+#> [859] 1.266833091 1.687949891 1.480093139 0.637954855 1.111183073 0.639695141
+#> [865] 1.550286927 1.015415084 0.420346009 0.321422761 1.591268444 4.608151843
+#> [871] 2.584581942 0.916801507 1.041887602 0.093480255 1.086576039 1.047631281
+#> [877] 1.430527607 0.618814271 0.175094220 1.974248348 0.057810964 0.620048945
+#> [883] 2.718144782 1.122260908 0.433246405 0.479543329 0.429487028 0.011694233
+#> [889] 1.156633406 0.394655293 2.149708510 1.772384971 0.194710645 1.419129260
+#> [895] 0.250818819 0.324759130 1.538943205 0.366778879 0.025734750 0.817077527
+#> [901] 0.616010173 0.292866302 1.121204254 0.579768515 1.177684776 0.236128188
+#> [907] 1.059197031 0.527440929 0.166312167 1.224702201 1.110860947 0.732579432
+#> [913] 1.724864623 0.644704078 0.069269519 0.952567956 1.111358906 0.600883380
+#> [919] 1.679741797 0.066940036 2.297411956 1.107233624 2.047241307 0.811408503
+#> [925] 0.861030463 0.988943388 0.654697728 2.650101335 1.125926658 0.472871332
+#> [931] 0.549338456 1.156120092 0.984370811 3.115975795 0.204576190 0.596189457
+#> [937] 0.248620244 3.367029763 0.713402786 0.196190420 0.677238976 0.995967834
+#> [943] 0.070049589 2.246014620 0.811819176 1.413041535 1.097209746 1.434442005
+#> [949] 1.745318808 1.164017173 0.310201244 1.417575585 1.542019317 0.193657065
+#> [955] 0.149821245 0.485774095 0.257238552 1.751671387 0.832762809 0.514671246
+#> [961] 1.716181934 1.413458887 0.072307625 0.156024464 0.834120510 0.108264987
+#> [967] 0.777941612 1.048215045 0.863479396 0.932646569 1.586483130 0.407130842
+#> [973] 0.346619710 2.720267670 2.053396474 0.839915551 1.363739283 1.619119691
+#> [979] 1.172915767 0.179886106 0.327206559 0.152820544 0.282530061 1.507590310
+#> [985] 0.382006700 1.087394772 0.891043058 3.488040415 0.396865447 3.390340528
+#> [991] 0.560613586 1.254901480 1.216596375 0.657919457 0.420739523 1.049383433
+#> [997] 0.516871500 0.770119753 1.012598151
+#> 
+#> $boot_statistics$`treatment:time`
+#>   [1] 0.434091843 0.086498389 0.573559198 0.140955292 1.193025890 0.236336089
+#>   [7] 0.173085615 0.750712098 0.993454854 2.163600476 2.191776929 0.657261911
+#>  [13] 0.158822755 0.756006625 0.779961199 0.734682220 0.943512518 2.636674391
+#>  [19] 2.761259763 0.152331292 2.619202648 0.312718630 0.574748755 0.259695602
+#>  [25] 1.241250929 1.567785722 0.128645287 0.302686399 1.562954539 1.289335249
+#>  [31] 2.638791093 0.299234407 0.424681964 0.836306682 0.515415811 0.402299983
+#>  [37] 3.251415579 0.148128609 2.009435773 1.618437931 0.267467853 1.025907358
+#>  [43] 0.684437494 1.165390326 3.814619326 2.472646462 0.177089842 0.258938931
+#>  [49] 0.313562573 1.046807254 1.004972498 1.212033095 2.124298382 0.643647349
+#>  [55] 1.975147541 2.313579819 1.267257774 0.982263726 0.900427206 3.997927811
+#>  [61] 0.415505624 0.583893222 0.885606518 3.178522123 0.682316056 1.098136544
+#>  [67] 3.068515495 2.726761132 0.581470719 0.386154045 0.651824150 0.327507671
+#>  [73] 1.257944341 2.079962793 0.488491114 0.894321962 1.650054003 0.206457625
+#>  [79] 0.312194544 1.876072362 1.159299419 1.413408931 0.495889724 1.280274033
+#>  [85] 1.046598875 2.165558078 2.380471322 1.619876730 0.292958546 0.234829757
+#>  [91] 0.119407960 2.286838976 1.510744687 0.521524860 0.524566608 1.618283797
+#>  [97] 1.115791482 1.192913697 1.284000613 0.741794091 0.768062777 0.267274315
+#> [103] 0.609698502 2.116663336 2.046543877 0.965817365 1.007874144 1.778219414
+#> [109] 2.478170308 0.632306847 0.191274287 0.479263443 0.653857365 0.269620266
+#> [115] 0.728948409 0.337545357 0.700547554 0.192719036 0.466515881 0.566036411
+#> [121] 0.129582056 1.078648042 1.048432434 2.091792989 0.886340964 0.425670693
+#> [127] 0.443693489 0.093175042 1.425954112 0.808613477 1.709970661 0.886959316
+#> [133] 1.504607081 0.211419904 1.148152881 1.806912387 1.081170323 0.863987556
+#> [139] 0.329086412 0.080311498 3.183873260 2.078561951 0.330653879 0.060737087
+#> [145] 0.613517837 0.952931505 1.656182342 0.795348989 1.369417891 0.630945604
+#> [151] 0.078740640 0.693560112 1.468624357 0.932970191 0.124638358 0.663784976
+#> [157] 1.076506695 3.781997714 2.468609513 3.569823822 0.085879080 1.598294315
+#> [163] 0.752902852 1.469961828 0.266076883 0.432279367 0.448500658 0.522630115
+#> [169] 0.340911857 0.067620710 0.410462220 1.301441946 3.153049419 3.231519029
+#> [175] 0.291533381 0.718928235 0.235128629 0.766409525 2.487433971 0.670649542
+#> [181] 0.592153530 0.309433239 0.627250350 1.786672551 1.168658376 1.903087093
+#> [187] 1.188419528 1.501033417 1.443029512 0.910866406 1.254916776 1.081335692
+#> [193] 1.685547481 0.130926892 1.287536006 1.729488344 2.226825770 0.550080097
+#> [199] 3.235362218 0.257774945 0.254474695 0.107768972 1.012796484 0.071870991
+#> [205] 0.875089998 0.464113513 0.121371017 0.551214618 0.146405979 1.050861518
+#> [211] 1.548416371 1.971697413 0.929966137 0.434592491 0.644399110 1.199486423
+#> [217] 2.433860965 0.153104216 0.970329498 0.506356155 0.280706780 1.146430358
+#> [223] 2.265171711 0.377759095 0.968932358 0.069181736 0.353648039 0.202725927
+#> [229] 0.126261742 0.435215493 0.310561535 0.287502246 0.401299768 0.323367162
+#> [235] 1.496568436 0.125929234 2.428555231 0.654322750 0.297383764 3.628744394
+#> [241] 1.116906192 1.495264687 4.058651050 0.372313229 0.843963950 0.923324591
+#> [247] 0.269527459 0.864356143 2.602150758 1.337152529 2.148259036 0.607264879
+#> [253] 0.357400037 0.799550337 0.945227966 0.937021922 0.857304056 0.260347851
+#> [259] 0.500848309 0.579018990 1.835947511 0.840998563 0.061234574 0.092902931
+#> [265] 0.269034650 0.494558418 0.739310406 0.528388319 0.994629846 0.230952348
+#> [271] 0.344823752 0.720859701 1.896284876 0.076549388 0.556506170 0.970006270
+#> [277] 0.437543277 0.691638864 0.289419053 4.873662722 2.891889594 0.749099245
+#> [283] 0.200585060 0.917109079 2.283312669 0.393252314 0.188322993 0.670356598
+#> [289] 0.493892365 1.050994096 4.556663497 1.257037700 0.043455158 0.393558794
+#> [295] 0.550900022 0.210973864 0.517150394 1.605568145 1.860310649 0.730724848
+#> [301] 2.404402483 0.529769315 0.380494091 2.428074768 0.167364924 0.124447596
+#> [307] 0.465088863 0.760988923 1.587891233 0.591048225 3.648354386 2.907919098
+#> [313] 1.327726901 0.586799314 0.468312296 1.425162165 2.018873976 0.375117216
+#> [319] 0.313279346 0.974933938 2.143601631 0.523992206 0.754373309 0.352927775
+#> [325] 0.754903966 1.561811976 2.758045202 0.976750392 0.208414311 1.303780089
+#> [331] 0.026176514 0.978975204 0.181824617 0.040791319 1.459076212 0.099271347
+#> [337] 0.450001355 0.328199690 0.010069810 0.364852877 1.539136538 0.437055223
+#> [343] 1.335257104 1.113223466 2.143244978 0.280325033 1.400315609 1.951262392
+#> [349] 0.596912388 0.223884484 2.856753855 0.267371851 0.240626570 1.745946686
+#> [355] 0.564673075 0.058045224 0.591140538 2.198277569 0.713242722 0.105121038
+#> [361] 0.616192917 1.659917503 1.449214756 0.131234944 1.340327038 1.475560981
+#> [367] 0.204869215 0.324321661 1.147649407 0.902529576 0.764889717 1.706054999
+#> [373] 2.038266993 2.840878114 1.714397291 0.215983575 0.170606373 0.372834333
+#> [379] 0.958878870 0.294902011 0.062333428 0.391802032 0.215706879 0.458202419
+#> [385] 0.751534098 0.502256848 2.046945507 2.359282658 1.204065076 1.593265474
+#> [391] 0.703998701 1.406656881 0.666170672 0.294458459 1.290124787 2.953197216
+#> [397] 0.166137327 0.604039144 0.619459051 0.839634319 1.489261938 1.505781665
+#> [403] 3.972966770 0.639980529 0.045806717 1.581558912 3.334548235 1.107050316
+#> [409] 0.648885677 1.823167320 0.460613300 0.216620061 0.476742610 2.523053711
+#> [415] 0.104070317 1.327013447 3.223682803 0.375483537 0.674801764 0.309382412
+#> [421] 0.395786497 2.154112145 0.367394172 0.776447414 0.405292870 0.432939325
+#> [427] 1.439131546 0.016033490 1.997903404 0.795109803 2.288978534 0.272609341
+#> [433] 1.206093128 1.075509838 0.196721938 0.415279461 3.701619692 0.892074705
+#> [439] 0.589281450 0.819961915 1.497973166 0.557595795 0.381102732 2.126515232
+#> [445] 3.351828893 0.708868875 1.137138969 1.116713473 1.854832600 0.912268869
+#> [451] 0.763691747 0.807641977 1.443577330 1.539689186 0.932221808 0.011050606
+#> [457] 0.890937936 0.369454463 1.144417758 1.157872856 0.784959427 1.343502896
+#> [463] 1.287371651 0.207787207 0.349432275 0.646921498 2.545363051 1.773860141
+#> [469] 0.320490312 1.941362474 0.333315287 0.913451180 0.275514110 2.217761948
+#> [475] 0.895401587 0.664264492 2.264006117 0.504663475 2.017714022 0.947693726
+#> [481] 0.911736217 0.540099959 1.395163359 0.193133008 1.317732861 1.785976952
+#> [487] 0.371529845 0.161918431 0.680477585 1.280015245 0.918732649 3.010793979
+#> [493] 0.115036418 1.310531443 1.513284619 0.987255454 1.284570410 0.859999211
+#> [499] 1.713672826 0.741790319 1.772013446 1.409794780 2.746706843 1.560046230
+#> [505] 0.430244121 0.182014272 1.410723129 0.534313275 0.141002818 3.291880035
+#> [511] 0.644856519 0.095361249 3.066291930 1.778835063 1.232971230 0.525878977
+#> [517] 0.553884560 1.980381033 0.648889515 0.312645568 0.989337541 0.990312749
+#> [523] 0.306595043 2.977748641 0.082292687 2.764839594 0.501873485 0.250852453
+#> [529] 0.683745573 1.036329573 0.782645552 0.131960890 0.210654434 0.792403369
+#> [535] 0.665039003 2.903303394 0.301693474 1.578969036 0.288098962 1.697603099
+#> [541] 0.262246135 0.667325601 3.728405243 0.457277913 1.937243973 1.192530144
+#> [547] 0.023058305 2.054183832 0.151636785 1.732867045 1.716212194 2.624364624
+#> [553] 3.811189525 0.991044749 0.400358532 1.666933369 1.141644391 1.453044533
+#> [559] 0.875359521 1.209424168 1.571108980 0.697088861 1.871073284 0.135959311
+#> [565] 2.084146173 0.060725379 1.770267455 0.512696431 1.472718376 0.870152210
+#> [571] 0.616171934 0.339861326 0.332009299 0.235723487 0.297051616 0.398998645
+#> [577] 0.564506461 0.613488645 0.882624630 0.269847960 0.250033436 0.123959984
+#> [583] 1.342331243 3.603409260 0.686453717 0.700321886 2.987172776 0.489631587
+#> [589] 1.549585550 0.994662195 1.175161928 0.521397116 0.556550797 1.133461540
+#> [595] 1.820271216 1.412501808 1.418276202 0.387671999 0.802859768 1.166133351
+#> [601] 3.219306344 1.062733090 0.682697324 0.213609337 0.147829501 1.143228180
+#> [607] 0.300203078 1.374578150 3.573876304 0.232740005 1.180662248 0.728736034
+#> [613] 0.369795869 0.666825363 1.252931702 1.670230720 0.696396748 2.539058734
+#> [619] 1.066550939 0.184346206 0.742911043 0.728776545 0.874869208 3.946624987
+#> [625] 0.457906800 0.526077805 0.145850311 0.839461042 0.386298769 1.476524283
+#> [631] 1.944957018 1.694939336 2.741838091 1.935662427 0.629129634 1.666541343
+#> [637] 0.812503262 0.173374313 0.188735698 2.392336868 0.640155926 0.785204288
+#> [643] 2.488927888 1.139372794 0.273039285 0.120385101 0.495406855 0.412779038
+#> [649] 0.886857779 1.974915725 1.555761010 0.664379974 0.136296037 3.149293044
+#> [655] 0.927826726 1.045255230 0.335898965 2.183300280 0.934677719 2.049387853
+#> [661] 0.883732453 0.386014600 0.129207311 0.803161891 0.978452423 1.509965335
+#> [667] 0.152528170 0.926314608 0.490036296 0.223795687 0.948015688 1.514844737
+#> [673] 0.661456798 0.752375355 0.939564911 0.951644329 3.986190615 0.808082635
+#> [679] 1.377114098 4.903666512 0.717309934 2.191170528 0.953040455 1.029568326
+#> [685] 3.402615816 1.133113633 1.267268966 1.240117985 0.528788432 1.426880909
+#> [691] 2.507231074 0.677040953 0.483400129 2.526893207 1.869454552 0.278343845
+#> [697] 0.716170043 0.780477300 0.407770840 0.034622187 0.731847688 0.112494061
+#> [703] 2.489415079 0.300804185 0.302045285 0.379324233 4.336932535 1.705735054
+#> [709] 0.576789659 0.979232481 0.905071657 1.454201900 0.801404456 0.521284260
+#> [715] 0.307260605 0.796109024 2.073963285 0.930088096 0.452043822 0.147510699
+#> [721] 0.466647751 1.600731324 0.425773295 0.215911574 1.030255432 0.771909422
+#> [727] 1.463478313 1.225030942 1.155017076 1.886864600 0.388531322 0.517446602
+#> [733] 0.236937222 0.707728684 0.821930186 3.652206606 0.952157175 0.362336083
+#> [739] 0.766506320 0.739253549 0.344321050 3.026530947 0.549323025 1.550775653
+#> [745] 0.212148136 0.216834213 0.615006678 1.059358231 0.815925225 0.065260930
+#> [751] 0.305285094 0.868629098 1.257527693 0.565093792 1.086545939 1.759321169
+#> [757] 1.161012767 0.786157586 1.272026449 0.820305432 0.096451995 0.420365544
+#> [763] 0.071342514 0.401935935 2.758980513 0.563889559 1.278183493 0.111532609
+#> [769] 0.222308389 2.444368408 0.215128811 1.318294872 0.983598969 1.642969798
+#> [775] 0.977265199 0.842964966 2.206591222 0.762819879 0.366711605 1.291848982
+#> [781] 3.148185064 1.409543636 0.408023740 1.691673457 0.005159603 5.562647423
+#> [787] 0.371414098 2.224182499 0.368852858 1.390563424 0.171837655 0.642023613
+#> [793] 0.740779479 0.831230242 0.846056487 1.002351258 1.402238030 1.963299917
+#> [799] 1.591229373 1.511457735 0.864290098 0.170653352 1.636246770 1.408082150
+#> [805] 0.326121930 1.158068308 0.341977091 0.530926403 2.946706602 0.402151594
+#> [811] 0.666981327 0.498212668 2.160839504 2.384671052 2.042579789 0.978495744
+#> [817] 2.997107389 0.800955860 0.324713466 0.819885694 0.765019010 0.773034146
+#> [823] 0.011979933 0.197366237 0.067507099 2.316182814 0.123140908 2.239569297
+#> [829] 0.629069446 2.578614383 0.867216175 0.930908671 0.073172619 1.550990615
+#> [835] 0.765485948 0.630438272 1.775514652 0.545401615 1.968521678 2.727161343
+#> [841] 1.919388136 1.378456138 2.257389063 0.653727748 0.898631172 1.282868417
+#> [847] 0.327644195 0.960859046 0.490990314 0.339346336 2.252686555 3.468979656
+#> [853] 0.736786945 2.008194284 0.333678367 0.831700974 0.882911584 1.286190430
+#> [859] 1.018215422 2.292845986 1.043553892 2.366671847 0.785910929 1.111932784
+#> [865] 0.307404462 0.385408335 0.222150842 0.485945472 2.704937324 0.841775287
+#> [871] 1.151643932 1.765694860 0.868856091 0.823631413 0.994966765 3.145727033
+#> [877] 1.328445657 0.654426898 0.152147452 0.498347916 0.429530855 0.355459975
+#> [883] 0.263183684 0.266520276 2.675002658 0.527664242 0.604171025 0.494084831
+#> [889] 1.548191501 0.917641170 1.382930880 1.572250491 0.591638192 0.488335503
+#> [895] 0.416145715 0.320740308 4.165893842 0.669326863 0.034937568 0.556704261
+#> [901] 1.525815111 0.223539274 2.459190286 2.889438163 0.802722053 1.623153677
+#> [907] 0.351323882 0.380636566 0.799298925 0.774153050 1.165894868 4.032237669
+#> [913] 0.447591489 1.090706270 1.142989302 0.400999588 0.356737098 0.576717039
+#> [919] 0.481912193 0.447242563 1.858176769 2.088480187 0.385119203 1.114244547
+#> [925] 0.023630953 3.847234662 0.107284860 1.592965186 0.704137736 0.454405272
+#> [931] 0.956728146 0.686600257 1.403035950 2.256581056 0.100316322 0.744183704
+#> [937] 0.366268107 1.332096553 0.080307703 1.312162698 0.822361214 0.197567270
+#> [943] 0.533849189 2.361855463 2.162278713 0.325722213 1.016016341 0.356693655
+#> [949] 3.056457609 2.688071560 1.061223933 0.490603362 0.257795604 0.076153581
+#> [955] 2.227584644 0.607827514 0.095864264 3.306076584 0.101680719 1.154095618
+#> [961] 1.239398011 1.510345259 0.737147295 0.404736078 0.163477491 0.263552612
+#> [967] 2.248317684 0.950867411 0.213734360 0.372521633 1.152743600 1.310083707
+#> [973] 0.358024743 2.836690918 0.669991424 1.466402617 0.378032591 0.639317575
+#> [979] 0.308242457 0.820872082 1.501359583 0.312362961 0.391692354 0.628356264
+#> [985] 2.837916548 1.191554996 0.124986904 0.112190359 0.349082624 0.650792934
+#> [991] 0.627645196 0.713365488 0.399243720 0.756838936 1.119203800 0.932371081
+#> [997] 0.646532026 0.726270081 0.032755773
+#> 
+#> 
+#> $missing
+#> $response
+#> [1] "height"
+#> 
+#> $n_rows
+#> [1] 96
+#> 
+#> $n_missing
+#> [1] 14
+#> 
+#> $missing_rate
+#> [1] 0.1458333
+#> 
+#> $missing_rows
+#>  [1]  6 17 20 22 33 47 48 52 60 65 66 76 77 89
+#> 
+#> $assumption_note
+#> [1] "The missingness mechanism cannot be established from observed data alone. MCAR/MAR/MNAR assumptions require scientific justification and sensitivity analysis."
+#> 
+#> $repeated
+#> $repeated$n_subjects
+#> [1] 24
+#> 
+#> $repeated$n_occasions
+#> [1] 4
+#> 
+#> $repeated$complete_subjects
+#> [1] 13
+#> 
+#> $repeated$incomplete_subjects
+#> [1] 11
+#> 
+#> $repeated$subjects_with_no_observed_response
+#> [1] 0
+#> 
+#> $repeated$observed_by_occasion
+#>  1  2  3  4 
+#> 19 21 23 19 
+#> 
+#> $repeated$missing_rate_by_occasion
+#>          1          2          3          4 
+#> 0.20833333 0.12500000 0.04166667 0.20833333 
+#> 
+#> $repeated$pattern_counts
+#> patterns
+#> 1111 0111 1110 1011 0011 0110 1100 
+#>   13    3    3    2    1    1    1 
+#> 
+#> $repeated$monotone_subjects
+#> [1] 17
+#> 
+#> $repeated$nonmonotone_subjects
+#> [1] 7
+#> 
+#> $repeated$observation_matrix
+#>                 1     2     3     4
+#> control@@1   TRUE  TRUE  TRUE  TRUE
+#> control@@2   TRUE FALSE  TRUE  TRUE
+#> control@@3   TRUE  TRUE  TRUE  TRUE
+#> control@@4   TRUE  TRUE  TRUE  TRUE
+#> control@@5  FALSE  TRUE  TRUE FALSE
+#> control@@6   TRUE FALSE  TRUE  TRUE
+#> control@@7   TRUE  TRUE  TRUE  TRUE
+#> control@@8   TRUE  TRUE  TRUE  TRUE
+#> control@@9  FALSE  TRUE  TRUE  TRUE
+#> control@@10  TRUE  TRUE  TRUE  TRUE
+#> control@@11  TRUE  TRUE  TRUE  TRUE
+#> control@@12  TRUE  TRUE FALSE FALSE
+#> treated@@13  TRUE  TRUE  TRUE FALSE
+#> treated@@14  TRUE  TRUE  TRUE  TRUE
+#> treated@@15  TRUE  TRUE  TRUE FALSE
+#> treated@@16  TRUE  TRUE  TRUE  TRUE
+#> treated@@17 FALSE FALSE  TRUE  TRUE
+#> treated@@18  TRUE  TRUE  TRUE  TRUE
+#> treated@@19  TRUE  TRUE  TRUE FALSE
+#> treated@@20 FALSE  TRUE  TRUE  TRUE
+#> treated@@21  TRUE  TRUE  TRUE  TRUE
+#> treated@@22  TRUE  TRUE  TRUE  TRUE
+#> treated@@23 FALSE  TRUE  TRUE  TRUE
+#> treated@@24  TRUE  TRUE  TRUE  TRUE
+#> 
+#> 
+#> attr(,"class")
+#> [1] "agri_missing_report"
+#> 
+#> $prep
+#> $prep$groups
+#> $prep$groups[[1]]
+#> $prep$groups[[1]]$Y
+#>                     1         2        3         4
+#> control@@1  10.507456 11.175421 11.58718 12.532270
+#> control@@2  10.443145        NA 12.89586 11.398975
+#> control@@3   7.201917  8.249454 10.50214 10.872152
+#> control@@4   7.440707  8.386312 10.11754  8.798423
+#> control@@5         NA 11.751801 20.45428        NA
+#> control@@6  13.820300        NA 12.13128 15.241642
+#> control@@7  11.509548 11.650842 11.44364 10.704438
+#> control@@8  11.516598 11.950074 11.74507 11.746734
+#> control@@9         NA  8.696390 10.64383 10.603295
+#> control@@10 10.216952 14.379738 14.48379 11.912297
+#> control@@11  8.229888 11.951667 11.05988 10.667700
+#> control@@12  9.550545 10.001575       NA        NA
+#> 
+#> $prep$groups[[1]]$n
+#> [1] 12
+#> 
+#> $prep$groups[[1]]$level
+#> [1] "control"
+#> 
+#> 
+#> $prep$groups[[2]]
+#> $prep$groups[[2]]$Y
+#>                     1         2        3        4
+#> treated@@13  8.837410  8.589190 12.03576       NA
+#> treated@@14 11.238333 13.117006 13.72101 12.01655
+#> treated@@15  9.758080 11.785013 14.52522       NA
+#> treated@@16 12.251915 14.475982 16.70177 15.83977
+#> treated@@17        NA        NA 16.18386 19.27473
+#> treated@@18  8.541455  9.647528 11.85867 14.02686
+#> treated@@19  6.492470 13.205680 17.19227       NA
+#> treated@@20        NA 13.602193 17.74553 16.14795
+#> treated@@21 11.955345 14.364238 18.75291 19.94939
+#> treated@@22  5.936957  9.830355 14.69022 13.46321
+#> treated@@23        NA 11.762079 14.65133 14.87729
+#> treated@@24 10.626836 12.284680 15.05015 17.13581
+#> 
+#> $prep$groups[[2]]$n
+#> [1] 12
+#> 
+#> $prep$groups[[2]]$level
+#> [1] "treated"
+#> 
+#> 
+#> 
+#> $prep$cell_grid
+#>   treatment time
+#> 1   control    1
+#> 2   control    2
+#> 3   control    3
+#> 4   control    4
+#> 5   treated    1
+#> 6   treated    2
+#> 7   treated    3
+#> 8   treated    4
+#> 
+#> $prep$between
+#> [1] "treatment"
+#> 
+#> $prep$within
+#> [1] "time"
+#> 
+#> $prep$all_factors
+#> [1] "treatment" "time"     
+#> 
+#> $prep$a
+#> [1] 2
+#> 
+#> $prep$d
+#> [1] 4
+#> 
+#> $prep$response
+#> [1] "height"
+#> 
+#> 
+#> $components
+#> $components$p
+#> [1] 0.2560976 0.3609756 0.4939024 0.4256098 0.2527100 0.5138581 0.8119919
+#> [8] 0.8299458
+#> 
+#> $components$Vn
+#>            [,1]       [,2]       [,3]       [,4]       [,5]       [,6]
+#> [1,] 0.11193734 0.03667460 0.03986330 0.08123575 0.00000000 0.00000000
+#> [2,] 0.03667460 0.13455879 0.08159138 0.04537153 0.00000000 0.00000000
+#> [3,] 0.03986330 0.08159138 0.12765129 0.05304923 0.00000000 0.00000000
+#> [4,] 0.08123575 0.04537153 0.05304923 0.10463613 0.00000000 0.00000000
+#> [5,] 0.00000000 0.00000000 0.00000000 0.00000000 0.13541322 0.09153552
+#> [6,] 0.00000000 0.00000000 0.00000000 0.00000000 0.09153552 0.13467780
+#> [7,] 0.00000000 0.00000000 0.00000000 0.00000000 0.02806283 0.05656806
+#> [8,] 0.00000000 0.00000000 0.00000000 0.00000000 0.02982850 0.02961449
+#>            [,7]       [,8]
+#> [1,] 0.00000000 0.00000000
+#> [2,] 0.00000000 0.00000000
+#> [3,] 0.00000000 0.00000000
+#> [4,] 0.00000000 0.00000000
+#> [5,] 0.02806283 0.02982850
+#> [6,] 0.05656806 0.02961449
+#> [7,] 0.03928713 0.02462985
+#> [8,] 0.02462985 0.04889065
+#> 
+#> $components$V_list
+#> $components$V_list[[1]]
+#>            [,1]       [,2]       [,3]       [,4]
+#> [1,] 0.05596867 0.01833730 0.01993165 0.04061788
+#> [2,] 0.01833730 0.06727940 0.04079569 0.02268577
+#> [3,] 0.01993165 0.04079569 0.06382564 0.02652462
+#> [4,] 0.04061788 0.02268577 0.02652462 0.05231806
+#> 
+#> $components$V_list[[2]]
+#>            [,1]       [,2]       [,3]       [,4]
+#> [1,] 0.06770661 0.04576776 0.01403141 0.01491425
+#> [2,] 0.04576776 0.06733890 0.02828403 0.01480724
+#> [3,] 0.01403141 0.02828403 0.01964357 0.01231492
+#> [4,] 0.01491425 0.01480724 0.01231492 0.02444533
+#> 
+#> 
+#> $components$R_list
+#> $components$R_list[[1]]
+#>              1  2  3  4
+#> control@@1  22 30 36 53
+#> control@@2  20 NA 54 32
+#> control@@3   3  6 21 28
+#> control@@4   4  7 18 11
+#> control@@5  NA 40 82 NA
+#> control@@6  60 NA 50 71
+#> control@@7  34 37 33 27
+#> control@@8  35 45 38 39
+#> control@@9  NA 10 25 23
+#> control@@10 19 63 65 44
+#> control@@11  5 46 29 26
+#> control@@12 13 17 NA NA
+#> 
+#> $components$R_list[[2]]
+#>              1  2  3  4
+#> treated@@13 12  9 49 NA
+#> treated@@14 31 55 59 48
+#> treated@@15 15 42 66 NA
+#> treated@@16 51 64 75 72
+#> treated@@17 NA NA 74 80
+#> treated@@18  8 14 43 61
+#> treated@@19  2 56 77 NA
+#> treated@@20 NA 58 78 73
+#> treated@@21 47 62 79 81
+#> treated@@22  1 16 68 57
+#> treated@@23 NA 41 67 69
+#> treated@@24 24 52 70 76
+#> 
+#> 
+#> $components$lambda_list
+#> $components$lambda_list[[1]]
+#>  1  2  3  4 
+#> 10 10 11 10 
+#> 
+#> $components$lambda_list[[2]]
+#>  1  2  3  4 
+#>  9 11 12  9 
+#> 
+#> 
+#> $components$meanR_list
+#> $components$meanR_list[[1]]
+#> [1] 21.5 30.1 41.0 35.4
+#> 
+#> $components$meanR_list[[2]]
+#> [1] 21.22222 42.63636 67.08333 68.55556
+#> 
+#> 
+#> $components$N
+#> [1] 82
+#> 
+#> $components$n
+#> [1] 24
+#> 
+#> 
+#> $reference
+#> [1] "Amro L, Konietschke F, Pauly M (2024). Biometrical Journal 66:e70008. doi:10.1002/bimj.70008"
+#> 
+#> $status
+#> [1] "experimental: formula-level implementation requires independent benchmark validation before confirmatory use"
+#> 
+#> attr(,"class")
+#> [1] "agri_incomplete_wild" "agri_engine_fit"     
+#> 
+#> $complete_subjects
+#> $method
+#> [1] "incomplete repeated-measures rank wild bootstrap"
+#> 
+#> $statistic
+#> [1] "ATS"
+#> 
+#> $weights
+#> [1] "rademacher"
+#> 
+#> $B
+#> [1] 999
+#> 
+#> $seed
+#> [1] 802
+#> 
+#> $missing_assumption
+#> [1] "MCAR"
+#> 
+#> $omnibus
+#>                        effect statistic     value      df p_boot p_asymptotic
+#> treatment           treatment       ATS  6.962871 1.00000  0.018 8.321839e-03
+#> time                     time       ATS 16.286105 2.21674  0.001 2.100703e-08
+#> treatment:time treatment:time       ATS  3.979319 2.21674  0.019 1.536549e-02
+#> 
+#> $effects
+#>   cell treatment time relative_marginal_effect
+#> 1    1   control    1                0.2156593
+#> 2    2   control    2                0.4381868
+#> 3    3   control    3                0.4354396
+#> 4    4   control    4                0.4134615
+#> 5    5   treated    1                0.3493590
+#> 6    6   treated    2                0.5641026
+#> 7    7   treated    3                0.8301282
+#> 8    8   treated    4                0.8365385
+#> 
+#> $covariance
+#>            [,1]       [,2]       [,3]       [,4]       [,5]       [,6]
+#> [1,] 0.05877159 0.04402145 0.03219846 0.02987637 0.00000000 0.00000000
+#> [2,] 0.04402145 0.13454997 0.09280154 0.04624542 0.00000000 0.00000000
+#> [3,] 0.03219846 0.09280154 0.08755233 0.05345696 0.00000000 0.00000000
+#> [4,] 0.02987637 0.04624542 0.05345696 0.06845238 0.00000000 0.00000000
+#> [5,] 0.00000000 0.00000000 0.00000000 0.00000000 0.15053419 0.15956197
+#> [6,] 0.00000000 0.00000000 0.00000000 0.00000000 0.15956197 0.20526175
+#> [7,] 0.00000000 0.00000000 0.00000000 0.00000000 0.04829060 0.06645299
+#> [8,] 0.00000000 0.00000000 0.00000000 0.00000000 0.04134615 0.04342949
+#>            [,7]       [,8]
+#> [1,] 0.00000000 0.00000000
+#> [2,] 0.00000000 0.00000000
+#> [3,] 0.00000000 0.00000000
+#> [4,] 0.00000000 0.00000000
+#> [5,] 0.04829060 0.04134615
+#> [6,] 0.06645299 0.04342949
+#> [7,] 0.05245726 0.02708333
+#> [8,] 0.02708333 0.04006410
+#> 
+#> $p_vector
+#> [1] 0.2156593 0.4381868 0.4354396 0.4134615 0.3493590 0.5641026 0.8301282
+#> [8] 0.8365385
+#> 
+#> $contrasts
+#> $contrasts$treatment
+#>       [,1]  [,2]  [,3]  [,4] [,5] [,6] [,7] [,8]
+#> [1,] -0.25 -0.25 -0.25 -0.25 0.25 0.25 0.25 0.25
+#> 
+#> $contrasts$time
+#>      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8]
+#> [1,] -0.5  0.5  0.0  0.0 -0.5  0.5  0.0  0.0
+#> [2,] -0.5 -0.5  1.0  0.0 -0.5 -0.5  1.0  0.0
+#> [3,] -0.5 -0.5 -0.5  1.5 -0.5 -0.5 -0.5  1.5
+#> 
+#> $contrasts$`treatment:time`
+#>      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8]
+#> [1,]    1   -1    0    0   -1    1    0    0
+#> [2,]    1    1   -2    0   -1   -1    2    0
+#> [3,]    1    1    1   -3   -1   -1   -1    3
+#> 
+#> 
+#> $boot_statistics
+#> $boot_statistics$treatment
+#>   [1] 4.198699e-03 1.956533e-01 8.164081e-01 2.262032e-01 1.717621e-02
+#>   [6] 2.157641e-01 5.656967e-01 1.266543e+00 3.846671e-01 9.858432e-01
+#>  [11] 2.109749e-05 8.154806e-01 1.237543e-02 4.765626e-02 2.060310e-01
+#>  [16] 1.225938e-01 2.083377e-01 3.681189e-01 1.229864e+00 1.232889e+00
+#>  [21] 2.422230e-02 1.161681e+00 8.576178e+00 1.276348e+00 2.178617e-02
+#>  [26] 8.044239e-01 5.039576e+00 6.762323e-02 9.457572e-01 1.085905e+00
+#>  [31] 4.111086e-02 7.284582e-01 1.448067e+00 3.686915e+00 7.655710e-01
+#>  [36] 2.843509e-01 2.531127e-02 6.684610e+00 1.823134e+00 5.338053e-01
+#>  [41] 3.186271e-01 3.990636e+00 1.129284e+00 2.060772e-03 2.490627e-02
+#>  [46] 1.171635e+00 2.292495e+00 2.957905e-01 3.002494e+00 3.911749e-01
+#>  [51] 8.225486e+00 1.703309e-02 1.033845e+00 1.653069e+00 5.391817e+00
+#>  [56] 2.090021e-01 2.796104e+00 3.481013e-04 1.539756e+00 1.358682e+00
+#>  [61] 4.737369e-01 2.526828e+00 2.614685e-01 1.901959e+00 5.992677e+00
+#>  [66] 2.079236e-01 3.738526e-02 2.742132e-02 6.767704e-03 6.099017e-01
+#>  [71] 2.490627e-02 4.486278e-02 1.158997e+00 1.749918e-01 5.690132e-01
+#>  [76] 1.709000e+00 1.635599e-02 3.068583e-01 6.609251e-02 3.564856e-02
+#>  [81] 1.649497e-02 2.014043e-02 5.849332e-01 1.639813e-01 2.060714e+00
+#>  [86] 3.549164e-01 2.182683e-01 2.561701e-01 1.692729e-02 1.726569e-02
+#>  [91] 8.028239e-02 1.149627e-01 1.524067e-02 2.566020e-01 3.017169e+00
+#>  [96] 9.898656e-02 1.964350e+00 8.534171e-01 1.409973e+00 4.152128e-01
+#> [101] 8.547075e-01 1.076672e+00 3.891349e-01 3.746625e-01 3.142913e+00
+#> [106] 5.900852e-01 7.051749e-02 1.249737e+00 7.277435e-02 1.966552e-02
+#> [111] 2.390726e+00 2.747900e+00 2.664806e-01 2.250509e+00 4.079277e-02
+#> [116] 1.057545e+00 9.851591e-02 1.502458e+00 1.890140e-01 1.235164e-01
+#> [121] 1.101549e-01 7.493384e-03 3.414604e-01 4.563026e-03 6.093344e-01
+#> [126] 4.791836e-03 1.702830e+00 4.395799e+00 1.153009e-01 1.709406e-01
+#> [131] 3.397818e-02 8.495791e-01 5.355024e-02 3.869933e-02 4.898750e+00
+#> [136] 2.122160e-01 9.550165e-02 6.891825e-03 2.508529e-01 7.859650e-05
+#> [141] 2.207100e-01 1.044706e+00 9.478953e-01 2.310778e-03 4.714942e-01
+#> [146] 3.018404e+00 4.317357e-01 5.808361e-02 4.511206e+00 1.946890e+00
+#> [151] 4.553187e+00 4.650358e-03 3.636555e-01 2.083377e-01 4.487909e+00
+#> [156] 4.917188e-01 4.193549e-01 5.619761e-01 5.528339e-02 9.518022e-01
+#> [161] 4.301514e-01 7.328568e-01 2.793880e-02 3.532631e-02 5.198644e-05
+#> [166] 3.790423e-01 2.283680e+00 6.306651e-01 2.581260e+00 8.167274e-01
+#> [171] 1.331317e+00 4.277755e+00 3.061261e-01 3.383728e-04 5.496219e-01
+#> [176] 1.744862e+00 6.916999e-01 3.361152e+00 1.293022e+00 6.601563e-01
+#> [181] 1.105209e+00 1.569293e-01 6.335594e-01 4.091550e-01 1.085905e+00
+#> [186] 4.842549e-02 8.787529e-01 4.719584e-01 1.022685e+00 7.125929e-01
+#> [191] 1.293022e+00 6.464719e-02 3.209179e-01 6.806048e-02 2.396462e-01
+#> [196] 3.670775e-01 8.243078e-01 4.902877e-02 1.057222e-01 2.070001e-01
+#> [201] 1.061201e-04 4.115986e-02 2.018605e-01 9.408864e-03 6.248301e-01
+#> [206] 2.536094e+00 3.799755e-01 8.912734e-03 6.439546e-03 5.129245e-01
+#> [211] 5.575896e-01 3.354124e-02 5.444277e-01 1.495041e+00 1.215991e+00
+#> [216] 1.370372e-02 1.086041e-02 3.092538e-01 7.220466e+00 1.436488e-01
+#> [221] 4.844852e-01 1.529549e+00 1.628823e+00 5.655530e-01 4.508112e-01
+#> [226] 8.278711e-01 2.031116e-01 4.829255e-02 3.731753e+00 4.436604e+00
+#> [231] 1.409973e+00 6.616374e-01 1.455809e-02 3.389582e+00 4.495137e-01
+#> [236] 2.545168e-02 3.404234e-02 4.588335e+00 5.778372e-02 1.281523e+00
+#> [241] 7.829912e+00 3.060873e-01 4.022532e-01 6.979045e-02 2.874068e-01
+#> [246] 1.923277e+00 2.264791e+00 1.941642e-01 2.602048e-01 2.056109e-02
+#> [251] 2.201678e-01 2.636179e-01 2.257003e+00 5.173955e-01 1.005209e-05
+#> [256] 3.389582e+00 1.483861e+00 9.930542e-02 3.911749e-01 1.741650e-01
+#> [261] 1.549304e+00 3.493694e-01 1.621718e-01 1.235530e+00 1.235164e-01
+#> [266] 1.557047e-02 4.744827e-01 9.259813e-02 3.493200e-01 1.062185e-02
+#> [271] 5.242576e-01 1.966552e-02 4.152128e-01 6.977942e-01 4.057010e-01
+#> [276] 8.265203e-02 1.313766e+00 1.626288e+00 5.444277e-01 6.465608e-01
+#> [281] 8.084437e-01 4.039301e-01 5.497718e-02 1.933715e+00 1.321316e-01
+#> [286] 2.653266e+00 9.137248e-01 1.304136e+00 1.140545e-02 4.714942e-01
+#> [291] 2.989849e+00 3.889510e+00 7.372099e-01 8.755981e-01 7.193533e-01
+#> [296] 7.103812e-02 1.209941e+00 6.976667e+00 1.144636e+00 4.511206e+00
+#> [301] 6.468317e-02 9.068432e-01 7.553235e+00 3.241517e-03 3.636555e-01
+#> [306] 3.509375e+00 6.390144e-01 2.250509e+00 6.767186e-01 3.765917e-01
+#> [311] 7.579641e-02 9.716451e-01 6.655442e-01 2.526828e+00 2.221745e-02
+#> [316] 6.866490e-02 4.278476e-01 3.122443e-01 6.500109e-01 1.050371e+00
+#> [321] 1.638782e-02 8.152473e-03 2.819016e+00 2.746590e-01 1.285057e-01
+#> [326] 5.474103e-02 2.745939e-02 6.644217e-01 1.101549e-01 5.723049e-01
+#> [331] 3.761498e-01 4.626553e-03 2.895665e-01 6.511466e-02 3.374933e-01
+#> [336] 1.709406e-01 1.569293e-01 6.503864e-01 5.494408e-02 2.510231e+00
+#> [341] 4.474654e-02 2.460967e+00 5.860506e-01 1.663090e+00 4.255822e+00
+#> [346] 6.483574e-02 6.335594e-01 3.096961e-01 1.640401e-02 4.468217e+00
+#> [351] 4.245978e-01 6.346622e-02 1.056955e-02 1.905962e-01 6.232067e-01
+#> [356] 1.206928e+00 4.857048e-02 8.146671e-02 1.264025e+00 3.247878e-02
+#> [361] 3.532631e-02 7.549104e-02 9.931869e+00 5.173955e-01 6.464719e-02
+#> [366] 2.583173e+00 7.678223e-01 1.005209e-05 1.626288e+00 3.750010e+00
+#> [371] 1.900256e+00 9.622414e-01 1.608071e+00 5.459537e-03 6.570170e-02
+#> [376] 7.445038e-02 1.639813e-01 1.680050e-01 6.755536e-02 1.751270e+00
+#> [381] 5.621678e-02 1.153947e+00 1.548279e+00 2.719187e-01 4.381537e+00
+#> [386] 1.347455e+00 3.330086e-01 1.318910e+00 1.081044e-01 7.209551e+00
+#> [391] 1.235164e-01 1.409973e+00 5.763539e+00 6.511466e-02 9.860468e-01
+#> [396] 5.808361e-02 3.147785e-01 2.451270e-01 5.656967e-01 7.450941e-02
+#> [401] 2.455709e-02 9.373769e-01 2.901913e-01 1.074649e-01 1.635599e-02
+#> [406] 4.698877e-01 2.176494e-01 2.680848e+00 1.453892e-01 1.169775e+00
+#> [411] 1.888510e+00 7.118268e-01 7.050609e+00 6.138008e-02 1.005371e-02
+#> [416] 1.908000e+00 2.445694e-02 2.692593e+00 1.984579e+00 2.538318e-01
+#> [421] 2.611706e-01 2.065000e+00 4.776646e-01 3.683821e-01 6.085600e-01
+#> [426] 4.104987e+00 3.793946e-02 1.551046e+00 2.894558e-01 1.834385e+00
+#> [431] 6.327459e-01 2.200116e-01 1.070269e-01 1.787203e-01 2.350657e+00
+#> [436] 3.343136e+00 3.091290e+00 1.489408e+00 9.978967e-04 2.754825e-01
+#> [441] 2.257466e-01 6.824546e-02 1.762303e+00 1.101501e-01 2.350657e+00
+#> [446] 6.911825e-01 4.141692e-01 1.033845e+00 3.352085e-01 6.516773e-04
+#> [451] 2.275593e-01 2.120919e-01 4.267361e-01 4.755541e-03 1.171635e+00
+#> [456] 1.168270e+00 6.245517e-01 2.819523e+00 3.928857e-01 2.733592e-01
+#> [461] 2.170288e+00 6.504031e-02 1.295676e-03 2.355480e-01 4.588335e+00
+#> [466] 3.168924e+00 1.828309e-03 1.362179e+00 3.173224e-01 1.896030e-03
+#> [471] 3.837831e+00 1.012721e-02 1.277907e-01 1.213147e-01 1.598904e+00
+#> [476] 1.335841e-01 2.611706e-01 2.081933e+00 6.111606e-01 2.650979e-01
+#> [481] 3.002494e+00 1.022191e-02 1.165975e-04 3.358043e-01 6.650188e-01
+#> [486] 5.392118e-03 1.062257e-01 4.354995e-01 3.157966e-02 1.906910e-01
+#> [491] 2.604802e+00 2.705327e-01 2.193564e-01 9.315348e-01 9.441621e-01
+#> [496] 2.922545e-02 1.192838e+00 1.821538e-02 2.013321e-01 1.639813e-01
+#> [501] 4.531569e-01 4.477668e-01 2.299642e-02 8.481108e-01 3.018404e+00
+#> [506] 3.733583e-01 1.666259e+00 6.847902e-04 1.821538e-02 3.361152e+00
+#> [511] 2.534214e-02 2.229026e+00 1.717534e-01 3.573265e-01 7.894003e-01
+#> [516] 3.105324e-01 3.365502e-01 6.934861e-03 4.568306e-01 5.751637e-02
+#> [521] 6.846115e-01 1.442949e-01 4.626553e-03 1.799824e-01 7.925424e-01
+#> [526] 1.888510e+00 1.886197e-01 3.761656e-01 1.255992e-03 1.197323e+00
+#> [531] 6.924181e-01 2.646426e+00 5.656967e-01 4.781898e+00 2.462369e-01
+#> [536] 4.129314e-01 8.177869e-01 7.087392e-01 6.609251e-02 2.692593e+00
+#> [541] 1.911052e-02 1.250554e+00 6.053844e+00 1.004091e-01 1.046103e-03
+#> [546] 2.130443e-02 2.114370e+00 8.378442e-02 4.416491e-01 1.676767e+00
+#> [551] 6.283748e+00 5.200949e-03 3.113076e-01 1.818242e+00 1.295525e+00
+#> [556] 6.213910e-02 1.508390e+01 1.549304e+00 2.590521e+00 1.062257e-01
+#> [561] 6.789648e-01 1.402900e+00 3.349662e-02 1.908119e+00 6.614235e-03
+#> [566] 8.044239e-01 7.088198e-02 8.318359e-02 8.134589e-01 1.994437e+00
+#> [571] 2.462369e-01 4.560988e-01 2.125528e+00 3.105836e+00 2.288473e-01
+#> [576] 4.249011e-01 2.586370e-02 4.634335e+00 6.777523e-02 1.593702e-01
+#> [581] 1.741555e+00 7.825077e-01 2.602521e-01 2.739496e-01 3.793946e-02
+#> [586] 2.438439e-01 4.457770e-01 2.471255e-01 7.167000e-01 3.363725e-01
+#> [591] 1.495041e+00 6.778245e-03 5.778956e+00 1.281523e+00 1.420725e+00
+#> [596] 3.713621e+00 4.650358e-03 8.495791e-01 1.085905e+00 1.713760e-01
+#> [601] 4.143322e+00 1.941642e-01 4.623546e-01 1.033137e+00 3.544684e-01
+#> [606] 3.646401e-03 1.442307e+00 3.765479e-02 3.348413e-01 1.234586e+00
+#> [611] 2.025279e+00 2.462561e+00 3.781133e+00 1.180157e-01 2.464892e-01
+#> [616] 2.586370e-02 1.147819e+00 3.755202e-01 1.232090e+00 3.939242e-01
+#> [621] 1.997285e+00 7.574492e-01 5.078727e-04 3.446907e+00 1.068416e+00
+#> [626] 1.076672e+00 1.592652e-01 2.462192e-02 6.566329e-01 6.860456e-01
+#> [631] 4.054229e-01 4.725895e+00 8.505309e-01 5.947763e-01 1.289303e-01
+#> [636] 2.268309e+00 3.137309e+00 5.629899e-01 1.644323e-01 2.420654e-02
+#> [641] 3.062912e-01 1.326652e-02 1.798085e+00 4.829255e-02 4.317923e+00
+#> [646] 1.685706e+00 2.637818e+00 3.801094e-01 1.198108e-01 1.118333e-03
+#> [651] 1.209941e+00 6.469844e-01 1.451804e-02 3.850869e-01 3.974612e-03
+#> [656] 1.114915e+00 2.135193e-01 3.553787e-03 8.878791e-01 1.084322e-01
+#> [661] 5.594680e-01 3.638398e-01 3.974179e-02 4.433624e-01 5.774057e-01
+#> [666] 7.103812e-02 5.773699e-01 1.933965e-01 7.103812e-02 1.054196e+00
+#> [671] 2.294830e+00 4.006219e-01 2.891052e+00 9.457572e-01 4.114539e-01
+#> [676] 1.473472e-02 1.918388e-02 3.233894e-02 5.745097e+00 3.061261e-01
+#> [681] 4.722424e-02 3.940441e-02 3.071299e+00 1.864938e-02 6.054972e-01
+#> [686] 1.844717e+01 2.472977e-03 1.451804e-02 3.156938e-01 5.849967e+00
+#> [691] 3.307812e-01 5.418659e-01 1.062057e+00 3.549123e-02 2.174484e+00
+#> [696] 5.954452e-02 4.635379e-01 5.146531e-01 5.849967e+00 6.473936e-01
+#> [701] 5.451629e-01 1.622891e-01 1.134360e+01 6.894461e-01 1.914490e-01
+#> [706] 7.416195e+00 6.207480e-01 1.209941e+00 6.332916e-04 9.915185e-02
+#> [711] 5.505535e-03 4.438128e-01 3.786986e+00 4.077035e-02 5.785081e+00
+#> [716] 6.778245e-03 1.422866e-04 9.452534e-02 6.068696e-01 2.574866e-02
+#> [721] 6.499750e-01 8.678076e+00 6.713476e-01 3.760339e-01 4.721053e-01
+#> [726] 2.201645e-01 4.320412e-01 2.362583e-01 1.446521e+00 1.653473e-01
+#> [731] 2.287154e+00 3.136515e-01 5.064081e-02 4.497494e-02 8.738527e-02
+#> [736] 3.411770e-01 1.922674e-01 3.035717e+00 1.669162e-03 1.906910e-01
+#> [741] 2.650979e-01 3.786986e+00 1.073906e-01 2.638340e-01 1.508390e+01
+#> [746] 2.669402e+00 1.090559e+00 3.203683e+00 2.566020e-01 2.819523e+00
+#> [751] 1.642167e+00 3.257748e-01 8.344365e-01 1.007491e+00 2.362583e-01
+#> [756] 1.489408e+00 5.624293e-02 1.111193e-01 1.232889e+00 1.345705e-01
+#> [761] 7.260240e-02 2.574567e+00 4.057501e-02 1.650787e+00 2.224399e-01
+#> [766] 7.760196e-01 3.645948e-01 1.113268e-02 6.186187e-01 3.708425e-01
+#> [771] 3.985624e-01 1.081615e-01 1.674941e-02 1.395973e+01 1.188175e-01
+#> [776] 2.270374e+00 1.037821e+00 1.232090e+00 4.254291e-02 6.819203e-01
+#> [781] 2.768715e+00 2.784206e-01 3.509375e+00 6.011000e-04 4.650728e-03
+#> [786] 6.032185e-01 6.415320e-01 7.100301e-01 1.075896e+00 3.287075e+00
+#> [791] 4.818503e-01 1.150173e-02 5.656967e-01 4.079277e-02 7.397072e-01
+#> [796] 1.333223e+00 3.750010e+00 1.028369e+00 3.620082e-02 1.302134e+00
+#> [801] 8.950184e-01 3.562587e-01 1.843745e-01 1.346658e-01 2.384269e+00
+#> [806] 2.262032e-01 7.336632e-01 5.378668e-01 1.663209e-01 4.621804e+00
+#> [811] 3.061246e+00 6.077123e-01 1.850528e-01 8.771364e-02 2.982508e-01
+#> [816] 2.067686e+00 9.144943e-01 4.847130e-03 4.342293e+00 4.634335e+00
+#> [821] 2.061717e-04 1.301109e+00 1.120073e-02 1.206036e+00 4.079888e-01
+#> [826] 1.944240e+00 4.195502e-01 7.082080e-01 2.601626e-02 2.598341e-01
+#> [831] 5.838659e-02 1.628823e+00 2.571597e-01 9.835777e-03 3.708425e-01
+#> [836] 1.454151e-01 1.244397e-01 1.471329e-02 1.266793e+00 8.520942e-01
+#> [841] 3.475547e-02 9.537996e-01 2.339192e-01 2.558309e-02 1.613825e+00
+#> [846] 3.581318e-01 4.389491e-02 3.904920e-01 5.223788e-03 1.471329e-02
+#> [851] 5.078727e-04 1.008028e-01 1.389453e+00 1.145606e+00 4.469512e-03
+#> [856] 2.462369e-01 1.608403e-01 1.150173e-02 3.409101e+00 4.844852e-01
+#> [861] 1.436488e-01 4.284601e+00 3.075306e-01 1.235530e+00 2.366381e+00
+#> [866] 3.919919e-01 2.231866e+00 5.656254e+00 2.055022e-01 5.750723e-01
+#> [871] 7.808295e-03 2.656500e+00 6.777523e-02 1.426012e+00 2.746941e+00
+#> [876] 9.428608e-01 7.069069e-01 2.374290e-01 1.073906e-01 1.806330e-03
+#> [881] 1.128896e-01 1.238905e+00 3.907028e-01 7.012420e-01 1.601079e+00
+#> [886] 9.928799e-01 9.809241e-01 2.841295e-01 3.215020e-03 1.816239e+00
+#> [891] 4.873905e-01 1.285618e-01 1.597116e+00 6.134281e-01 5.363936e-01
+#> [896] 5.252935e-01 1.939787e-03 5.774057e-01 1.362179e+00 8.992423e-01
+#> [901] 1.356957e+00 1.219511e+00 4.973140e-03 1.336580e-02 6.787212e-01
+#> [906] 1.836126e-01 3.620082e-02 3.222721e-01 5.252750e-01 8.167274e-01
+#> [911] 2.647365e-03 9.382224e-04 2.498803e-02 1.552208e-03 1.787562e+00
+#> [916] 1.003709e-03 1.980098e+00 2.298520e+00 6.911825e-01 2.221745e-02
+#> [921] 1.232950e+00 6.478971e-02 1.316006e-01 3.446737e-01 4.390488e-06
+#> [926] 6.242329e+00 4.532915e+00 4.935048e-01 3.121035e-01 7.120431e+00
+#> [931] 1.123835e-01 1.033845e+00 9.462793e-04 6.874488e-01 2.368441e+00
+#> [936] 3.415649e+00 4.725893e+00 3.071299e+00 1.088080e-02 5.671931e+00
+#> [941] 2.993863e-01 4.973140e-03 2.190007e+00 9.927154e-01 9.817289e-01
+#> [946] 1.903252e-01 5.718301e-01 1.726190e-02 1.618372e+00 2.535877e-03
+#> [951] 5.467877e+00 2.362583e-01 2.924995e-01 8.961119e-01 1.437327e+00
+#> [956] 1.336580e-02 6.742444e-01 1.088080e-02 7.754164e-02 1.121811e+00
+#> [961] 1.849698e+00 1.585487e+00 1.090525e+00 2.119671e+00 4.381537e+00
+#> [966] 1.598904e+00 3.159247e+00 8.257427e-01 9.026571e-01 3.891225e-03
+#> [971] 5.077714e-02 6.514349e+00 1.674890e-01 4.123248e-01 8.737284e-01
+#> [976] 2.854157e-01 9.363374e-01 6.422658e-02 2.485063e+00 1.511458e+00
+#> [981] 1.902812e+00 1.809744e+00 2.707498e-03 1.806330e-03 8.615970e-02
+#> [986] 4.673892e-01 4.524957e-01 2.841091e-01 8.469358e-02 2.563772e-01
+#> [991] 1.717534e-01 1.246641e+00 2.421362e-01 5.039576e+00 4.904340e-01
+#> [996] 1.279406e+00 1.008028e-01 2.164571e+00 2.580557e-02
+#> 
+#> $boot_statistics$time
+#>   [1] 3.572265e-01 2.734860e+00 6.319251e-01 2.913234e-01 3.214470e-01
+#>   [6] 8.474241e-01 6.156026e-01 1.260734e+00 7.227568e-01 1.503879e+00
+#>  [11] 2.371704e-01 4.459314e+00 8.386414e-01 1.224061e-01 6.603867e-01
+#>  [16] 2.374064e-01 3.132528e-01 1.442105e+00 2.076036e+00 1.713026e-01
+#>  [21] 3.689530e-01 7.180165e-02 6.910229e-01 1.874158e+00 1.944035e+00
+#>  [26] 4.220869e-01 1.339481e+00 1.374454e+00 1.878154e+00 4.220869e-01
+#>  [31] 8.566240e-01 4.470161e-01 3.329458e+00 3.362159e-01 3.502283e+00
+#>  [36] 1.392477e+00 9.343367e-01 6.353216e-01 1.710756e+00 1.259156e+00
+#>  [41] 3.799424e-01 1.083263e+00 1.001923e+00 1.487908e+00 1.321473e+00
+#>  [46] 1.293229e-01 1.273926e-01 1.968501e+00 6.442543e-01 3.557134e+00
+#>  [51] 5.247118e-01 1.173693e+00 1.208541e+00 2.960178e-02 6.532981e-02
+#>  [56] 1.438098e-01 3.003482e-01 1.345902e+00 1.261277e+00 3.337045e-01
+#>  [61] 4.954193e-02 2.741045e+00 2.829308e-01 6.451586e-01 5.545544e-01
+#>  [66] 1.103218e-01 2.048593e+00 2.955183e-01 1.503879e+00 4.619274e-01
+#>  [71] 8.041273e-02 2.151569e-01 6.458402e-01 1.986009e-01 1.168501e-01
+#>  [76] 4.401028e-01 3.671646e+00 7.215203e-01 1.369873e+00 7.032433e-01
+#>  [81] 7.970926e-01 6.806342e-01 8.907536e-01 1.786465e-01 8.529926e-01
+#>  [86] 1.361993e+00 1.295239e+00 9.369772e-01 1.098719e+00 3.076253e+00
+#>  [91] 8.070317e-01 2.272985e+00 1.715746e-01 7.768487e-01 9.603807e-02
+#>  [96] 1.548933e+00 5.703288e-01 2.926797e+00 1.582462e-01 2.458257e+00
+#> [101] 1.571570e+00 8.252990e-01 3.880868e+00 2.536155e+00 6.498675e-01
+#> [106] 1.514559e+00 1.989042e+00 1.480362e+00 6.305982e-01 5.406722e+00
+#> [111] 7.929075e-01 6.137699e-01 1.920596e-01 1.375997e+00 9.969145e-02
+#> [116] 2.295633e+00 4.373018e+00 4.775137e-01 2.575811e+00 3.616921e-01
+#> [121] 7.029628e-01 2.026708e+00 4.519771e-01 8.457245e-01 3.930163e+00
+#> [126] 4.542331e-01 2.778456e-01 2.740195e+00 7.512452e-01 9.123436e-01
+#> [131] 3.043216e-01 2.639867e+00 1.880775e+00 3.124117e-01 4.537345e-01
+#> [136] 3.040428e-01 9.744274e-02 1.499306e+00 6.487408e-01 6.182514e-01
+#> [141] 2.033724e-01 1.715746e-01 1.296978e+00 7.083079e-01 2.054463e+00
+#> [146] 1.268068e+00 2.610056e+00 4.239185e-01 3.727927e+00 1.233552e+00
+#> [151] 1.919320e+00 6.622251e-02 1.503879e+00 1.668749e+00 1.461214e+00
+#> [156] 1.240221e+00 3.667191e+00 7.758480e-01 3.170921e+00 3.125308e+00
+#> [161] 9.926595e-01 5.439109e-01 1.772301e+00 2.885698e+00 9.256567e-01
+#> [166] 3.904950e-01 2.783386e+00 2.602967e-01 4.283212e+00 1.010470e+00
+#> [171] 6.455562e-01 8.896111e-01 1.821556e+00 4.462388e-01 3.926608e-02
+#> [176] 8.256887e-01 2.179762e+00 2.184688e+00 1.189215e+00 5.629352e-01
+#> [181] 4.838609e-01 5.208029e-01 8.326347e-01 8.165264e-01 6.003445e-01
+#> [186] 1.497361e-01 3.972691e-01 1.890984e-01 2.423386e-01 1.044025e-01
+#> [191] 9.557086e-01 7.970926e-01 8.047972e-01 4.595481e-01 7.650015e-01
+#> [196] 7.023177e-01 1.502291e+00 8.705891e-01 3.125308e+00 2.824125e-01
+#> [201] 1.110962e+00 1.596741e+00 3.962427e+00 1.398825e-01 3.024491e+00
+#> [206] 1.235523e-01 2.837376e-01 1.117132e+00 1.639946e+00 1.138582e+00
+#> [211] 4.259274e-02 9.874626e-01 3.590594e+00 2.829308e-01 1.029157e+00
+#> [216] 1.648209e+00 3.725377e-01 7.118676e-01 1.924961e+00 1.087253e-01
+#> [221] 8.225529e-01 8.113422e-01 2.802300e+00 1.486332e+00 1.218090e+00
+#> [226] 1.899457e+00 3.852110e-01 2.657831e-01 3.089133e-01 1.592444e+00
+#> [231] 1.095829e+00 8.684476e-01 3.902015e-01 7.180165e-02 2.960041e-01
+#> [236] 2.798655e-01 6.587596e-01 6.464365e-01 2.901270e-02 1.349429e-01
+#> [241] 1.759792e-01 3.672205e-01 8.019470e-01 2.048593e+00 1.393375e+00
+#> [246] 1.902394e-01 1.097825e+00 3.610476e-01 3.607966e-01 1.088330e+00
+#> [251] 1.967511e-01 3.688501e-01 1.968584e+00 1.201708e+00 3.872309e-01
+#> [256] 1.246831e+00 1.543176e+00 5.360060e-01 1.375567e-01 1.012153e+00
+#> [261] 7.325475e-01 4.381491e-01 1.119410e+00 3.636621e-01 1.737892e+00
+#> [266] 1.020072e+00 1.460505e+00 1.692261e+00 3.656215e-01 5.384493e-01
+#> [271] 1.083263e+00 4.868756e-01 1.600138e+00 3.337329e-01 2.379423e+00
+#> [276] 8.744594e-01 8.719234e-01 5.098618e-01 5.729734e-01 3.789953e-02
+#> [281] 8.070317e-01 1.995079e+00 3.107524e-01 1.177262e+00 1.641588e-01
+#> [286] 1.054729e+00 1.343813e-01 1.022237e+00 5.872672e-01 5.564072e-01
+#> [291] 5.408822e-02 6.059562e-01 7.421312e-01 1.970732e-01 2.262804e+00
+#> [296] 2.389841e+00 5.842903e-01 1.112645e+00 1.589844e+00 2.286305e+00
+#> [301] 2.836364e-01 1.239214e+00 2.563437e-01 7.547791e-01 7.748947e-01
+#> [306] 9.666537e-01 4.865240e-01 5.809323e-01 6.532212e-01 4.339577e-01
+#> [311] 7.664004e-01 4.614818e-01 3.467354e+00 5.733476e+00 3.080006e+00
+#> [316] 2.604573e+00 6.130361e-01 4.283212e+00 7.710177e-01 2.996795e-01
+#> [321] 6.700043e-01 1.044025e-01 1.294358e+00 5.731044e-01 8.878375e-01
+#> [326] 1.961100e-01 8.531565e-01 5.507691e-01 7.145876e-02 3.029584e+00
+#> [331] 4.390046e-01 9.540662e-02 1.561730e+00 4.553973e-01 2.845845e+00
+#> [336] 1.548933e+00 3.605957e-01 6.865466e-01 5.110295e-01 1.921569e+00
+#> [341] 4.559983e-01 7.369810e-01 3.587699e+00 4.004269e-01 3.655272e+00
+#> [346] 6.744473e-01 6.532291e+00 8.650745e-01 1.929414e+00 5.815253e-01
+#> [351] 7.462284e-01 1.678413e+00 4.067565e-01 6.611231e-01 5.595639e-01
+#> [356] 2.513586e-01 8.676200e-02 5.054970e-01 8.717756e-01 4.407316e+00
+#> [361] 1.514636e+00 1.438098e-01 2.734860e+00 4.639837e-01 6.183889e-01
+#> [366] 8.248579e-01 1.011591e+00 8.187127e-01 1.668749e+00 1.513460e+00
+#> [371] 9.156789e-01 6.042082e-01 7.821826e-01 5.860111e-01 1.137107e-01
+#> [376] 8.822418e-01 1.754149e+00 1.332385e+00 1.708249e+00 1.536221e+00
+#> [381] 9.744274e-02 2.084438e+00 1.234879e+00 9.169329e-01 3.848436e-01
+#> [386] 4.609108e-01 1.278733e-01 6.681671e-01 7.041476e-01 2.138378e-01
+#> [391] 3.445921e+00 5.785956e+00 7.925820e-01 2.717620e+00 7.786502e-01
+#> [396] 1.063996e+00 4.039625e-02 6.482289e-01 1.239558e+00 2.530248e+00
+#> [401] 1.217310e+00 4.910963e-01 3.097901e-01 8.579715e-01 1.611744e+00
+#> [406] 9.611251e-01 1.295361e+00 4.625473e-01 5.052612e+00 4.406293e-01
+#> [411] 1.332385e+00 4.557170e-01 4.276295e-01 6.921660e-01 4.239584e+00
+#> [416] 3.535234e-01 1.718805e-01 3.524932e-01 1.821556e+00 1.020777e-01
+#> [421] 7.227568e-01 9.938478e-02 3.464083e-01 3.799537e+00 9.577241e-01
+#> [426] 3.719314e-01 4.101910e-01 7.041476e-01 1.571570e+00 2.575306e-01
+#> [431] 1.543176e+00 5.460978e-01 2.343176e+00 2.326339e+00 5.408822e-02
+#> [436] 1.207975e+00 1.862103e+00 1.724191e+00 5.754395e-01 8.072937e-01
+#> [441] 2.423034e-01 6.607797e+00 1.640932e-01 2.522667e-01 6.207422e-01
+#> [446] 3.461508e+00 3.533971e-01 2.764184e-01 1.428875e+00 2.529490e-01
+#> [451] 1.008108e+00 9.357879e-01 4.818189e+00 5.810403e-01 1.262198e-02
+#> [456] 4.386680e+00 2.898120e-01 1.066144e+00 2.163824e-01 2.845375e+00
+#> [461] 2.715207e-01 1.548795e+00 2.955183e-01 8.613812e-01 2.642971e-01
+#> [466] 4.202038e+00 1.164025e+00 6.926833e-01 1.772301e+00 3.889629e-01
+#> [471] 3.231075e-01 1.558504e+00 2.681606e+00 8.719234e-01 1.825890e+00
+#> [476] 1.171795e+00 1.509917e+00 4.581857e+00 1.671349e-01 8.141715e-01
+#> [481] 2.189335e+00 8.128884e-01 2.289000e+00 5.619365e-01 1.019159e+00
+#> [486] 3.867308e-01 3.407868e-02 1.225951e-01 9.497033e-02 6.910229e-01
+#> [491] 4.222443e-01 6.795132e-01 2.875654e-01 6.424238e-01 7.222310e-01
+#> [496] 1.966725e-01 9.039164e-01 5.408822e-02 1.086396e+00 2.301080e-01
+#> [501] 3.904280e-01 1.343813e-01 7.471939e-01 1.632273e+00 4.714662e-01
+#> [506] 1.933487e+00 1.712785e-31 6.237671e-01 4.629469e-01 8.144017e-01
+#> [511] 2.252282e-02 5.455298e-01 1.136754e+00 3.689406e-01 3.176892e+00
+#> [516] 1.712785e-31 4.815748e-01 5.466652e-01 8.265798e-01 1.889753e-01
+#> [521] 3.234418e-02 5.358359e-01 8.744594e-01 1.120643e+00 7.843043e-01
+#> [526] 3.860315e-01 7.547791e-01 7.547791e-01 8.041273e-02 6.003445e-01
+#> [531] 1.190219e+00 6.905112e-01 5.909606e-01 1.087253e-01 5.345963e-01
+#> [536] 3.384775e-01 4.668703e-01 2.522943e-01 7.321529e-01 1.021972e+00
+#> [541] 2.076592e+00 1.924961e+00 2.789382e-01 2.050499e+00 7.145876e-02
+#> [546] 4.268914e-01 5.452818e-01 3.127343e+00 3.610433e-01 2.591591e-01
+#> [551] 1.298068e+00 2.686018e+00 2.623129e-01 3.962427e+00 1.296978e+00
+#> [556] 7.913480e-01 5.906629e-01 3.461508e+00 1.066183e+00 4.172294e-01
+#> [561] 1.523901e+00 1.302394e+00 1.807951e+00 1.034753e+00 1.057882e+00
+#> [566] 2.533965e-01 1.318092e-01 3.270873e+00 1.370688e-02 7.984986e-01
+#> [571] 7.301393e-01 4.258376e+00 1.142724e-01 2.469354e-01 4.986574e-01
+#> [576] 1.401967e+00 4.991701e-01 2.537685e-01 2.633402e+00 1.801383e+00
+#> [581] 7.107826e-01 8.363309e+00 1.752614e+00 1.806219e+00 1.310706e+00
+#> [586] 2.422155e-01 1.680110e-01 1.739929e+00 1.283472e+00 9.863409e-01
+#> [591] 3.268059e+00 3.654038e-01 1.144651e+00 3.872309e-01 1.234496e+00
+#> [596] 8.102698e-01 7.443406e-01 3.423112e+00 1.495581e+00 1.557825e+00
+#> [601] 1.265083e+00 9.350651e-01 8.474241e-01 3.226184e-01 4.751717e-01
+#> [606] 2.029800e-01 3.713780e-01 9.012975e-01 5.103069e-01 5.014093e-01
+#> [611] 8.025892e-03 4.407316e+00 5.409925e-01 1.697069e+00 5.063695e+00
+#> [616] 4.405844e-01 2.894496e-01 7.428229e-01 1.222454e+00 1.082030e+00
+#> [621] 1.477716e+00 4.002698e-01 3.691460e-01 9.814953e-01 1.369873e+00
+#> [626] 7.864690e-01 4.519771e-01 2.389841e+00 2.572352e+00 2.487106e+00
+#> [631] 2.264257e+00 1.249649e+00 9.915946e-01 1.494755e+00 1.295239e+00
+#> [636] 8.841066e-01 2.764184e-01 8.347087e-02 9.401559e-02 1.376529e+00
+#> [641] 7.325475e-01 3.227126e+00 5.545371e-01 3.994043e-01 1.593092e+00
+#> [646] 1.604468e+00 5.606812e-01 6.800882e-01 2.747841e-01 3.618517e-01
+#> [651] 7.722676e-01 2.477633e-01 7.471939e-01 4.268914e-01 4.133888e-01
+#> [656] 1.340687e+00 6.207422e-01 1.292525e+00 2.195687e+00 3.572265e-01
+#> [661] 1.390358e-02 9.584720e-02 1.450805e+00 4.997640e-01 7.675913e-01
+#> [666] 5.801803e-01 9.006490e-01 1.978690e-01 2.400672e+00 8.799679e-02
+#> [671] 5.754395e-01 4.579773e-01 2.030714e+00 1.200801e+00 1.449113e+00
+#> [676] 1.480362e+00 2.033724e-01 7.443406e-01 4.030584e-01 1.094604e+00
+#> [681] 1.593092e+00 1.372122e+00 5.733976e-01 2.626099e+00 9.720043e-02
+#> [686] 7.061057e-01 3.311565e-01 3.453095e-01 8.652524e-01 2.118229e-01
+#> [691] 1.750396e+00 1.513447e+00 7.843043e-01 3.061891e-01 2.996795e-01
+#> [696] 3.358231e-01 2.877475e-01 1.762889e+00 1.257778e+00 9.540662e-02
+#> [701] 4.994823e-01 8.945715e-01 2.634984e-01 1.472527e+00 4.888353e-02
+#> [706] 1.767309e+00 2.096181e+00 2.380118e+00 3.533971e-01 3.647535e+00
+#> [711] 4.069591e-01 3.209938e+00 6.130361e-01 2.263285e-01 2.921426e-01
+#> [716] 3.701791e-01 4.133728e-01 3.667121e-01 1.704982e+00 4.295727e+00
+#> [721] 1.213106e+00 2.575334e+00 3.638900e-01 1.157906e+00 5.976600e-01
+#> [726] 1.115850e+00 4.262659e-01 8.343321e-01 7.032433e-01 8.603351e-01
+#> [731] 1.193470e-01 1.197441e+00 9.560390e-01 2.417743e+00 2.301080e-01
+#> [736] 2.635432e+00 2.487269e-01 2.560163e+00 4.138849e-01 3.280343e+00
+#> [741] 9.223312e-01 1.534650e+00 8.883326e-02 4.976102e-01 1.033889e+00
+#> [746] 5.877701e-02 1.066183e+00 2.741045e+00 1.825890e+00 5.147158e-01
+#> [751] 3.224722e+00 6.613582e-01 1.415447e+00 9.711955e-01 3.689406e-01
+#> [756] 1.756941e+00 1.492273e-01 1.323510e+00 1.756335e+00 3.860462e-01
+#> [761] 1.395157e+00 9.188751e-01 7.245965e-01 1.097825e+00 8.458716e-01
+#> [766] 3.857865e-01 1.335381e+00 4.922653e+00 1.374454e+00 7.434317e-01
+#> [771] 3.093618e+00 9.641456e-01 4.305810e-01 4.617599e-01 1.468788e-02
+#> [776] 4.920697e-01 1.628916e+00 1.218421e+00 7.478516e-01 5.976600e-01
+#> [781] 3.481268e+00 7.787624e-03 6.532212e-01 1.582462e-01 2.484163e+00
+#> [786] 1.948062e-01 1.287862e+00 2.487356e-01 1.354193e+00 1.010470e+00
+#> [791] 1.966497e-01 2.898479e-02 4.092691e-01 4.992921e-01 1.584556e+00
+#> [796] 3.017972e-01 9.374774e-01 4.624780e-01 2.301583e+00 2.849417e-01
+#> [801] 4.157766e+00 8.226338e-01 1.425156e-01 1.060288e+00 4.384019e-01
+#> [806] 5.110295e-01 3.044546e+00 2.155180e+00 2.749390e+00 1.084491e+00
+#> [811] 1.673812e+00 9.342297e-01 1.306037e+00 2.763968e-01 5.067757e-01
+#> [816] 1.069260e+00 1.815982e-02 7.146038e-01 8.015917e-02 8.684476e-01
+#> [821] 3.541897e-01 2.026653e+00 7.821826e-01 2.201077e-01 3.725377e-01
+#> [826] 1.429931e+00 1.647040e+00 1.997344e-02 8.822418e-01 4.095173e-01
+#> [831] 4.133728e-01 1.414269e+00 1.640721e+00 1.372122e+00 8.371677e-01
+#> [836] 1.217622e+00 4.052737e-01 8.059220e-01 3.335725e-01 1.147418e+00
+#> [841] 1.007997e+00 6.487408e-01 6.699230e-01 7.423107e+00 1.592067e-01
+#> [846] 4.116124e-01 1.202370e+00 2.138378e-01 2.926797e+00 4.535396e-02
+#> [851] 8.490082e-01 2.982980e+00 9.734878e-02 3.926126e-01 3.487519e+00
+#> [856] 3.870051e-01 2.455431e-02 1.003217e+00 2.621420e+00 2.916247e+00
+#> [861] 1.671349e-01 3.959498e-01 2.968647e+00 8.824307e-01 2.803032e+00
+#> [866] 3.689530e-01 9.877645e-01 2.765781e-02 1.171795e+00 1.026328e+00
+#> [871] 8.512919e+00 1.186272e+00 3.799424e-01 1.294961e+00 3.712197e-01
+#> [876] 9.484597e-01 3.358231e-01 3.850771e-01 2.778334e-01 2.705095e-01
+#> [881] 1.413633e+00 6.226853e-02 6.354847e-01 2.204413e-01 8.829572e-02
+#> [886] 7.344515e-02 5.687089e-01 2.533965e-01 5.065769e-01 1.850816e+00
+#> [891] 8.992084e-02 2.025006e+00 1.577396e-01 9.668117e-01 1.671088e+00
+#> [896] 5.034981e-01 5.408822e-02 5.212862e-01 3.634875e+00 4.733765e-01
+#> [901] 3.953873e-01 1.121014e+00 1.745758e+00 2.311131e+00 1.036408e+00
+#> [906] 1.393375e+00 6.042082e-01 1.586035e-01 1.619999e+00 5.863147e-01
+#> [911] 3.336964e+00 3.358231e-01 2.440690e+00 8.415471e-02 5.064443e-01
+#> [916] 2.915426e-01 3.267753e-01 4.356941e-01 4.796317e-01 1.966725e-01
+#> [921] 1.022237e+00 1.888456e+00 8.386414e-01 7.138503e-01 1.782620e-01
+#> [926] 5.050952e-01 2.997691e+00 2.268366e+00 5.209388e-01 1.218421e+00
+#> [931] 6.806665e-01 2.264257e+00 2.133327e+00 1.117539e+00 7.214280e-01
+#> [936] 2.047486e+00 9.557086e-01 3.468601e-01 4.629469e-01 3.959331e-01
+#> [941] 4.657510e-01 1.884338e+00 1.424048e+00 5.552459e-02 5.050952e-01
+#> [946] 7.434317e-01 3.732389e-01 1.988170e+00 1.545850e+00 1.550771e+00
+#> [951] 6.478331e-01 2.041229e+00 5.067757e-01 6.980494e-01 2.161546e+00
+#> [956] 5.294101e-01 3.870051e-01 1.592067e-01 8.434674e-01 1.712785e-31
+#> [961] 8.510233e-01 4.884635e-01 1.395215e+00 2.885125e-01 1.239026e+00
+#> [966] 4.421773e-01 3.132528e-01 8.186744e-01 5.202442e-01 2.873129e-01
+#> [971] 1.435813e-01 5.095893e-01 2.022790e+00 6.140598e-01 1.098719e+00
+#> [976] 7.282775e-01 8.754564e-01 7.794994e-01 6.184292e-01 4.639837e-01
+#> [981] 6.611231e-01 7.105213e-01 1.462965e+00 3.235252e-01 2.722865e+00
+#> [986] 2.411980e-01 3.099100e-01 2.740195e+00 1.994100e+00 1.115021e+00
+#> [991] 5.399222e-01 1.225951e-01 2.011078e-01 1.731023e-01 4.052337e-01
+#> [996] 1.516205e-01 2.260764e-01 3.366063e-01 6.189715e-01
+#> 
+#> $boot_statistics$`treatment:time`
+#>   [1] 2.148491113 0.703457038 0.251358601 0.253396470 2.799189110 0.321715262
+#>   [7] 2.458257145 0.727103495 1.492921385 2.845844915 1.004024195 0.363486479
+#>  [13] 0.197290949 2.376145264 0.401495126 0.157310674 4.417155748 1.663011366
+#>  [19] 0.554426502 1.449958982 0.497204006 0.526609686 1.952344592 0.225189570
+#>  [25] 1.317376397 1.635697502 3.194138814 0.310752376 1.432083543 0.008025892
+#>  [31] 0.582686376 0.395949756 2.963581543 0.393796017 1.124283520 1.485803509
+#>  [37] 1.435818866 0.461657682 0.575588719 0.886803890 1.747080282 0.240538435
+#>  [43] 1.957493457 1.137382039 0.422244324 0.612340384 1.179568576 0.695300495
+#>  [49] 0.407078710 0.341120101 0.349653467 0.427629521 1.354193145 1.073743122
+#>  [55] 2.802299747 0.312991604 1.143365471 1.094218494 0.818674447 0.657561534
+#>  [61] 0.723523096 0.760604243 2.873084486 0.531512154 0.705090006 0.652751624
+#>  [67] 0.285026262 1.405034182 4.290943372 0.170319018 1.257778277 1.100486846
+#>  [73] 1.077389662 0.663779359 0.747851637 0.383950316 0.090083153 0.839759375
+#>  [79] 0.216487736 0.607705442 0.459753657 0.095847199 3.581669530 1.033154432
+#>  [85] 3.128816650 0.216382440 0.171880473 1.452166080 1.354126917 0.664093795
+#>  [91] 0.644254261 0.529095448 0.847127031 2.639867023 0.801144216 0.531049368
+#>  [97] 0.405233716 0.300348236 1.203174961 0.350037327 0.996909978 0.308913258
+#> [103] 0.554554418 2.968647033 0.566229542 0.208801918 1.085649658 1.947554552
+#> [109] 1.306037441 0.990285064 1.499066512 2.569775856 0.329452566 0.208558438
+#> [115] 0.669575474 2.418175561 0.260893813 0.332373101 1.933486810 0.240257948
+#> [121] 0.793724972 0.332115632 1.146630542 0.289029411 0.043689724 1.033354442
+#> [127] 0.424044493 4.581857395 0.477513675 0.477405694 2.280584574 0.119159292
+#> [133] 1.703760012 1.013504786 0.108735309 1.823684399 0.670004306 0.919050229
+#> [139] 0.144941494 0.884914288 0.174577535 0.964010890 1.693587503 0.692166008
+#> [145] 1.593092488 0.252294347 0.802868690 1.692260982 1.429794527 1.234495872
+#> [151] 0.766660714 0.141495556 0.570796823 5.309623552 0.210780472 1.130714128
+#> [157] 0.484823734 0.724536193 0.210893977 0.560681164 0.153846391 0.309909998
+#> [163] 0.521286186 1.267583930 0.773422964 1.109656879 0.282930777 0.149227293
+#> [169] 0.413372760 0.814537597 0.303655572 0.928613557 2.060511243 3.248105754
+#> [175] 0.015031960 0.027445691 0.409551058 2.783386148 2.213783305 0.632686619
+#> [181] 3.335785637 1.369873348 0.419323956 0.487166173 0.887182872 0.432002525
+#> [187] 1.755247110 2.291741181 0.509589283 2.523524667 0.502499673 3.811628638
+#> [193] 0.032592133 2.151279254 0.135211342 0.755744378 4.524981005 0.934568508
+#> [199] 0.769799654 3.190477128 0.498657407 1.560371156 0.106177198 1.354193145
+#> [205] 1.907729339 2.148889922 0.007459937 1.339344641 3.194138814 1.435670818
+#> [211] 0.681201850 0.773993881 0.465751041 0.931345422 0.343986182 4.649599352
+#> [217] 0.910478988 3.184395961 0.144941494 3.007459107 0.771990956 0.365723166
+#> [223] 0.611344824 2.637445334 1.640721453 0.492601594 1.195199212 0.158508699
+#> [229] 1.186310616 0.146079746 3.593392142 0.079679438 0.992187273 0.113710679
+#> [235] 0.252948988 1.414902636 0.010512888 0.444862693 3.031471476 0.244304465
+#> [241] 0.281500068 1.257804825 0.251933999 1.265083828 0.884106628 1.233713801
+#> [247] 0.772267579 0.304321645 0.107573505 1.287393007 0.069613194 0.563028810
+#> [253] 0.444862693 0.703243316 0.470688852 1.551725013 1.639202498 0.934229703
+#> [259] 0.477405694 0.417579085 1.197441208 2.189334753 1.283689668 0.014687878
+#> [265] 1.784119916 1.167615830 0.282412547 0.416255728 2.348477691 0.180142560
+#> [271] 0.676296560 0.658443580 0.216382440 2.621419641 0.756544182 0.198365665
+#> [277] 0.668167087 0.679513153 3.655271743 0.089920843 1.714060393 0.392612609
+#> [283] 0.156124661 1.187666149 1.265083193 0.061768763 2.106750004 0.765993114
+#> [289] 2.873084486 0.097200432 1.207974619 0.466978451 2.286818426 0.438059577
+#> [295] 0.180704951 1.225777223 1.890898592 0.488463542 0.220441289 0.046109487
+#> [301] 3.125308212 0.332258781 0.764924953 0.510306908 0.728722960 2.264257247
+#> [307] 1.401967282 0.103131798 0.942070926 0.343986182 1.937396172 1.651873550
+#> [313] 0.189576955 1.523901414 0.269092886 0.703598795 1.624568352 0.829278244
+#> [319] 1.447892268 1.084491390 0.469028710 3.076252816 0.622968024 0.718400238
+#> [325] 0.384843568 1.520929323 2.189334753 0.514715827 3.590395733 2.217258487
+#> [331] 0.480570255 1.877818165 0.967307410 2.298574878 0.829278244 0.704773568
+#> [337] 1.257778277 1.611744244 0.770677177 1.124610051 1.496656849 2.839102644
+#> [343] 1.487907850 0.720072455 0.359860719 0.012621979 2.400672128 0.521957611
+#> [349] 0.117772498 0.839759375 1.786422431 1.151822909 0.299679463 0.657157978
+#> [355] 1.840592558 0.270395790 0.632050916 1.877818165 1.288869138 1.420701627
+#> [361] 1.222454021 2.522376766 1.733671391 0.610630734 1.540217265 0.428301792
+#> [367] 2.803032416 1.558533227 0.387230922 0.332267416 0.440032456 0.353523422
+#> [373] 1.481138116 0.333563663 0.377544939 0.349653467 0.191948690 1.944034638
+#> [379] 1.270671314 0.111813298 4.290943372 0.638228859 0.104402476 0.774894714
+#> [385] 1.292684481 0.201895668 1.756334508 0.575356097 3.125308212 0.380754488
+#> [391] 1.510377293 1.341525762 3.084665737 1.123839247 0.445438476 0.506576867
+#> [397] 0.483860902 0.099384779 1.068126892 0.680319655 1.267103540 0.063988770
+#> [403] 0.333704501 0.581565105 0.271463242 0.633788231 0.744645100 0.470688852
+#> [409] 1.021972365 2.029643635 0.483860902 0.378541427 1.252828990 0.383392380
+#> [415] 0.508131584 1.359064820 1.840060720 0.435601076 2.026652817 1.234495872
+#> [421] 2.925121764 1.268005208 0.881962032 0.946374956 0.266362963 0.861697415
+#> [427] 0.406756462 0.338747217 1.171540426 2.530247956 1.020376302 1.872945447
+#> [433] 0.322618428 1.873492294 0.439608660 1.628916165 1.243080671 0.263197198
+#> [439] 1.092873950 0.557261041 0.370179131 1.401967282 0.335845809 0.871775649
+#> [445] 0.265783078 0.700168106 1.750395562 0.269151130 1.234495872 0.156552702
+#> [451] 0.612649968 0.093728448 0.490883580 4.383387327 0.185175791 0.933584276
+#> [457] 1.069157753 2.379066243 1.187666149 3.335785637 0.461657682 0.277146635
+#> [463] 0.526609686 0.734546136 5.154920978 0.749277065 0.679513153 1.913136246
+#> [469] 2.041228596 0.776573455 0.424138184 2.633402417 0.015262111 0.054088221
+#> [475] 0.059588739 0.385211028 1.244405506 0.661358183 3.198165486 1.590693807
+#> [481] 1.615683599 0.712722756 0.647833103 0.210893977 1.073099104 0.995925538
+#> [487] 2.036306400 1.302394070 0.873566606 0.964010890 1.274100487 0.332420404
+#> [493] 2.049835128 1.350133698 0.141228824 2.250882584 0.108174263 0.242338614
+#> [499] 0.519145317 4.407315538 1.189611632 1.026327637 5.436584183 2.438473286
+#> [505] 0.695300495 0.019973444 0.863667705 0.455846510 0.351910506 3.587698915
+#> [511] 1.008108231 1.359064820 1.401967282 0.117772498 0.961125109 0.499227868
+#> [517] 1.003256909 1.968583965 0.703598795 1.413633327 1.259385900 1.441055734
+#> [523] 3.905860471 1.110962190 1.444093223 0.772507163 3.861712819 0.108780289
+#> [529] 0.142925279 0.241200065 1.394738865 0.173016750 1.207566651 0.843467365
+#> [535] 2.284840283 0.288524189 0.315853394 4.274276473 1.536159797 0.534596270
+#> [541] 0.997693444 0.590251946 1.268067733 0.304321645 0.558855810 2.206247664
+#> [547] 0.672217448 1.312454364 0.007459937 3.198165486 0.380754488 1.044726079
+#> [553] 0.633306502 0.654772458 1.548932513 0.202980027 0.663245189 1.907190040
+#> [559] 1.708248659 1.117896702 0.462946945 0.969833361 3.224722383 1.375234696
+#> [565] 0.276396765 1.502291366 0.373616729 2.502534775 0.354189724 0.509705659
+#> [571] 2.758621386 0.737947820 1.840060720 1.104357408 0.403914855 1.261276656
+#> [577] 0.315240550 0.299072510 1.692260982 1.840060720 0.125983967 0.176694009
+#> [583] 0.521752708 0.014687878 0.077324204 0.137556673 1.896950491 2.022623079
+#> [589] 0.590888135 0.698230410 1.169779865 0.352493231 0.244336629 0.017574557
+#> [595] 0.140304033 0.672217448 5.263611806 1.933486810 0.856624001 0.312991604
+#> [601] 1.310848475 1.937396172 2.816564028 0.670004306 0.759739485 0.832434164
+#> [607] 0.919558682 2.951453325 0.744340611 1.341525762 0.749277065 1.208867209
+#> [613] 1.090076071 0.479637798 0.131806552 0.527133613 0.898380720 0.798330569
+#> [619] 1.316430089 0.152462431 1.195627472 0.732886179 0.461657682 0.933703693
+#> [625] 0.696210133 0.735171875 0.771990956 0.071683712 0.164188172 1.044848136
+#> [631] 0.435632233 0.175577474 0.099454130 0.997263464 0.472401116 1.434539229
+#> [637] 2.482329327 0.268792615 0.837167690 1.130090452 2.572352271 2.178908826
+#> [643] 0.929494520 0.430529989 0.408464024 0.633306502 0.921962278 1.181609233
+#> [649] 0.113912148 0.117751868 0.582370410 1.094604377 0.413884872 0.477405694
+#> [655] 4.550384133 1.754148928 0.248526343 2.523524667 0.603724088 0.246935356
+#> [661] 0.086761997 0.094970335 0.628328463 2.061496894 0.447272783 0.407078710
+#> [667] 3.224722383 0.712493610 1.171794534 0.270395790 0.552894989 1.877818165
+#> [673] 0.407078710 0.529845683 1.021972365 1.479035721 1.139571965 0.929494520
+#> [679] 2.717619957 0.562065008 0.990285064 0.368045728 2.222437743 0.481866753
+#> [685] 0.169550496 2.574843730 0.919558682 1.600138051 4.290943372 2.536154527
+#> [691] 1.323171495 1.169570635 0.922451959 0.914130052 1.624352527 0.703521172
+#> [697] 0.462839935 0.705896928 1.006653709 1.062415782 0.612962653 0.042720052
+#> [703] 0.444597572 0.524711807 1.674582789 0.544625863 0.873033619 0.315853394
+#> [709] 0.388814062 2.322171855 3.993189679 0.119270526 0.335845809 0.267120480
+#> [715] 1.663011366 2.355552877 0.361203166 1.189701702 0.571144869 0.882430703
+#> [721] 2.091666681 0.225189570 1.087545597 2.074739749 0.616642010 2.337173699
+#> [727] 1.160127402 1.296058411 0.567631209 0.269151130 0.108709285 0.514268924
+#> [733] 0.813515795 1.989041945 0.365789585 1.020071675 0.136360812 0.768337012
+#> [739] 1.267349284 0.253396470 0.073445147 0.498181384 0.400269788 2.269799820
+#> [745] 1.171540426 1.402909447 0.061495834 0.886065721 0.601512660 1.156564970
+#> [751] 0.919625861 0.571801491 2.286619277 0.810269786 0.163194981 3.801598044
+#> [757] 1.004024195 0.898028245 0.762161079 2.213783305 1.251753850 1.217815139
+#> [763] 0.401225099 1.402495560 0.955708626 0.792907532 0.321677524 0.231991962
+#> [769] 0.434669791 0.544790019 1.688677812 0.747361828 0.588158342 0.060035796
+#> [775] 1.214197889 0.547537778 0.306189067 1.711027175 0.583798864 0.266524506
+#> [781] 1.213828266 0.531003382 0.373808027 0.128403226 1.415447176 0.151458092
+#> [787] 1.952384850 0.477513675 0.766400398 1.375234696 0.522575598 0.068023114
+#> [793] 1.473340928 0.080573878 0.148278045 0.989900820 0.304042803 0.807293721
+#> [799] 0.372155459 1.617791119 0.240538435 1.397111475 0.978779962 0.248755513
+#> [805] 0.798495110 0.558868312 0.113770453 0.384562131 2.924787365 0.322832436
+#> [811] 2.222854591 1.231031019 1.483100718 1.700729426 0.266362963 1.558672042
+#> [817] 1.075620957 3.634874760 2.179762222 0.501651316 1.295529427 1.171782662
+#> [823] 0.745505216 0.263173849 0.654772458 0.529981494 3.053091532 1.466606703
+#> [829] 4.966281786 0.396904583 1.786238349 1.132796733 1.989041945 2.633402417
+#> [835] 0.073445147 1.267103540 0.235281130 1.237275735 0.609711432 0.230042181
+#> [841] 1.262413811 0.720255576 1.064303113 0.324300669 0.409517315 0.270572822
+#> [847] 0.826172626 2.113615091 0.454565556 0.547603195 0.164292246 0.810299055
+#> [853] 0.013807923 1.273233012 1.885477791 0.646415611 0.775848023 1.513447255
+#> [859] 0.289449581 0.838641397 0.311857164 0.264224237 0.737573037 0.483791556
+#> [865] 2.885697536 0.645556154 1.066183324 0.048802131 1.292525466 1.073099104
+#> [871] 0.268019504 0.820985762 0.342091175 0.333572460 0.905406409 0.192059599
+#> [877] 0.374560945 1.310951451 0.248535139 0.435601076 0.769799654 0.560077029
+#> [883] 0.274378549 0.988386640 0.586314729 0.600344480 0.971195467 0.880376014
+#> [889] 1.431731722 2.440689805 1.675219865 2.327976291 0.289811978 2.640770410
+#> [895] 1.189215397 2.839102644 0.416917356 0.256240052 0.306189067 0.521101926
+#> [901] 0.803905699 2.082859860 0.143608751 0.451055371 2.722864766 0.986338520
+#> [907] 0.130709985 2.639627125 1.558504102 0.272360920 1.420701627 1.651873550
+#> [913] 0.834332120 2.041228596 1.821555625 0.416816276 1.082167620 0.220012441
+#> [919] 0.523378767 0.439608660 3.069915630 0.807035249 0.569583054 0.890753561
+#> [925] 0.705817632 0.440584430 2.680646468 2.090977659 0.099524855 1.449113243
+#> [931] 0.406959090 0.262928617 0.333563663 1.452850581 1.365507483 1.656240405
+#> [937] 0.904924416 0.182927270 0.547603195 1.431453932 1.534650474 1.339344641
+#> [943] 0.393104715 0.583380412 1.239538078 0.772055216 0.658585686 1.328802653
+#> [949] 1.520929323 2.168360366 1.433686252 4.581857395 3.811628638 1.265083193
+#> [955] 0.663779359 0.811342213 3.919030693 1.098719320 1.436874088 1.197441208
+#> [961] 0.386031536 0.572702763 0.645840173 0.634351679 1.433686252 0.555814883
+#> [967] 1.823684399 3.433371703 0.280569288 1.447646015 1.306037441 0.395093153
+#> [973] 0.237038251 0.755112568 1.162010356 0.550769078 0.156503948 0.401495126
+#> [979] 0.094741398 0.570787228 0.032536299 1.675219865 0.418184019 1.948945713
+#> [985] 3.191676539 0.770677177 0.479631719 1.772513839 3.336964184 0.061350437
+#> [991] 1.812831162 3.423111983 1.127263696 0.965778329 1.123000402 0.696378264
+#> [997] 0.582370410 1.492921385 0.643849505
+#> 
+#> 
+#> $missing
+#> $response
+#> [1] "height"
+#> 
+#> $n_rows
+#> [1] 52
+#> 
+#> $n_missing
+#> [1] 0
+#> 
+#> $missing_rate
+#> [1] 0
+#> 
+#> $missing_rows
+#> integer(0)
+#> 
+#> $assumption_note
+#> [1] "The missingness mechanism cannot be established from observed data alone. MCAR/MAR/MNAR assumptions require scientific justification and sensitivity analysis."
+#> 
+#> $repeated
+#> $repeated$n_subjects
+#> [1] 13
+#> 
+#> $repeated$n_occasions
+#> [1] 4
+#> 
+#> $repeated$complete_subjects
+#> [1] 13
+#> 
+#> $repeated$incomplete_subjects
+#> [1] 0
+#> 
+#> $repeated$subjects_with_no_observed_response
+#> [1] 0
+#> 
+#> $repeated$observed_by_occasion
+#>  1  2  3  4 
+#> 13 13 13 13 
+#> 
+#> $repeated$missing_rate_by_occasion
+#> 1 2 3 4 
+#> 0 0 0 0 
+#> 
+#> $repeated$pattern_counts
+#> 1111 
+#>   13 
+#> 
+#> $repeated$monotone_subjects
+#> [1] 13
+#> 
+#> $repeated$nonmonotone_subjects
+#> [1] 0
+#> 
+#> $repeated$observation_matrix
+#>                1    2    3    4
+#> control@@1  TRUE TRUE TRUE TRUE
+#> control@@3  TRUE TRUE TRUE TRUE
+#> control@@4  TRUE TRUE TRUE TRUE
+#> control@@7  TRUE TRUE TRUE TRUE
+#> control@@8  TRUE TRUE TRUE TRUE
+#> control@@10 TRUE TRUE TRUE TRUE
+#> control@@11 TRUE TRUE TRUE TRUE
+#> treated@@14 TRUE TRUE TRUE TRUE
+#> treated@@16 TRUE TRUE TRUE TRUE
+#> treated@@18 TRUE TRUE TRUE TRUE
+#> treated@@21 TRUE TRUE TRUE TRUE
+#> treated@@22 TRUE TRUE TRUE TRUE
+#> treated@@24 TRUE TRUE TRUE TRUE
+#> 
+#> 
+#> attr(,"class")
+#> [1] "agri_missing_report"
+#> 
+#> $prep
+#> $prep$groups
+#> $prep$groups[[1]]
+#> $prep$groups[[1]]$Y
+#>                     1         2        3         4
+#> control@@1  10.507456 11.175421 11.58718 12.532270
+#> control@@3   7.201917  8.249454 10.50214 10.872152
+#> control@@4   7.440707  8.386312 10.11754  8.798423
+#> control@@7  11.509548 11.650842 11.44364 10.704438
+#> control@@8  11.516598 11.950074 11.74507 11.746734
+#> control@@10 10.216952 14.379738 14.48379 11.912297
+#> control@@11  8.229888 11.951667 11.05988 10.667700
+#> 
+#> $prep$groups[[1]]$n
+#> [1] 7
+#> 
+#> $prep$groups[[1]]$level
+#> [1] "control"
+#> 
+#> 
+#> $prep$groups[[2]]
+#> $prep$groups[[2]]$Y
+#>                     1         2        3        4
+#> treated@@14 11.238333 13.117006 13.72101 12.01655
+#> treated@@16 12.251915 14.475982 16.70177 15.83977
+#> treated@@18  8.541455  9.647528 11.85867 14.02686
+#> treated@@21 11.955345 14.364238 18.75291 19.94939
+#> treated@@22  5.936957  9.830355 14.69022 13.46321
+#> treated@@24 10.626836 12.284680 15.05015 17.13581
+#> 
+#> $prep$groups[[2]]$n
+#> [1] 6
+#> 
+#> $prep$groups[[2]]$level
+#> [1] "treated"
+#> 
+#> 
+#> 
+#> $prep$cell_grid
+#>   treatment time
+#> 1   control    1
+#> 2   control    2
+#> 3   control    3
+#> 4   control    4
+#> 5   treated    1
+#> 6   treated    2
+#> 7   treated    3
+#> 8   treated    4
+#> 
+#> $prep$between
+#> [1] "treatment"
+#> 
+#> $prep$within
+#> [1] "time"
+#> 
+#> $prep$all_factors
+#> [1] "treatment" "time"     
+#> 
+#> $prep$a
+#> [1] 2
+#> 
+#> $prep$d
+#> [1] 4
+#> 
+#> $prep$response
+#> [1] "height"
+#> 
+#> 
+#> $components
+#> $components$p
+#> [1] 0.2156593 0.4381868 0.4354396 0.4134615 0.3493590 0.5641026 0.8301282
+#> [8] 0.8365385
+#> 
+#> $components$Vn
+#>            [,1]       [,2]       [,3]       [,4]       [,5]       [,6]
+#> [1,] 0.05877159 0.04402145 0.03219846 0.02987637 0.00000000 0.00000000
+#> [2,] 0.04402145 0.13454997 0.09280154 0.04624542 0.00000000 0.00000000
+#> [3,] 0.03219846 0.09280154 0.08755233 0.05345696 0.00000000 0.00000000
+#> [4,] 0.02987637 0.04624542 0.05345696 0.06845238 0.00000000 0.00000000
+#> [5,] 0.00000000 0.00000000 0.00000000 0.00000000 0.15053419 0.15956197
+#> [6,] 0.00000000 0.00000000 0.00000000 0.00000000 0.15956197 0.20526175
+#> [7,] 0.00000000 0.00000000 0.00000000 0.00000000 0.04829060 0.06645299
+#> [8,] 0.00000000 0.00000000 0.00000000 0.00000000 0.04134615 0.04342949
+#>            [,7]       [,8]
+#> [1,] 0.00000000 0.00000000
+#> [2,] 0.00000000 0.00000000
+#> [3,] 0.00000000 0.00000000
+#> [4,] 0.00000000 0.00000000
+#> [5,] 0.04829060 0.04134615
+#> [6,] 0.06645299 0.04342949
+#> [7,] 0.05245726 0.02708333
+#> [8,] 0.02708333 0.04006410
+#> 
+#> $components$V_list
+#> $components$V_list[[1]]
+#>            [,1]       [,2]       [,3]       [,4]
+#> [1,] 0.03164624 0.02370386 0.01733763 0.01608728
+#> [2,] 0.02370386 0.07244999 0.04997006 0.02490138
+#> [3,] 0.01733763 0.04997006 0.04714356 0.02878452
+#> [4,] 0.01608728 0.02490138 0.02878452 0.03685897
+#> 
+#> $components$V_list[[2]]
+#>            [,1]       [,2]       [,3]       [,4]
+#> [1,] 0.06947732 0.07364398 0.02228797 0.01908284
+#> [2,] 0.07364398 0.09473619 0.03067061 0.02004438
+#> [3,] 0.02228797 0.03067061 0.02421105 0.01250000
+#> [4,] 0.01908284 0.02004438 0.01250000 0.01849112
+#> 
+#> 
+#> $components$R_list
+#> $components$R_list[[1]]
+#>              1  2  3  4
+#> control@@1  14 20 25 37
+#> control@@3   2  5 13 18
+#> control@@4   3  6 11  8
+#> control@@7  23 26 22 17
+#> control@@8  24 31 27 28
+#> control@@10 12 43 45 30
+#> control@@11  4 32 19 16
+#> 
+#> $components$R_list[[2]]
+#>              1  2  3  4
+#> treated@@14 21 38 40 34
+#> treated@@16 35 44 49 48
+#> treated@@18  7  9 29 41
+#> treated@@21 33 42 51 52
+#> treated@@22  1 10 46 39
+#> treated@@24 15 36 47 50
+#> 
+#> 
+#> $components$lambda_list
+#> $components$lambda_list[[1]]
+#> 1 2 3 4 
+#> 7 7 7 7 
+#> 
+#> $components$lambda_list[[2]]
+#> 1 2 3 4 
+#> 6 6 6 6 
+#> 
+#> 
+#> $components$meanR_list
+#> $components$meanR_list[[1]]
+#> [1] 11.71429 23.28571 23.14286 22.00000
+#> 
+#> $components$meanR_list[[2]]
+#> [1] 18.66667 29.83333 43.66667 44.00000
+#> 
+#> 
+#> $components$N
+#> [1] 52
+#> 
+#> $components$n
+#> [1] 13
+#> 
+#> 
+#> $reference
+#> [1] "Amro L, Konietschke F, Pauly M (2024). Biometrical Journal 66:e70008. doi:10.1002/bimj.70008"
+#> 
+#> $status
+#> [1] "experimental: formula-level implementation requires independent benchmark validation before confirmatory use"
+#> 
+#> attr(,"class")
+#> [1] "agri_incomplete_wild" "agri_engine_fit"     
+#> 
+#> $note
+#> [1] "A discrepancy is a sensitivity signal, not evidence for MCAR, MAR or MNAR."
+```
+
+### 10.1 This is not imputation
+
+An imputation procedure fills the gaps and then analyses the completed
+data as if it were observed. A sensitivity analysis does something
+different and more honest: it asks whether the conclusion **changes**
+under different assumptions about why values are absent.
+
+|  | Imputation | Sensitivity |
+|----|----|----|
+| Produces | one completed dataset | several analyses |
+| Claims | the filled values are plausible | nothing about the filled values |
+| Answers | what is the estimate | is the estimate robust to the assumption |
+| Fails when | the mechanism is MNAR | never, but it may report instability |
+
+### 10.2 How to read the output
+
+| Outcome | Reading |
+|----|----|
+| conclusions agree across assumptions | the result does not rest on the missingness assumption; say so in one sentence |
+| conclusions differ | **that is the finding**; report all of them and state which was pre-specified |
+
+The second case is uncomfortable and it is where most of the value lies.
+A conclusion that survives only under MCAR, in an experiment where
+plants died, is not a conclusion.
+
+### 10.3 Interpretation
+
+Report the primary assumption, the sensitivity range, and the mechanism
+you believe operated. Those three together are what a reviewer needs.
+
+------------------------------------------------------------------------
+
+## Part III. Two deliberate refusals
+
+## 11. An additional block stratum is refused
+
+``` r
+
+blocked_rm <- rm_miss
+blocked_rm$block <- factor(rep(1:4, length.out = nrow(blocked_rm)))
+
+blocked_des <- agri_design(
+  height ~ treatment * time,
+  blocked_rm,
+  design  = "repeated",
+  subject = subject,
+  within  = time,
+  block   = block
+)
+
+agri_rank(blocked_des, method = "auto")
+#> Error:
+#> ! Incomplete repeated measures with an additional agronomic block stratum are not assigned to an unvalidated automatic method. The native incomplete wild-rank procedure deliberately rejects this case.
+```
+
+### 11.1 Why the refusal is preferable
+
+A repeated-measures experiment laid out in blocks has **three** levels
+of structure: the block, the subject inside the block, and the occasion
+inside the subject. The rank-based engines available here represent two
+of them.
+
+Two responses are possible. Accept the block and treat it approximately,
+or refuse and say so. The package refuses, for a specific reason: an
+approximation that is not validated would produce a p-value with unknown
+calibration, and the analyst would have no way to detect it.
+
+### 11.2 What to do instead
+
+| Option | When it is defensible |
+|----|----|
+| drop the block from the declaration | when between-block variation is demonstrably small; report the decision |
+| analyse each block separately and combine | when blocks are few and interpretable |
+| analyse a derived endpoint in the full design | when the scientific question is about an endpoint anyway |
+| use a mixed model outside this package | when the subject-and-block structure is the scientific object |
+
+The last option is not a defeat. This package is deliberately narrow,
+and a three-level longitudinal structure is a legitimate place to leave
+it.
+
+------------------------------------------------------------------------
+
+## 12. The experimental label
+
+The native incomplete repeated-measures engine is labelled
+**experimental** in the package documentation, and it keeps that label
+until the validation plan in `VALIDATION_PLAN.md` is complete.
+
+### 12.1 What remains to be verified
+
+``` r
+
+data.frame(
+  item = c("intermediate rank quantities", "relative effects",
+           "covariance matrices", "WTS/ATS/MATS",
+           "frozen wild-bootstrap sequences", "Type-I error",
+           "power", "missingness rates", "ordinal data", "ties",
+           "heteroscedasticity", "row and label invariance",
+           "comparison with reference code"),
+  status = "pending"
+)
+#>                               item  status
+#> 1     intermediate rank quantities pending
+#> 2                 relative effects pending
+#> 3              covariance matrices pending
+#> 4                     WTS/ATS/MATS pending
+#> 5  frozen wild-bootstrap sequences pending
+#> 6                     Type-I error pending
+#> 7                            power pending
+#> 8                missingness rates pending
+#> 9                     ordinal data pending
+#> 10                            ties pending
+#> 11              heteroscedasticity pending
+#> 12        row and label invariance pending
+#> 13  comparison with reference code pending
+```
+
+### 12.2 What the label means in practice
+
+Running without error is **not** evidence of correct Type-I error. An
+engine can produce plausible p-values that are systematically too small
+or too large, and nothing in the output reveals it.
+
+For a manuscript, the defensible positions are:
+
+1.  use an established backend on complete data, and report the
+    missingness separately;
+2.  or use the native engine and describe it as experimental, with the
+    sensitivity analysis of section 10 as the primary evidence.
+
+What is not defensible is using it without the label.
+
+------------------------------------------------------------------------
+
+## Part IV. Common mistakes, and the function that prevents each
+
+## 13. Counting measurements as replicates
+
+**The mistake.** Ten plants measured four times, analysed as forty
+observations.
+
+**Why it is wrong.** The experiment has ten independent units. Every
+interval is too narrow by roughly a factor of two.
+
+**What prevents it.** `agri_design(design = "repeated", subject =)`
+records the unit, and the analysis uses it. See section 4.
+
+------------------------------------------------------------------------
+
+## 14. Running a repeated-measures analysis for an endpoint question
+
+**The mistake.** Analysing four occasions when the question concerns
+final yield.
+
+**Why it is wrong.** It spends degrees of freedom on time effects nobody
+asked about, and the answer to the endpoint question is buried in an
+interaction.
+
+**What prevents it.** Nothing automatic. See the decision table in
+section 5.2.
+
+------------------------------------------------------------------------
+
+## 15. Analysing only the survivors
+
+**The mistake.** Dropping subjects with any missing occasion, and
+analysing the complete cases.
+
+**Why it is wrong.** If death is related to treatment, the survivors are
+a selected subset, and the comparison is biased in favour of the
+treatment that killed more. See section 8.4.
+
+**What prevents it.**
+[`agri_missing_report()`](https://wep69.github.io/agriRank/reference/agri_missing_report.md)
+shows where the losses are concentrated, and the incomplete engine uses
+the observed cells rather than discarding subjects.
+
+------------------------------------------------------------------------
+
+## 16. Not stating the missingness assumption
+
+**The mistake.** Reporting an analysis of incomplete data without saying
+what was assumed.
+
+**Why it is wrong.** An assumption was made regardless. Leaving it
+unstated moves it from the methods section, where a reader can disagree
+with it, into the code, where they cannot.
+
+**What prevents it.**
+[`incomplete_wild_rank_test()`](https://wep69.github.io/agriRank/reference/incomplete_wild_rank_test.md)
+requires `missing_assumption` explicitly. See section 9.1.
+
+------------------------------------------------------------------------
+
+## 17. Treating a sensitivity analysis as a robustness ritual
+
+**The mistake.** Running
+[`agri_missing_sensitivity()`](https://wep69.github.io/agriRank/reference/agri_missing_sensitivity.md),
+observing that it ran, and reporting the primary analysis unchanged.
+
+**Why it is wrong.** The output is the point. If the conclusions differ
+across assumptions, that difference is a result.
+
+**What prevents it.** Reading section 10.2.
+
+------------------------------------------------------------------------
+
+## 18. Using the experimental engine without its label
+
+**The mistake.** Reporting the native wild-bootstrap engine as an
+established method.
+
+**Why it is wrong.** Its calibration study is incomplete. See section
+12.
+
+**What prevents it.** The label is in the function documentation, in
+`VALIDATION_PLAN.md`, and here.
+
+------------------------------------------------------------------------
+
+## Part V. Compact selection guide
+
+## 19. Choose by the completeness and the question
+
+| Situation | Use |
+|----|----|
+| complete data, trajectory question | `agri_repeated(backend = "nparLD")` |
+| complete data, small samples | `agri_repeated(backend = "MANOVA.RM")` |
+| complete data, endpoint question | analyse the endpoint with [`np_rcbd()`](https://wep69.github.io/agriRank/reference/np_rcbd.md) |
+| incomplete data | [`agri_missing_report()`](https://wep69.github.io/agriRank/reference/agri_missing_report.md), then [`incomplete_wild_rank_test()`](https://wep69.github.io/agriRank/reference/incomplete_wild_rank_test.md) |
+| incomplete data, always | [`agri_missing_sensitivity()`](https://wep69.github.io/agriRank/reference/agri_missing_sensitivity.md) as well |
+| repeated measures inside blocks | see section 11.2 |
+| death related to treatment | analyse survival too, see *Time-to-Event and Ranking Data* |
+
+------------------------------------------------------------------------
+
+## Part VI. Minimum reporting checklist
+
+## 20. What the methods section must contain
+
+1.  the number of subjects, and the number of occasions per subject;
+2.  the subject and the within factor, named;
+3.  that the subject is the experimental unit for the between-subject
+    factor;
+4.  the backend, and why it suits the completeness of the data;
+5.  the number of resampling iterations and the seed;
+6.  the amount of missingness and where it is concentrated;
+7.  the missingness assumption, and the mechanism believed to have
+    operated;
+8.  the sensitivity analysis and its outcome;
+9.  if the native engine was used, its experimental status;
+10. the package version.
+
+## 21. A worked methods paragraph
+
+> Plant height was measured on 12 plants per treatment at four
+> occasions. The subject was the individual plant and the within-subject
+> factor was occasion; the design was declared and validated with
+> [`agri_design()`](https://wep69.github.io/agriRank/reference/agri_design.md)
+> from agriRank 0.14.0. Of the 144 scheduled measurements, 15% were
+> absent, distributed across treatments without evident concentration
+> ([`agri_missing_report()`](https://wep69.github.io/agriRank/reference/agri_missing_report.md)).
+> Because the losses followed a rained-out measurement day affecting the
+> whole trial, missingness was taken as completely at random. Inference
+> used the native rank-based wild-bootstrap engine
+> ([`incomplete_wild_rank_test()`](https://wep69.github.io/agriRank/reference/incomplete_wild_rank_test.md),
+> ANOVA-type statistic, 1999 resamples, seed 801), which is labelled
+> experimental in the package documentation. A sensitivity analysis
+> across missingness assumptions
+> ([`agri_missing_sensitivity()`](https://wep69.github.io/agriRank/reference/agri_missing_sensitivity.md),
+> 999 resamples) did not alter the conclusions and is reported in Table
+> S3.
+
+------------------------------------------------------------------------
+
+## 22. Where to go next
+
+| If you now want | Read |
+|----|----|
+| the design declaration in detail | *Design Foundations, CRD, and RCBD* |
+| comparisons after the omnibus test | *Effects, Conover, Contrasts, and Factorial Inference* |
+| several responses on the same subjects | *Multivariate, Multi-Environment, Batch, and Sensitivity Workflows* |
+| plant death as an outcome in its own right | *Time-to-Event and Ranking Data* |
+| the whole workflow on one experiment | *Integrated Agronomic Case Study* |
+
+------------------------------------------------------------------------
+
+## Part VII. Glossary
+
+## 23. Terms used in this vignette
+
+| Term | Meaning here |
+|----|----|
+| **subject** | the unit measured repeatedly; the replicate for a between-subject factor |
+| **occasion** | one measurement time on a subject |
+| **within factor** | a factor varying inside a subject |
+| **between factor** | a factor varying across subjects |
+| **trajectory** | the sequence of measurements on one subject |
+| **MCAR** | missing completely at random, unrelated to anything |
+| **MAR** | missing at random, related only to observed values |
+| **MNAR** | missing not at random, related to the unobserved value itself |
+| **complete case** | a subject with no missing occasion |
+| **ATS** | ANOVA-type statistic, conservative in small samples |
+| **WTS** | Wald-type statistic, liberal in small samples unless resampled |
+| **wild bootstrap** | a resampling scheme that multiplies residuals by random signs |
+| **sensitivity analysis** | repeating an analysis under alternative assumptions |
+
+------------------------------------------------------------------------
+
+## Selected methodological references
+
+- Amro, L., Konietschke, F., and Pauly, M. (2024).
+  Multiplication-combination tests for incomplete paired data.
+  *Statistics in Medicine*.
+- Brunner, E., Bathke, A. C., and Konietschke, F. (2018). *Rank and
+  Pseudo-Rank Procedures for Independent Observations in Factorial
+  Designs*. Springer.
+- Friedrich, S., Konietschke, F., and Pauly, M. (2019). Resampling-based
+  analysis of multivariate data and repeated measures designs with the R
+  package MANOVA.RM. *The R Journal*, 11(2), 380-400.
+- Little, R. J. A., and Rubin, D. B. (2019). *Statistical Analysis with
+  Missing Data*, 3rd edition. Wiley.
+- Noguchi, K., Gel, Y. R., Brunner, E., and Konietschke, F. (2012).
+  nparLD: An R software package for the nonparametric analysis of
+  longitudinal data in factorial experiments. *Journal of Statistical
+  Software*, 50(12), 1-23. <https://doi.org/10.18637/jss.v050.i12>
+
+The package also ships a verified RIS library under `inst/references/`.
