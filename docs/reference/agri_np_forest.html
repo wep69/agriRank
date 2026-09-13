@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -122,41 +122,24 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">dz</span> <span class="op">&lt;-</span> <span class="va">agri_dose</span></span></span>
-<span class="r-in"><span><span class="co"># A qualitative companion for the nitrogen gradient: two cultivars that share</span></span></span>
-<span class="r-in"><span><span class="co"># the dose response but differ in baseline yield (Mg/ha).</span></span></span>
-<span class="r-in"><span><span class="va">dz</span><span class="op">$</span><span class="va">cultivar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Ana"</span>, <span class="st">"Bela"</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dz</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">dz</span><span class="op">$</span><span class="va">yield</span> <span class="op">&lt;-</span> <span class="va">dz</span><span class="op">$</span><span class="va">yield</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">dz</span><span class="op">$</span><span class="va">cultivar</span> <span class="op">==</span> <span class="st">"Bela"</span>, <span class="fl">0.9</span>, <span class="fl">0</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"quantreg"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span> <span class="op">+</span> <span class="va">cultivar</span>, <span class="va">dz</span>, method <span class="op">=</span> <span class="st">"quantile"</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># B = 19 keeps this example fast; a real analysis needs B &gt;= 999.</span></span></span>
-<span class="r-in"><span>  <span class="va">bt</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_bootstrap.html">agri_np_bootstrap</a></span><span class="op">(</span><span class="va">fit</span>, target <span class="op">=</span> <span class="st">"coefficients"</span>, B <span class="op">=</span> <span class="fl">19</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu">agri_np_forest</span><span class="op">(</span><span class="va">fit</span>, bootstrap <span class="op">=</span> <span class="va">bt</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="co"># Cultivar Bela shifts the whole dose-response curve upward by about</span></span></span>
-<span class="r-in"><span>  <span class="co"># 0.9 Mg/ha; reading its interval against the zero line is the point of</span></span></span>
-<span class="r-in"><span>  <span class="co"># the figure.</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-plt img"><img src="agri_np_forest-1.png" alt="" width="700" height="433"></span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span>
+<span><span class="va">dz</span> <span class="op">&lt;-</span> <span class="va">agri_dose</span></span>
+<span><span class="co"># A qualitative companion for the nitrogen gradient: two cultivars that share</span></span>
+<span><span class="co"># the dose response but differ in baseline yield (Mg/ha).</span></span>
+<span><span class="va">dz</span><span class="op">$</span><span class="va">cultivar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Ana"</span>, <span class="st">"Bela"</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dz</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">dz</span><span class="op">$</span><span class="va">yield</span> <span class="op">&lt;-</span> <span class="va">dz</span><span class="op">$</span><span class="va">yield</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">dz</span><span class="op">$</span><span class="va">cultivar</span> <span class="op">==</span> <span class="st">"Bela"</span>, <span class="fl">0.9</span>, <span class="fl">0</span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"quantreg"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span> <span class="op">+</span> <span class="va">cultivar</span>, <span class="va">dz</span>, method <span class="op">=</span> <span class="st">"quantile"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># B = 19 keeps this example fast; a real analysis needs B &gt;= 999.</span></span>
+<span>  <span class="va">bt</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_bootstrap.html">agri_np_bootstrap</a></span><span class="op">(</span><span class="va">fit</span>, target <span class="op">=</span> <span class="st">"coefficients"</span>, B <span class="op">=</span> <span class="fl">19</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="fu">agri_np_forest</span><span class="op">(</span><span class="va">fit</span>, bootstrap <span class="op">=</span> <span class="va">bt</span><span class="op">)</span></span>
+<span>  <span class="co"># Cultivar Bela shifts the whole dose-response curve upward by about</span></span>
+<span>  <span class="co"># 0.9 Mg/ha; reading its interval against the zero line is the point of</span></span>
+<span>  <span class="co"># the figure.</span></span>
+<span><span class="op">}</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

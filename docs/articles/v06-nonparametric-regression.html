@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,7 +64,7 @@ Development Team</h4>
     
 <p><strong>Regression vignette</strong> <strong>Package:</strong>
 <code>agriRank</code> <strong>Version targeted:</strong>
-<code>0.14.0</code> <strong>Owns:</strong> fitting a curve to a
+<code>0.14.1</code> <strong>Owns:</strong> fitting a curve to a
 quantitative agronomic gradient without assuming its functional
 form.</p>
 <hr>
@@ -1350,7 +1350,7 @@ differ:</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">gvar</span><span class="op">$</span><span class="va">formula_used</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="co">#&gt; yield ~ cultivar + s(dose, by = cultivar, k = 10)</span></span>
-<span><span class="co">#&gt; &lt;environment: 0x00000281e020da10&gt;</span></span></code></pre></div>
+<span><span class="co">#&gt; &lt;environment: 0x0000021deb80cba0&gt;</span></span></code></pre></div>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">"gvar"</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/agri_np_plot.html">agri_np_plot</a></span><span class="op">(</span><span class="va">gvar</span>, predictor <span class="op">=</span> <span class="st">"dose"</span>, group <span class="op">=</span> <span class="st">"cultivar"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">

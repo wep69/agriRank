@@ -157,15 +157,11 @@ data(agri_dose)
 fit <- agri_np_regression(yield ~ dose, agri_dose, method = "gam", block = block)
 ot <- agri_np_optimum_test(fit, B = 39, seed = 1, n = 40, external = FALSE)
 ot$optimum
-#>   level  n optimum lower upper fitted_response p_boundary replicates identified
-#> 1   all 40     280   280   280        5.035595          1         21      FALSE
 
 # Example 2. The distribution of the resampled optimum. Mass piled against an
 # end of the range is the visual form of the same conclusion.
 p <- plot(ot, type = "distribution")
 class(p)
-#> [1] "ggplot2::ggplot" "ggplot"          "ggplot2::gg"     "S7_object"      
-#> [5] "gg"             
 
 # Example 3. Comparing two cultivars needs a model whose curves may differ in
 # shape, so the qualitative predictor must enter through a varying smooth.
@@ -181,17 +177,7 @@ fit2 <- agri_np_regression(yield ~ dose + cultivar, d2, method = "gam",
 ot2 <- agri_np_optimum_test(fit2, by = cultivar, B = 39, seed = 1, n = 40,
                             external = FALSE)
 ot2$optimum
-#>   level  n  optimum    lower    upper fitted_response p_boundary replicates
-#> 1 early 40 186.6667 172.3077 204.6154        4.771614          0         21
-#> 2  late 40 280.0000 280.0000 280.0000        5.001628          1         21
-#>   identified
-#> 1       TRUE
-#> 2      FALSE
 ot2$contrasts
-#>       contrast difference     lower     upper    p_value both_identified
-#> 1 early - late  -93.33333 -107.6923 -75.38462 0.09090909           FALSE
-#>   replicates p_adjusted
-#> 1         21 0.09090909
 
 # Example 4. An additive adjustment forces parallel curves, so the comparison
 # is refused rather than answered with a difference of zero.
@@ -200,7 +186,6 @@ fit_add <- agri_np_regression(yield ~ dose + cultivar, d2, method = "gam",
 res <- tryCatch(agri_np_optimum_test(fit_add, by = cultivar, B = 19),
                 error = function(e) conditionMessage(e))
 cat(res, "\n")
-#> The fitted curves for the levels of `cultivar` are parallel, because `cultivar` enters the model as an additive adjustment. Their optima are therefore identical by construction and comparing them would describe the model, not the experiment. Refit allowing the shape to differ, with `gam_structure = "varying"`, which fits one smooth of dose per level of cultivar. 
 
 # Example 5. An integer decision is not located on a continuous grid, so the
 # function points to the integer machinery instead.
@@ -210,5 +195,4 @@ fi <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
                          predictor_support = "observed_integer")
 res2 <- tryCatch(agri_np_optimum_test(fi), error = function(e) conditionMessage(e))
 cat(res2, "\n")
-#> This fit declares an integer decision support. Use `agri_integer_optimum()` and `agri_integer_confset()`, which work on the admissible integer lattice instead of a grid. 
 ```

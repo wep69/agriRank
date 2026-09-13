@@ -56,14 +56,12 @@ if (requireNamespace("plotly", quietly = TRUE)) {
   w1 <- agri_np_interactive(f)
   class(w1)
 }
-#> [1] "plotly"     "htmlwidget"
 
 # Example 2: interactive derivative
 if (requireNamespace("plotly", quietly = TRUE)) {
   w2 <- agri_np_interactive(f, type = "derivative")
   class(w2)
 }
-#> [1] "plotly"     "htmlwidget"
 
 # Example 3: interactive response surface over two gradients
 data(agri_surface)
@@ -74,5 +72,4 @@ if (requireNamespace("plotly", quietly = TRUE) && requireNamespace("mgcv", quiet
                             surface_predictors = c("nitrogen", "water"), n = 30)
   class(w3)
 }
-#> [1] "plotly"     "htmlwidget"
 ```

@@ -1,7 +1,7 @@
 # Methodological Foundations, State of the Art, and Common Mistakes
 
 **Foundations vignette** **Package:** `agriRank` **Version targeted:**
-`0.14.0` **Owns:** why the package is built the way it is, what the
+`0.14.1` **Owns:** why the package is built the way it is, what the
 methods actually assume, and the mistakes it exists to prevent.
 
 ------------------------------------------------------------------------

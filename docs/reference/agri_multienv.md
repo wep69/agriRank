@@ -69,44 +69,11 @@ An \`agri_rank_fit\` with environment enforcement metadata.
 x<-simulate_agri("multienv");
 if (requireNamespace("ARTool", quietly = TRUE) || requireNamespace("permuco", 
     quietly = TRUE)) agri_multienv(yield ~ genotype, x, environment, block)
-#> boundary (singular) fit: see help('isSingular')
-#> boundary (singular) fit: see help('isSingular')
-#> boundary (singular) fit: see help('isSingular')
-#> agriRank fit
-#>   Design: multienv
-#>   Method: Aligned Rank Transform
-#>   Response: yield
-#>                   Term         F Df Df.res       Pr(>F)               effect
-#> 1             genotype 6.8838985  3     45 0.0006496793             genotype
-#> 2          environment 2.1474913  2     15 0.1513043770          environment
-#> 3 genotype:environment 0.6783333  6     45 0.6677714985 genotype:environment
 x<-simulate_agri("multienv");
 if (requireNamespace("ARTool", quietly = TRUE)) agri_multienv(yield ~ genotype * 
     environment, x, environment, block, method = "ART")
-#> boundary (singular) fit: see help('isSingular')
-#> boundary (singular) fit: see help('isSingular')
-#> boundary (singular) fit: see help('isSingular')
-#> agriRank fit
-#>   Design: multienv
-#>   Method: Aligned Rank Transform
-#>   Response: yield
-#>                   Term         F Df Df.res       Pr(>F)               effect
-#> 1             genotype 6.8838985  3     45 0.0006496793             genotype
-#> 2          environment 2.1474913  2     15 0.1513043770          environment
-#> 3 genotype:environment 0.6783333  6     45 0.6677714985 genotype:environment
 x<-simulate_agri("multienv");
 if (requireNamespace("permuco", quietly = TRUE)) agri_multienv(yield ~ 
     genotype, x, environment, block, method = "permuco", environment_interaction = FALSE, 
     np = 99)
-#> Warning: The number of permutations is below 2000, p-values might be unreliable.
-#> Warning: the distribution of  .agri_env_block, genotype, environment  may be discrete.
-#> agriRank fit
-#>   Design: multienv
-#>   Method: permuco permutation ANOVA on mid-ranks
-#>   Response: yield
-#>                         SS df        F parametric P(>F) resampled P(>F)
-#> .agri_env_block  2959.2500 17 0.457772      0.960519785      0.94949495
-#> genotype         7147.1111  3 6.265067      0.001055334      0.01010101
-#> environment       812.4489  2 1.068274      0.351163610      0.62626263
-#> Residuals       19393.3889 51       NA               NA              NA
 ```

@@ -1,7 +1,7 @@
 # Time-to-Event and Ranking Data
 
 **Non-measurement vignette** **Package:** `agriRank` **Version
-targeted:** `0.14.0` **Owns:** the two agronomic experiments whose datum
+targeted:** `0.14.1` **Owns:** the two agronomic experiments whose datum
 is not a measurement. Germination counted inside intervals, and on-farm
 trials returning an order.
 
@@ -462,7 +462,16 @@ if (is.null(rt$worth)) {
 } else {
   print(rt$worth[order(-rt$worth$worth), ])
 }
-#> PlackettLuce is not installed in this environment.
+#>   item       worth
+#> 5   V5 0.424304920
+#> 8   V8 0.219635152
+#> 3   V3 0.182102118
+#> 2   V2 0.071487557
+#> 6   V6 0.051724145
+#> 4   V4 0.024119737
+#> 1   V1 0.018971174
+#> 7   V7 0.004909403
+#> 9   V9 0.002745794
 ```
 
 Two things are worth keeping straight.

@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,7 +64,7 @@ Development Team</h4>
     
 <p><strong>Hierarchical designs vignette</strong>
 <strong>Package:</strong> <code>agriRank</code> <strong>Version
-targeted:</strong> <code>0.14.0</code> <strong>Owns:</strong> designs
+targeted:</strong> <code>0.14.1</code> <strong>Owns:</strong> designs
 with more than one randomization level, ordered-dose trend tests,
 rank-based covariance adjustment, and simulation-based power.</p>
 <hr>
@@ -313,16 +313,25 @@ design knows this even when the analyst does not.</p>
 <span><span class="co">#&gt;   Design: split_plot</span></span>
 <span><span class="co">#&gt;   Method: Aligned Rank Transform</span></span>
 <span><span class="co">#&gt;   Response: yield</span></span>
-<span><span class="co">#&gt;                  Term          F Df Df.res      Pr(&gt;F)              effect</span></span>
-<span><span class="co">#&gt; 1          irrigation 24.8976617  1      4 0.007544962          irrigation</span></span>
-<span><span class="co">#&gt; 2            cultivar  0.3494287  2     16 0.710339266            cultivar</span></span>
-<span><span class="co">#&gt; 3 irrigation:cultivar  0.3872747  2     16 0.685098385 irrigation:cultivar</span></span></code></pre></div>
+<span><span class="co">#&gt;   Resampling: none (asymptotic test)</span></span>
+<span><span class="co">#&gt;                effect  statistic df     p_value                Term          F</span></span>
+<span><span class="co">#&gt; 1          irrigation 24.8976617  1 0.007544962          irrigation 24.8976617</span></span>
+<span><span class="co">#&gt; 2            cultivar  0.3494287  2 0.710339266            cultivar  0.3494287</span></span>
+<span><span class="co">#&gt; 3 irrigation:cultivar  0.3872747  2 0.685098385 irrigation:cultivar  0.3872747</span></span>
+<span><span class="co">#&gt;   Df Df.res      Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1  1      4 0.007544962</span></span>
+<span><span class="co">#&gt; 2  2     16 0.710339266</span></span>
+<span><span class="co">#&gt; 3  2     16 0.685098385</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fit_sp</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                  Term          F Df Df.res      Pr(&gt;F)              effect</span></span>
-<span><span class="co">#&gt; 1          irrigation 24.8976617  1      4 0.007544962          irrigation</span></span>
-<span><span class="co">#&gt; 2            cultivar  0.3494287  2     16 0.710339266            cultivar</span></span>
-<span><span class="co">#&gt; 3 irrigation:cultivar  0.3872747  2     16 0.685098385 irrigation:cultivar</span></span></code></pre></div>
+<span><span class="co">#&gt;                effect  statistic df     p_value                Term          F</span></span>
+<span><span class="co">#&gt; 1          irrigation 24.8976617  1 0.007544962          irrigation 24.8976617</span></span>
+<span><span class="co">#&gt; 2            cultivar  0.3494287  2 0.710339266            cultivar  0.3494287</span></span>
+<span><span class="co">#&gt; 3 irrigation:cultivar  0.3872747  2 0.685098385 irrigation:cultivar  0.3872747</span></span>
+<span><span class="co">#&gt;   Df Df.res      Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1  1      4 0.007544962</span></span>
+<span><span class="co">#&gt; 2  2     16 0.710339266</span></span>
+<span><span class="co">#&gt; 3  2     16 0.685098385</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="reading-the-table">4.4 Reading the table<a class="anchor" aria-label="anchor" href="#reading-the-table"></a>
@@ -410,10 +419,14 @@ uncertainty, because it is tested against the coarser stratum.
 <span><span class="co">#&gt; boundary (singular) fit: see help('isSingular')</span></span>
 <span><span class="co">#&gt; boundary (singular) fit: see help('isSingular')</span></span>
 <span><span class="co">#&gt; boundary (singular) fit: see help('isSingular')</span></span>
-<span><span class="co">#&gt;                  Term          F Df Df.res       Pr(&gt;F)              effect</span></span>
-<span><span class="co">#&gt; 1          irrigation 25.9799406  1     20 5.500914e-05          irrigation</span></span>
-<span><span class="co">#&gt; 2            cultivar  0.3494287  2     20 7.093103e-01            cultivar</span></span>
-<span><span class="co">#&gt; 3 irrigation:cultivar  0.3872747  2     20 6.838862e-01 irrigation:cultivar</span></span></code></pre></div>
+<span><span class="co">#&gt;                effect  statistic df      p_value                Term          F</span></span>
+<span><span class="co">#&gt; 1          irrigation 25.9799406  1 5.500914e-05          irrigation 25.9799406</span></span>
+<span><span class="co">#&gt; 2            cultivar  0.3494287  2 7.093103e-01            cultivar  0.3494287</span></span>
+<span><span class="co">#&gt; 3 irrigation:cultivar  0.3872747  2 6.838862e-01 irrigation:cultivar  0.3872747</span></span>
+<span><span class="co">#&gt;   Df Df.res       Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1  1     20 5.500914e-05</span></span>
+<span><span class="co">#&gt; 2  2     20 7.093103e-01</span></span>
+<span><span class="co">#&gt; 3  2     20 6.838862e-01</span></span></code></pre></div>
 <p>Compare that table against the split-plot output of section 4.3. The
 subplot factor and the interaction are largely unaffected, because they
 were already being tested against the subplot error. The
@@ -463,40 +476,41 @@ right denominator.</p>
 <span><span class="co">#&gt;   Design: split_split</span></span>
 <span><span class="co">#&gt;   Method: Aligned Rank Transform</span></span>
 <span><span class="co">#&gt;   Response: yield</span></span>
-<span><span class="co">#&gt;                         Term         F Df Df.res     Pr(&gt;F)</span></span>
-<span><span class="co">#&gt; 1                 irrigation 3.2109321  1      3 0.17106139</span></span>
-<span><span class="co">#&gt; 2                   cultivar 1.1005679  2     12 0.36403990</span></span>
-<span><span class="co">#&gt; 3                     timing 6.9463417  1     18 0.01679214</span></span>
-<span><span class="co">#&gt; 4        irrigation:cultivar 1.1564317  2     12 0.34731881</span></span>
-<span><span class="co">#&gt; 5          irrigation:timing 0.5726530  1     18 0.45899785</span></span>
-<span><span class="co">#&gt; 6            cultivar:timing 0.1398468  2     18 0.87042701</span></span>
-<span><span class="co">#&gt; 7 irrigation:cultivar:timing 1.5564518  2     18 0.23796926</span></span>
-<span><span class="co">#&gt;                       effect</span></span>
-<span><span class="co">#&gt; 1                 irrigation</span></span>
-<span><span class="co">#&gt; 2                   cultivar</span></span>
-<span><span class="co">#&gt; 3                     timing</span></span>
-<span><span class="co">#&gt; 4        irrigation:cultivar</span></span>
-<span><span class="co">#&gt; 5          irrigation:timing</span></span>
-<span><span class="co">#&gt; 6            cultivar:timing</span></span>
-<span><span class="co">#&gt; 7 irrigation:cultivar:timing</span></span></code></pre></div>
+<span><span class="co">#&gt;   Resampling: none (asymptotic test)</span></span>
+<span><span class="co">#&gt;                       effect statistic df    p_value                       Term</span></span>
+<span><span class="co">#&gt; 1                 irrigation 3.2109321  1 0.17106139                 irrigation</span></span>
+<span><span class="co">#&gt; 2                   cultivar 1.1005679  2 0.36403990                   cultivar</span></span>
+<span><span class="co">#&gt; 3                     timing 6.9463417  1 0.01679214                     timing</span></span>
+<span><span class="co">#&gt; 4        irrigation:cultivar 1.1564317  2 0.34731881        irrigation:cultivar</span></span>
+<span><span class="co">#&gt; 5          irrigation:timing 0.5726530  1 0.45899785          irrigation:timing</span></span>
+<span><span class="co">#&gt; 6            cultivar:timing 0.1398468  2 0.87042701            cultivar:timing</span></span>
+<span><span class="co">#&gt; 7 irrigation:cultivar:timing 1.5564518  2 0.23796926 irrigation:cultivar:timing</span></span>
+<span><span class="co">#&gt;           F Df Df.res     Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1 3.2109321  1      3 0.17106139</span></span>
+<span><span class="co">#&gt; 2 1.1005679  2     12 0.36403990</span></span>
+<span><span class="co">#&gt; 3 6.9463417  1     18 0.01679214</span></span>
+<span><span class="co">#&gt; 4 1.1564317  2     12 0.34731881</span></span>
+<span><span class="co">#&gt; 5 0.5726530  1     18 0.45899785</span></span>
+<span><span class="co">#&gt; 6 0.1398468  2     18 0.87042701</span></span>
+<span><span class="co">#&gt; 7 1.5564518  2     18 0.23796926</span></span></code></pre></div>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fit_ssp</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                         Term         F Df Df.res     Pr(&gt;F)</span></span>
-<span><span class="co">#&gt; 1                 irrigation 3.2109321  1      3 0.17106139</span></span>
-<span><span class="co">#&gt; 2                   cultivar 1.1005679  2     12 0.36403990</span></span>
-<span><span class="co">#&gt; 3                     timing 6.9463417  1     18 0.01679214</span></span>
-<span><span class="co">#&gt; 4        irrigation:cultivar 1.1564317  2     12 0.34731881</span></span>
-<span><span class="co">#&gt; 5          irrigation:timing 0.5726530  1     18 0.45899785</span></span>
-<span><span class="co">#&gt; 6            cultivar:timing 0.1398468  2     18 0.87042701</span></span>
-<span><span class="co">#&gt; 7 irrigation:cultivar:timing 1.5564518  2     18 0.23796926</span></span>
-<span><span class="co">#&gt;                       effect</span></span>
-<span><span class="co">#&gt; 1                 irrigation</span></span>
-<span><span class="co">#&gt; 2                   cultivar</span></span>
-<span><span class="co">#&gt; 3                     timing</span></span>
-<span><span class="co">#&gt; 4        irrigation:cultivar</span></span>
-<span><span class="co">#&gt; 5          irrigation:timing</span></span>
-<span><span class="co">#&gt; 6            cultivar:timing</span></span>
-<span><span class="co">#&gt; 7 irrigation:cultivar:timing</span></span></code></pre></div>
+<span><span class="co">#&gt;                       effect statistic df    p_value                       Term</span></span>
+<span><span class="co">#&gt; 1                 irrigation 3.2109321  1 0.17106139                 irrigation</span></span>
+<span><span class="co">#&gt; 2                   cultivar 1.1005679  2 0.36403990                   cultivar</span></span>
+<span><span class="co">#&gt; 3                     timing 6.9463417  1 0.01679214                     timing</span></span>
+<span><span class="co">#&gt; 4        irrigation:cultivar 1.1564317  2 0.34731881        irrigation:cultivar</span></span>
+<span><span class="co">#&gt; 5          irrigation:timing 0.5726530  1 0.45899785          irrigation:timing</span></span>
+<span><span class="co">#&gt; 6            cultivar:timing 0.1398468  2 0.87042701            cultivar:timing</span></span>
+<span><span class="co">#&gt; 7 irrigation:cultivar:timing 1.5564518  2 0.23796926 irrigation:cultivar:timing</span></span>
+<span><span class="co">#&gt;           F Df Df.res     Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1 3.2109321  1      3 0.17106139</span></span>
+<span><span class="co">#&gt; 2 1.1005679  2     12 0.36403990</span></span>
+<span><span class="co">#&gt; 3 6.9463417  1     18 0.01679214</span></span>
+<span><span class="co">#&gt; 4 1.1564317  2     12 0.34731881</span></span>
+<span><span class="co">#&gt; 5 0.5726530  1     18 0.45899785</span></span>
+<span><span class="co">#&gt; 6 0.1398468  2     18 0.87042701</span></span>
+<span><span class="co">#&gt; 7 1.5564518  2     18 0.23796926</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="the-strata">5.2 The strata<a class="anchor" aria-label="anchor" href="#the-strata"></a>
@@ -611,16 +625,25 @@ strips running in each direction. The plots are the intersections.</p>
 <span><span class="co">#&gt;   Design: strip_plot</span></span>
 <span><span class="co">#&gt;   Method: Aligned Rank Transform</span></span>
 <span><span class="co">#&gt;   Response: yield</span></span>
-<span><span class="co">#&gt;                  Term         F Df Df.res      Pr(&gt;F)              effect</span></span>
-<span><span class="co">#&gt; 1          irrigation 13.064883  2      8 0.003018747          irrigation</span></span>
-<span><span class="co">#&gt; 2            nitrogen 10.255426  3     12 0.001247053            nitrogen</span></span>
-<span><span class="co">#&gt; 3 irrigation:nitrogen  4.295343  6     24 0.004444566 irrigation:nitrogen</span></span></code></pre></div>
+<span><span class="co">#&gt;   Resampling: none (asymptotic test)</span></span>
+<span><span class="co">#&gt;                effect statistic df     p_value                Term         F Df</span></span>
+<span><span class="co">#&gt; 1          irrigation 13.064883  2 0.003018747          irrigation 13.064883  2</span></span>
+<span><span class="co">#&gt; 2            nitrogen 10.255426  3 0.001247053            nitrogen 10.255426  3</span></span>
+<span><span class="co">#&gt; 3 irrigation:nitrogen  4.295343  6 0.004444566 irrigation:nitrogen  4.295343  6</span></span>
+<span><span class="co">#&gt;   Df.res      Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1      8 0.003018747</span></span>
+<span><span class="co">#&gt; 2     12 0.001247053</span></span>
+<span><span class="co">#&gt; 3     24 0.004444566</span></span></code></pre></div>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fit_strip</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                  Term         F Df Df.res      Pr(&gt;F)              effect</span></span>
-<span><span class="co">#&gt; 1          irrigation 13.064883  2      8 0.003018747          irrigation</span></span>
-<span><span class="co">#&gt; 2            nitrogen 10.255426  3     12 0.001247053            nitrogen</span></span>
-<span><span class="co">#&gt; 3 irrigation:nitrogen  4.295343  6     24 0.004444566 irrigation:nitrogen</span></span></code></pre></div>
+<span><span class="co">#&gt;                effect statistic df     p_value                Term         F Df</span></span>
+<span><span class="co">#&gt; 1          irrigation 13.064883  2 0.003018747          irrigation 13.064883  2</span></span>
+<span><span class="co">#&gt; 2            nitrogen 10.255426  3 0.001247053            nitrogen 10.255426  3</span></span>
+<span><span class="co">#&gt; 3 irrigation:nitrogen  4.295343  6 0.004444566 irrigation:nitrogen  4.295343  6</span></span>
+<span><span class="co">#&gt;   Df.res      Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1      8 0.003018747</span></span>
+<span><span class="co">#&gt; 2     12 0.001247053</span></span>
+<span><span class="co">#&gt; 3     24 0.004444566</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="why-the-interaction-has-its-own-stratum">6.2 Why the interaction has its own stratum<a class="anchor" aria-label="anchor" href="#why-the-interaction-has-its-own-stratum"></a>
@@ -1086,13 +1109,18 @@ level.</p>
 <span>  <span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">anc_fit</span><span class="op">$</span><span class="va">omnibus</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
+<span><span class="co">#&gt; Warning: `np` was renamed to `nperm`: it is the number of permutations, not a</span></span>
+<span><span class="co">#&gt; switch for nonparametric analysis.</span></span>
 <span><span class="co">#&gt; Warning in aovperm_fix(formula = formula, data = data, method = method, : The</span></span>
 <span><span class="co">#&gt; number of permutations is below 2000, p-values might be unreliable.</span></span>
-<span><span class="co">#&gt;                         SS df          F parametric P(&gt;F) resampled P(&gt;F)</span></span>
-<span><span class="co">#&gt; block             32.38264  5   1.040711     4.142295e-01    0.4092046023</span></span>
-<span><span class="co">#&gt; initial_biomass 2307.80754  1 370.840694     0.000000e+00    0.0005002501</span></span>
-<span><span class="co">#&gt; treatment        532.97206  2  42.821537     4.220853e-09    0.0005002501</span></span>
-<span><span class="co">#&gt; Residuals        168.02580 27         NA               NA              NA</span></span></code></pre></div>
+<span><span class="co">#&gt;            effect  statistic df      p_value         SS          F</span></span>
+<span><span class="co">#&gt; 1           block   1.040711  5 0.4092046023   32.38264   1.040711</span></span>
+<span><span class="co">#&gt; 2 initial_biomass 370.840694  1 0.0005002501 2307.80754 370.840694</span></span>
+<span><span class="co">#&gt; 3       treatment  42.821537  2 0.0005002501  532.97206  42.821537</span></span>
+<span><span class="co">#&gt;   parametric P(&gt;F) resampled P(&gt;F)</span></span>
+<span><span class="co">#&gt; 1     4.142295e-01    0.4092046023</span></span>
+<span><span class="co">#&gt; 2     0.000000e+00    0.0005002501</span></span>
+<span><span class="co">#&gt; 3     4.220853e-09    0.0005002501</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="what-it-buys">9.3 What it buys<a class="anchor" aria-label="anchor" href="#what-it-buys"></a>
@@ -1101,8 +1129,8 @@ level.</p>
 <code class="sourceCode R"><span><span class="va">des_noanc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">final_biomass</span> <span class="op">~</span> <span class="va">treatment</span>, <span class="va">anc</span>, design <span class="op">=</span> <span class="st">"rcbd"</span>,</span>
 <span>                         block <span class="op">=</span> <span class="va">block</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="fu"><a href="../reference/agri_rank.html">agri_rank</a></span><span class="op">(</span><span class="va">des_noanc</span>, method <span class="op">=</span> <span class="st">"ART"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;        Term        F Df Df.res     Pr(&gt;F)    effect</span></span>
-<span><span class="co">#&gt; 1 treatment 4.939347  2     28 0.01454396 treatment</span></span></code></pre></div>
+<span><span class="co">#&gt;      effect statistic df    p_value      Term        F Df Df.res     Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1 treatment  4.939347  2 0.01454396 treatment 4.939347  2     28 0.01454396</span></span></code></pre></div>
 <p>The covariate absorbs the initial-size variation, which would
 otherwise sit in the residual. Where the covariate is strongly related
 to the response, as here, the gain in precision can be large.</p>

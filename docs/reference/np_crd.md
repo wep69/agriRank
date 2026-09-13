@@ -58,28 +58,10 @@ verified references.
 ``` r
 # Example 1
 np_crd(yield~treatment,simulate_agri("crd"))
-#> agriRank fit
-#>   Design: crd
-#>   Method: Kruskal-Wallis
-#>   Response: yield
-#>      effect statistic df   p_value
-#> 1 treatment  1.646667  3 0.6488554
 
 # Example 2
 x<-simulate_agri("crd"); x$score<-round(x$yield); np_crd(score~treatment,x,"kruskal")
-#> agriRank fit
-#>   Design: crd
-#>   Method: Kruskal-Wallis
-#>   Response: score
-#>      effect statistic df   p_value
-#> 1 treatment   1.52551  3 0.6763952
 
 # Example 3
 x<-simulate_agri("crd"); np_crd(yield~treatment,x[-c(1,2),])
-#> agriRank fit
-#>   Design: crd
-#>   Method: Kruskal-Wallis
-#>   Response: yield
-#>      effect statistic df   p_value
-#> 1 treatment    1.6917  3 0.6387807
 ```

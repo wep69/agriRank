@@ -13,7 +13,7 @@ fitted values and residuals rather than inside the engine."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -130,44 +130,30 @@ regression fits. <em>The Annals of Statistics</em>, 21(4), 1926-1947.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"mgcv"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">21</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">200</span>, by <span class="op">=</span> <span class="fl">50</span><span class="op">)</span>, block <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span>, rep <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">d</span><span class="op">$</span><span class="va">noise</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">d</span><span class="op">$</span><span class="va">yield</span> <span class="op">&lt;-</span> <span class="fl">3</span> <span class="op">+</span> <span class="fl">0.030</span> <span class="op">*</span> <span class="va">d</span><span class="op">$</span><span class="va">N</span> <span class="op">-</span> <span class="fl">0.00009</span> <span class="op">*</span> <span class="va">d</span><span class="op">$</span><span class="va">N</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span></span></span>
-<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">block</span><span class="op">)</span> <span class="op">*</span> <span class="fl">0.3</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span>, <span class="fl">0</span>, <span class="fl">0.3</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">N</span> <span class="op">+</span> <span class="va">noise</span>, <span class="va">d</span>, method <span class="op">=</span> <span class="st">"gam"</span>,</span></span>
-<span class="r-in"><span>                            block <span class="op">=</span> <span class="va">block</span>, k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Example 1: both predictors tested, signs drawn once per block.</span></span></span>
-<span class="r-in"><span>  <span class="co"># B is small here for speed; use at least 999 for anything reported.</span></span></span>
-<span class="r-in"><span>  <span class="fu">agri_np_effect_test</span><span class="op">(</span><span class="va">fit</span>, B <span class="op">=</span> <span class="fl">49</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="co"># The statistic separates the two by three orders of magnitude even where the</span></span></span>
-<span class="r-in"><span>  <span class="co"># p-values cannot, because five blocks allow only 32 sign patterns.</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Example 2: one term only, and no multiplicity adjustment because the</span></span></span>
-<span class="r-in"><span>  <span class="co"># contrast was chosen before seeing the data</span></span></span>
-<span class="r-in"><span>  <span class="fu">agri_np_effect_test</span><span class="op">(</span><span class="va">fit</span>, terms <span class="op">=</span> <span class="va">N</span>, B <span class="op">=</span> <span class="fl">49</span>, seed <span class="op">=</span> <span class="fl">1</span>, adjust <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Example 3: an engine with no coefficients at all, which the kernel-based</span></span></span>
-<span class="r-in"><span>  <span class="co"># agri_np_significance() cannot test</span></span></span>
-<span class="r-in"><span>  <span class="va">fs</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">N</span>, <span class="va">d</span>, method <span class="op">=</span> <span class="st">"smoothing_spline"</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu">agri_np_effect_test</span><span class="op">(</span><span class="va">fs</span>, B <span class="op">=</span> <span class="fl">49</span>, seed <span class="op">=</span> <span class="fl">1</span>, cluster <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Cluster wild-bootstrap test of predictor contribution</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield   engine: smoothing_spline   B = 49</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Signs drawn once per row, which assumes complete randomization</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  term statistic p_value replicates note p_adjusted</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     N    0.7871    0.02         49            0.02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   A p_value of 0.02 is the floor of 49 replicates,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   not a measurement. Raise B before quoting it.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   The null is that the term does not enter the response at all, not</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   that its effect is linear or small. A term that is not rejected has</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   not been shown to be absent.</span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"mgcv"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">21</span><span class="op">)</span></span>
+<span>  <span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">200</span>, by <span class="op">=</span> <span class="fl">50</span><span class="op">)</span>, block <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span>, rep <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span></span>
+<span>  <span class="va">d</span><span class="op">$</span><span class="va">noise</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">d</span><span class="op">$</span><span class="va">yield</span> <span class="op">&lt;-</span> <span class="fl">3</span> <span class="op">+</span> <span class="fl">0.030</span> <span class="op">*</span> <span class="va">d</span><span class="op">$</span><span class="va">N</span> <span class="op">-</span> <span class="fl">0.00009</span> <span class="op">*</span> <span class="va">d</span><span class="op">$</span><span class="va">N</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">block</span><span class="op">)</span> <span class="op">*</span> <span class="fl">0.3</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span>, <span class="fl">0</span>, <span class="fl">0.3</span><span class="op">)</span></span>
+<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">N</span> <span class="op">+</span> <span class="va">noise</span>, <span class="va">d</span>, method <span class="op">=</span> <span class="st">"gam"</span>,</span>
+<span>                            block <span class="op">=</span> <span class="va">block</span>, k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Example 1: both predictors tested, signs drawn once per block.</span></span>
+<span>  <span class="co"># B is small here for speed; use at least 999 for anything reported.</span></span>
+<span>  <span class="fu">agri_np_effect_test</span><span class="op">(</span><span class="va">fit</span>, B <span class="op">=</span> <span class="fl">49</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="co"># The statistic separates the two by three orders of magnitude even where the</span></span>
+<span>  <span class="co"># p-values cannot, because five blocks allow only 32 sign patterns.</span></span>
+<span></span>
+<span>  <span class="co"># Example 2: one term only, and no multiplicity adjustment because the</span></span>
+<span>  <span class="co"># contrast was chosen before seeing the data</span></span>
+<span>  <span class="fu">agri_np_effect_test</span><span class="op">(</span><span class="va">fit</span>, terms <span class="op">=</span> <span class="va">N</span>, B <span class="op">=</span> <span class="fl">49</span>, seed <span class="op">=</span> <span class="fl">1</span>, adjust <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Example 3: an engine with no coefficients at all, which the kernel-based</span></span>
+<span>  <span class="co"># agri_np_significance() cannot test</span></span>
+<span>  <span class="va">fs</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">N</span>, <span class="va">d</span>, method <span class="op">=</span> <span class="st">"smoothing_spline"</span><span class="op">)</span></span>
+<span>  <span class="fu">agri_np_effect_test</span><span class="op">(</span><span class="va">fs</span>, B <span class="op">=</span> <span class="fl">49</span>, seed <span class="op">=</span> <span class="fl">1</span>, cluster <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

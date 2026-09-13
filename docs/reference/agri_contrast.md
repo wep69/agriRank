@@ -76,8 +76,6 @@ f<-agri_rank(d,"incomplete_wild",B=299,missing_assumption="MCAR");
 k<-nrow(f$engine$prep$cell_grid);
 C<-matrix(c(1,-1,rep(0,k-2)),1);
 agri_contrast(f,C,B=299)
-#>   contrast   estimate        SE  statistic p_adjusted_maxT      lower     upper
-#> 1       C1 -0.0530303 0.1244363 -0.4261643       0.7466667 -0.3086234 0.2025628
 
 # Example 2
 x<-simulate_agri("repeated_missing");
@@ -86,12 +84,6 @@ f<-agri_rank(d,"incomplete_wild",B=299,missing_assumption="MCAR");
 k<-nrow(f$engine$prep$cell_grid);
 C<-rbind(c(1,-1,rep(0,k-2)),c(rep(0,2),1,-1,rep(0,k-4)));
 agri_contrast(f,C,B=299)
-#>   contrast    estimate        SE  statistic p_adjusted_maxT      lower
-#> 1       C1 -0.05303030 0.1244363 -0.4261643       0.8333333 -0.4420795
-#> 2       C2 -0.06363636 0.1405887 -0.4526421       0.7600000 -0.5031860
-#>       upper
-#> 1 0.3360189
-#> 2 0.3759133
 
 # Example 3
 x<-simulate_agri("repeated_missing");
@@ -100,8 +92,4 @@ f<-agri_rank(d,"incomplete_wild",B=299,missing_assumption="MCAR");
 k<-nrow(f$engine$prep$cell_grid);
 C<-diag(k)[1,,drop=FALSE]-diag(k)[k,,drop=FALSE];
 agri_contrast(f,C,labels="first-last",B=299)
-#>              contrast   estimate        SE statistic p_adjusted_maxT    lower
-#> first-last first-last -0.5656566 0.1357825 -4.165901      0.06666667 -1.28047
-#>                upper
-#> first-last 0.1491569
 ```

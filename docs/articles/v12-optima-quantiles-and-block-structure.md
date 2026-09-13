@@ -1,7 +1,7 @@
 # Optima, Quantiles, and How the Block Enters the Model
 
 **Recommendation vignette** **Package:** `agriRank` **Version
-targeted:** `0.14.0` **Owns:** turning a fitted curve into something a
+targeted:** `0.14.1` **Owns:** turning a fitted curve into something a
 grower can act on. What rate, for whom, with what interval, and how the
 declared block enters.
 
@@ -231,7 +231,7 @@ fit2 <- agri_np_regression(yield ~ dose + cultivar, d2, method = "gam",
                            block = block, gam_structure = "varying")
 fit2$formula_used
 #> yield ~ cultivar + s(dose, by = cultivar, k = 7) + block
-#> <environment: 0x000001986c061350>
+#> <environment: 0x000001fbe9e095b0>
 ```
 
 ``` r

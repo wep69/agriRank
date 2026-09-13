@@ -66,25 +66,14 @@ Simulated for the package. Not a real experiment.
 # Example 1: the layout, and the integer nature of the treatment
 data(agri_density)
 str(agri_density)
-#> 'data.frame':    54 obs. of  3 variables:
-#>  $ block : Factor w/ 6 levels "B1","B2","B3",..: 1 1 1 1 1 1 1 1 1 2 ...
-#>  $ plants: int  1 2 3 4 5 6 7 8 9 1 ...
-#>  $ yield : num  2.63 4 4.6 5.08 5.24 ...
 all(agri_density$plants == round(agri_density$plants))
-#> [1] TRUE
 
 # Example 2: the admissible decision support and the discrete optimum
 fit <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
                           integer_base_method = "smoothing_spline",
                           predictor_support = "observed_integer")
 fit$integer_support
-#> [1] 1 2 3 4 5 6 7 8 9
 agri_integer_optimum(fit)
-#> agriRank integer-support optimum
-#>   Objective: max
-#>   Admissible support: {1, 2, 3, 4, 5, 6, 7, 8, 9}
-#>   Optimal integer value(s): 6
-#>   Fitted response: 5.65321
 
 # Example 3: a unimodal engine on the same data
 if (requireNamespace("Iso", quietly = TRUE)) {
@@ -93,9 +82,4 @@ if (requireNamespace("Iso", quietly = TRUE)) {
                            predictor_support = "observed_integer")
   agri_integer_optimum(fu)
 }
-#> agriRank integer-support optimum
-#>   Objective: max
-#>   Admissible support: {1, 2, 3, 4, 5, 6, 7, 8, 9}
-#>   Optimal integer value(s): 6
-#>   Fitted response: 5.72267
 ```

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -185,189 +185,90 @@ reference value, so a reported curve refers to a plot of average position.</p></
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># All examples use the exported data sets, so the fitted objects stay in the</span></span></span>
-<span class="r-in"><span><span class="co"># session and can be explored further. Yield is in Mg/ha, nitrogen in kg/ha and</span></span></span>
-<span class="r-in"><span><span class="co"># plant density in plants per hill.</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 1: smoothing spline over a nitrogen gradient</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"smoothing_spline"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">fit1</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank nonparametric regression</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: smoothing_spline</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Predictors: dose</span>
-<span class="r-in"><span><span class="co"># The response flattens beyond roughly 200 kg/ha: no parametric quadratic</span></span></span>
-<span class="r-in"><span><span class="co"># reproduces both the rising part and the plateau.</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 2: LOESS on the same gradient, for comparison of smoothers</span></span></span>
-<span class="r-in"><span><span class="va">fit2</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"loess"</span>, span <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit2</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank nonparametric regression summary</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Method: loess</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   n     RMSE       MAE    MedAE         bias  Spearman</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  40 0.352558 0.3036027 0.307143 -0.008741923 0.8724666</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Backend summary:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Call:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> stats::loess(formula = formula, data = dat, weights = weights, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     span = span, degree = degree)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Number of Observations: 40 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Equivalent Number of Parameters: 6.48 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Residual Standard Error: 0.3931 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Trace of smoother matrix: 7.15  (exact)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Control settings:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   span     :  0.6 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   degree   :  2 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   family   :  gaussian</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   surface  :  interpolate	  cell = 0.2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   normalize:  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  parametric:  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> drop.square:  FALSE </span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 3: block-adjusted GAM, the design-aware choice for this trial</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"mgcv"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="va">fit3</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"gam"</span>, block <span class="op">=</span> <span class="va">block</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit3</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="co"># Adjusting for block removes soil-fertility variation from the residual.</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank nonparametric regression summary</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Method: gam</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   n      RMSE       MAE     MedAE          bias  Spearman</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  40 0.1849693 0.1451067 0.1100682 -3.330415e-17 0.9534218</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Backend summary:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Family: gaussian </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Link function: identity </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Formula:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> yield ~ s(dose, k = 7) + block</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Parametric coefficients:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             Estimate Std. Error t value Pr(&gt;|t|)    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)  4.22575    0.07412  57.010  &lt; 2e-16 ***</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> blockB2      0.04150    0.10483   0.396   0.6949    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> blockB3      0.34637    0.10483   3.304   0.0024 ** </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> blockB4      0.68200    0.10483   6.506 2.87e-07 ***</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> blockB5      0.71650    0.10483   6.835 1.14e-07 ***</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Approximate significance of smooth terms:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           edf Ref.df     F p-value    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> s(dose) 3.864  4.634 122.1  &lt;2e-16 ***</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> R-sq.(adj) =  0.943   Deviance explained = 95.5%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -REML = 5.6206  Scale est. = 0.043954  n = 40</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 4: direct transition from a declared quantitative RCBD</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"mgcv"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="va">des</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, design <span class="op">=</span> <span class="st">"rcbd"</span>,</span></span>
-<span class="r-in"><span>                     block <span class="op">=</span> <span class="va">block</span>, quantitative <span class="op">=</span> <span class="va">dose</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">fit4</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">des</span>, method <span class="op">=</span> <span class="st">"gam"</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">fit4</span></span></span>
-<span class="r-in"><span>  <span class="co"># The block declared in the design is carried into the regression.</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank nonparametric regression</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: gam</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Predictors: dose</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Block adjustment: block</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 5: ordered-discrete kernel regression on an integer treatment</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_density</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"np"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="va">fit5</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>,</span></span>
-<span class="r-in"><span>                             method <span class="op">=</span> <span class="st">"discrete_kernel"</span>,</span></span>
-<span class="r-in"><span>                             predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="agri_integer_predict.html">agri_integer_predict</a></span><span class="op">(</span><span class="va">fit5</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   plants      fit</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1      1 3.350963</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2      2 4.285799</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3      3 4.794360</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4      4 5.323503</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5      5 5.599586</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6      6 5.675249</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7      7 5.400202</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8      8 5.067453</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9      9 5.057671</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 6: unimodal isotonic plant-density response</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"Iso"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="va">fit6</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>,</span></span>
-<span class="r-in"><span>                             method <span class="op">=</span> <span class="st">"unimodal_isotonic"</span>,</span></span>
-<span class="r-in"><span>                             predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="agri_integer_optimum.html">agri_integer_optimum</a></span><span class="op">(</span><span class="va">fit6</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="co"># Density responses rise and then fall through competition, so an</span></span></span>
-<span class="r-in"><span>  <span class="co"># increase-then-decrease constraint is scientifically justified here.</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank integer-support optimum</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Objective: max</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Admissible support: {1, 2, 3, 4, 5, 6, 7, 8, 9}</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Optimal integer value(s): 6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Fitted response: 5.72267</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 7: continuous latent spline, integer-only decisions</span></span></span>
-<span class="r-in"><span><span class="va">fit7</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span></span>
-<span class="r-in"><span>                           integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span></span>
-<span class="r-in"><span>                           predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="agri_integer_difference.html">agri_integer_difference</a></span><span class="op">(</span><span class="va">fit7</span>, order <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   from to delta_x fit_from   fit_to  difference difference_per_integer</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    1  2       1 3.303982 4.201545  0.89756344             0.89756344</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2    2  3       1 4.201545 4.858834  0.65728887             0.65728887</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3    3  4       1 4.858834 5.348576  0.48974195             0.48974195</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4    4  5       1 5.348576 5.633219  0.28464302             0.28464302</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5    5  6       1 5.633219 5.653211  0.01999178             0.01999178</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6    6  7       1 5.653211 5.409864 -0.24334647            -0.24334647</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7    7  8       1 5.409864 5.130370 -0.27949453            -0.27949453</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8    8  9       1 5.130370 5.004565 -0.12580537            -0.12580537</span>
-<span class="r-in"><span><span class="co"># Each row is the yield gain, in Mg/ha, of adding one more plant per hill.</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 8: umbrella-order regression with an RCBD block adjustment</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"cgam"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="va">fit8</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"umbrella"</span>,</span></span>
-<span class="r-in"><span>                             block <span class="op">=</span> <span class="va">block</span>, predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="agri_integer_optimum.html">agri_integer_optimum</a></span><span class="op">(</span><span class="va">fit8</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank integer-support optimum</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Objective: max</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Admissible support: {1, 2, 3, 4, 5, 6, 7, 8, 9}</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Optimal integer value(s): 5, 6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Fitted response: 5.32609</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 9: two interacting gradients</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_surface</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"mgcv"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="va">fit9</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitrogen</span> <span class="op">+</span> <span class="va">water</span>, <span class="va">agri_surface</span>,</span></span>
-<span class="r-in"><span>                             method <span class="op">=</span> <span class="st">"gam"</span>, gam_structure <span class="op">=</span> <span class="st">"tensor"</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="agri_np_predict.html">agri_np_predict</a></span><span class="op">(</span><span class="va">fit9</span>, newdata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>nitrogen <span class="op">=</span> <span class="fl">160</span>, water <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.6</span>, <span class="fl">1.0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="co"># The return to 160 kg/ha of nitrogen depends on irrigation depth.</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 5.360970 5.764386</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 10: a qualitative factor alongside the nitrogen gradient</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"quantreg"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="va">dzc</span> <span class="op">&lt;-</span> <span class="va">agri_dose</span></span></span>
-<span class="r-in"><span>  <span class="va">dzc</span><span class="op">$</span><span class="va">cultivar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Ana"</span>, <span class="st">"Bela"</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dzc</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">dzc</span><span class="op">$</span><span class="va">yield</span> <span class="op">&lt;-</span> <span class="va">dzc</span><span class="op">$</span><span class="va">yield</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">dzc</span><span class="op">$</span><span class="va">cultivar</span> <span class="op">==</span> <span class="st">"Bela"</span>, <span class="fl">0.9</span>, <span class="fl">0</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">fit10</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span> <span class="op">+</span> <span class="va">cultivar</span>, <span class="va">dzc</span>, method <span class="op">=</span> <span class="st">"quantile"</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit10</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="co"># Cultivar Bela adds about 0.9 Mg/ha at every nitrogen rate; the dose slope</span></span></span>
-<span class="r-in"><span>  <span class="co"># is shared by both cultivars. Plot the intervals with agri_np_forest().</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Solution may be nonunique</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  (Intercept)         dose cultivarBela </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   3.30700000   0.00785625   1.05575000 </span>
-<span class="r-in"><span></span></span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># All examples use the exported data sets, so the fitted objects stay in the</span></span>
+<span><span class="co"># session and can be explored further. Yield is in Mg/ha, nitrogen in kg/ha and</span></span>
+<span><span class="co"># plant density in plants per hill.</span></span>
+<span></span>
+<span><span class="co"># Example 1: smoothing spline over a nitrogen gradient</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span>
+<span><span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"smoothing_spline"</span><span class="op">)</span></span>
+<span><span class="va">fit1</span></span>
+<span><span class="co"># The response flattens beyond roughly 200 kg/ha: no parametric quadratic</span></span>
+<span><span class="co"># reproduces both the rising part and the plateau.</span></span>
+<span></span>
+<span><span class="co"># Example 2: LOESS on the same gradient, for comparison of smoothers</span></span>
+<span><span class="va">fit2</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"loess"</span>, span <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit2</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Example 3: block-adjusted GAM, the design-aware choice for this trial</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"mgcv"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">fit3</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"gam"</span>, block <span class="op">=</span> <span class="va">block</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit3</span><span class="op">)</span></span>
+<span>  <span class="co"># Adjusting for block removes soil-fertility variation from the residual.</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Example 4: direct transition from a declared quantitative RCBD</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"mgcv"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">des</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, design <span class="op">=</span> <span class="st">"rcbd"</span>,</span>
+<span>                     block <span class="op">=</span> <span class="va">block</span>, quantitative <span class="op">=</span> <span class="va">dose</span><span class="op">)</span></span>
+<span>  <span class="va">fit4</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">des</span>, method <span class="op">=</span> <span class="st">"gam"</span><span class="op">)</span></span>
+<span>  <span class="va">fit4</span></span>
+<span>  <span class="co"># The block declared in the design is carried into the regression.</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Example 5: ordered-discrete kernel regression on an integer treatment</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_density</span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"np"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">fit5</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>,</span>
+<span>                             method <span class="op">=</span> <span class="st">"discrete_kernel"</span>,</span>
+<span>                             predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="agri_integer_predict.html">agri_integer_predict</a></span><span class="op">(</span><span class="va">fit5</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Example 6: unimodal isotonic plant-density response</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"Iso"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">fit6</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>,</span>
+<span>                             method <span class="op">=</span> <span class="st">"unimodal_isotonic"</span>,</span>
+<span>                             predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="agri_integer_optimum.html">agri_integer_optimum</a></span><span class="op">(</span><span class="va">fit6</span><span class="op">)</span></span>
+<span>  <span class="co"># Density responses rise and then fall through competition, so an</span></span>
+<span>  <span class="co"># increase-then-decrease constraint is scientifically justified here.</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Example 7: continuous latent spline, integer-only decisions</span></span>
+<span><span class="va">fit7</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span>
+<span>                           integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span>
+<span>                           predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="agri_integer_difference.html">agri_integer_difference</a></span><span class="op">(</span><span class="va">fit7</span>, order <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co"># Each row is the yield gain, in Mg/ha, of adding one more plant per hill.</span></span>
+<span></span>
+<span><span class="co"># Example 8: umbrella-order regression with an RCBD block adjustment</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"cgam"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">fit8</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"umbrella"</span>,</span>
+<span>                             block <span class="op">=</span> <span class="va">block</span>, predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="agri_integer_optimum.html">agri_integer_optimum</a></span><span class="op">(</span><span class="va">fit8</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Example 9: two interacting gradients</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_surface</span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"mgcv"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">fit9</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitrogen</span> <span class="op">+</span> <span class="va">water</span>, <span class="va">agri_surface</span>,</span>
+<span>                             method <span class="op">=</span> <span class="st">"gam"</span>, gam_structure <span class="op">=</span> <span class="st">"tensor"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="agri_np_predict.html">agri_np_predict</a></span><span class="op">(</span><span class="va">fit9</span>, newdata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>nitrogen <span class="op">=</span> <span class="fl">160</span>, water <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.6</span>, <span class="fl">1.0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="co"># The return to 160 kg/ha of nitrogen depends on irrigation depth.</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Example 10: a qualitative factor alongside the nitrogen gradient</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"quantreg"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">dzc</span> <span class="op">&lt;-</span> <span class="va">agri_dose</span></span>
+<span>  <span class="va">dzc</span><span class="op">$</span><span class="va">cultivar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Ana"</span>, <span class="st">"Bela"</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dzc</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">dzc</span><span class="op">$</span><span class="va">yield</span> <span class="op">&lt;-</span> <span class="va">dzc</span><span class="op">$</span><span class="va">yield</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">dzc</span><span class="op">$</span><span class="va">cultivar</span> <span class="op">==</span> <span class="st">"Bela"</span>, <span class="fl">0.9</span>, <span class="fl">0</span><span class="op">)</span></span>
+<span>  <span class="va">fit10</span> <span class="op">&lt;-</span> <span class="fu">agri_np_regression</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span> <span class="op">+</span> <span class="va">cultivar</span>, <span class="va">dzc</span>, method <span class="op">=</span> <span class="st">"quantile"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit10</span><span class="op">)</span></span>
+<span>  <span class="co"># Cultivar Bela adds about 0.9 Mg/ha at every nitrogen rate; the dose slope</span></span>
+<span>  <span class="co"># is shared by both cultivars. Plot the intervals with agri_np_forest().</span></span>
+<span><span class="op">}</span></span>
+<span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,7 +64,7 @@ Development Team</h4>
     
 <p><strong>Repeated measures vignette</strong> <strong>Package:</strong>
 <code>agriRank</code> <strong>Version targeted:</strong>
-<code>0.14.0</code> <strong>Owns:</strong> measurements taken more than
+<code>0.14.1</code> <strong>Owns:</strong> measurements taken more than
 once on the same unit, and what to do when some of them are absent.</p>
 <hr>
 <div class="section level2">
@@ -329,22 +329,17 @@ will be imprecise whatever the total row count suggests.</p>
 <span>  iter    <span class="op">=</span> <span class="fl">999</span>,</span>
 <span>  seed    <span class="op">=</span> <span class="fl">701</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt;  F1 LD F1 Model </span></span>
-<span><span class="co">#&gt;  ----------------------- </span></span>
-<span><span class="co">#&gt;  Check that the order of the time and group levels are correct.</span></span>
-<span><span class="co">#&gt;  Time level:   1 2 3 4 </span></span>
-<span><span class="co">#&gt;  Group level:   control treated </span></span>
-<span><span class="co">#&gt;  If the order is not correct, specify the correct order in time.order or group.order.</span></span>
 <span></span>
 <span><span class="va">fit_rm</span></span>
 <span><span class="co">#&gt; agriRank fit</span></span>
 <span><span class="co">#&gt;   Design: repeated</span></span>
 <span><span class="co">#&gt;   Method: nparLD ANOVA-type rank inference</span></span>
 <span><span class="co">#&gt;   Response: height</span></span>
-<span><span class="co">#&gt;   Statistic       df      p-value         effect</span></span>
-<span><span class="co">#&gt; 1  5.312339 1.000000 2.117491e-02      treatment</span></span>
-<span><span class="co">#&gt; 2 18.638338 2.405447 3.797634e-10           time</span></span>
-<span><span class="co">#&gt; 3  9.686918 2.405447 1.587856e-05 treatment:time</span></span></code></pre></div>
+<span><span class="co">#&gt;   Resampling: none (asymptotic test)</span></span>
+<span><span class="co">#&gt;           effect statistic       df      p_value</span></span>
+<span><span class="co">#&gt; 1      treatment  5.312339 1.000000 2.117491e-02</span></span>
+<span><span class="co">#&gt; 2           time 18.638338 2.405447 3.797634e-10</span></span>
+<span><span class="co">#&gt; 3 treatment:time  9.686918 2.405447 1.587856e-05</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="the-three-effects-and-what-each-asks">5.1 The three effects, and what each asks<a class="anchor" aria-label="anchor" href="#the-three-effects-and-what-each-asks"></a>
 </h3>
@@ -451,21 +446,15 @@ the question is whether the lines are parallel.
 <span>  <span class="va">fit_nparld</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/agri_repeated.html">agri_repeated</a></span><span class="op">(</span><span class="va">des_rm</span>, backend <span class="op">=</span> <span class="st">"nparLD"</span>, seed <span class="op">=</span> <span class="fl">701</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit_nparld</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="co">#&gt;  F1 LD F1 Model </span></span>
-<span><span class="co">#&gt;  ----------------------- </span></span>
-<span><span class="co">#&gt;  Check that the order of the time and group levels are correct.</span></span>
-<span><span class="co">#&gt;  Time level:   1 2 3 4 </span></span>
-<span><span class="co">#&gt;  Group level:   control treated </span></span>
-<span><span class="co">#&gt;  If the order is not correct, specify the correct order in time.order or group.order.</span></span>
-<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; agriRank fit</span></span>
 <span><span class="co">#&gt;   Design: repeated</span></span>
 <span><span class="co">#&gt;   Method: nparLD ANOVA-type rank inference</span></span>
 <span><span class="co">#&gt;   Response: height</span></span>
-<span><span class="co">#&gt;   Statistic       df      p-value         effect</span></span>
-<span><span class="co">#&gt; 1  5.312339 1.000000 2.117491e-02      treatment</span></span>
-<span><span class="co">#&gt; 2 18.638338 2.405447 3.797634e-10           time</span></span>
-<span><span class="co">#&gt; 3  9.686918 2.405447 1.587856e-05 treatment:time</span></span></code></pre></div>
+<span><span class="co">#&gt;   Resampling: none (asymptotic test)</span></span>
+<span><span class="co">#&gt;           effect statistic       df      p_value</span></span>
+<span><span class="co">#&gt; 1      treatment  5.312339 1.000000 2.117491e-02</span></span>
+<span><span class="co">#&gt; 2           time 18.638338 2.405447 3.797634e-10</span></span>
+<span><span class="co">#&gt; 3 treatment:time  9.686918 2.405447 1.587856e-05</span></span></code></pre></div>
 <p><code>nparLD</code> implements the classical rank-based analysis of
 longitudinal data. It computes relative treatment effects and an
 ANOVA-type statistic, and it is the established reference for complete
@@ -484,10 +473,11 @@ designs of this shape.</p>
 <span><span class="co">#&gt;   Design: repeated</span></span>
 <span><span class="co">#&gt;   Method: MANOVA.RM WildBS</span></span>
 <span><span class="co">#&gt;   Response: height</span></span>
-<span><span class="co">#&gt;                Test statistic   df1    df2 p-value</span></span>
-<span><span class="co">#&gt; treatment               8.883 1.000 39.437   0.005</span></span>
-<span><span class="co">#&gt; time                   18.497 1.914    Inf   0.000</span></span>
-<span><span class="co">#&gt; treatment:time         14.317 1.914    Inf   0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;   Resampling replicates: 999</span></span>
+<span><span class="co">#&gt;           effect    df p_value Test statistic   df1    df2 p-value</span></span>
+<span><span class="co">#&gt; 1      treatment 1.000   0.005          8.883 1.000 39.437   0.005</span></span>
+<span><span class="co">#&gt; 2           time 1.914   0.000         18.497 1.914    Inf   0.000</span></span>
+<span><span class="co">#&gt; 3 treatment:time 1.914   0.000         14.317 1.914    Inf   0.000</span></span></code></pre></div>
 <p><code>MANOVA.RM</code> provides a Wald-type statistic with a
 resampling reference distribution, and a modified ANOVA-type statistic.
 The resampling matters: the Wald-type statistic is known to be liberal
@@ -688,7 +678,11 @@ throughout this package.</p>
 <span>    missing_assumption <span class="op">=</span> <span class="st">"MCAR"</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"missing"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: `B` = 299 is too small for confirmatory resampling inference: the</span></span>
+<span><span class="co">#&gt; smallest attainable p-value is 1/(B + 1) = 0.00333, so no result below that can</span></span>
+<span><span class="co">#&gt; be reported and the Monte Carlo error of any p-value near it is large. Use B &gt;=</span></span>
+<span><span class="co">#&gt; 1999, or state the p floor explicitly when computing time limits the budget.</span></span></code></pre></div>
 <div class="figure">
 <img src="v04-repeated-measures-and-missing-data_files/figure-html/missing-plot-1.png" class="r-plt" alt="Where the gaps are. Concentration in one treatment or at one occasion is the pattern to look for." width="884"><p class="caption">
 Where the gaps are. Concentration in one treatment or at one occasion is

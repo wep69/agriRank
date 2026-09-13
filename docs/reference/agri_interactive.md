@@ -63,14 +63,12 @@ if (requireNamespace("plotly", quietly = TRUE)) {
   w1 <- agri_interactive(f, "data")
   class(w1)
 }
-#> [1] "plotly"     "htmlwidget"
 
 # Example 2: relative effects
 if (requireNamespace("plotly", quietly = TRUE)) {
   w2 <- agri_interactive(f, "effects")
   class(w2)
 }
-#> [1] "plotly"     "htmlwidget"
 
 # Example 3: factorial interaction
 xf <- simulate_agri("factorial", seed = 52)
@@ -79,5 +77,4 @@ if (requireNamespace("plotly", quietly = TRUE)) {
   w3 <- agri_interactive(d, "interaction")
   class(w3)
 }
-#> [1] "plotly"     "htmlwidget"
 ```

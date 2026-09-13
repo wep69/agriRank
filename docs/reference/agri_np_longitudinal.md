@@ -121,22 +121,4 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   d1 <- d[!duplicated(d$plot), ]
   try(agri_np_longitudinal(yield ~ N, d1, subject = plot, time = time))
 }
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Warning: factor levels 1 not in original fit
-#> Error : Every level of `plot` appears once, so these data are not repeated measurements. Use agri_np_regression() directly.
 ```

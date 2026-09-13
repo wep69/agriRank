@@ -6,7 +6,8 @@ letters.
 ## Usage
 
 ``` r
-agri_cld(x, adjust = "holm", alpha = 0.05, ...)
+agri_cld(x, method = c("wilcoxon", "conover"), adjust = "holm", 
+    alpha = 0.05, ...)
 ```
 
 ## Arguments
@@ -18,6 +19,15 @@ agri_cld(x, adjust = "holm", alpha = 0.05, ...)
   [`agri_pairs`](https://wep69.github.io/agriRank/reference/agri_pairs.md)
   or
   [`agri_conover`](https://wep69.github.io/agriRank/reference/agri_conover.md).
+
+- method:
+
+  Comparison route, with the same vocabulary as
+  [`agri_pairs`](https://wep69.github.io/agriRank/reference/agri_pairs.md):
+  `"wilcoxon"` for the paired signed-rank route and `"conover"` for
+  design-aware all-pairs comparisons. The two can give different letters
+  on the same fit, so the route is an explicit argument rather than a
+  value forwarded through `...`.
 
 - adjust:
 
@@ -32,7 +42,7 @@ agri_cld(x, adjust = "holm", alpha = 0.05, ...)
 
   Additional arguments passed to
   [`agri_pairs`](https://wep69.github.io/agriRank/reference/agri_pairs.md),
-  such as `method`, `by` and `factor`.
+  such as `by` and `factor`.
 
 ## Details
 
@@ -82,29 +92,14 @@ verified references.
 # Example 1
 fit<-np_crd(yield~treatment,simulate_agri("crd"));
 if(requireNamespace("multcompView",quietly=TRUE)) agri_cld(fit)
-#>   group letter
-#> 1     A      a
-#> 2     B      a
-#> 3     C      a
-#> 4     D      a
 
 # Example 2
 fit<-np_crd(yield~treatment,simulate_agri("crd"));
 if(requireNamespace("multcompView",quietly=TRUE)) agri_cld(fit,adjust="BH")
-#>   group letter
-#> 1     A      a
-#> 2     B      a
-#> 3     C      a
-#> 4     D      a
 
 # Example 3
 fit<-np_crd(yield~treatment,simulate_agri("crd"));
 if(requireNamespace("multcompView",quietly=TRUE)) agri_cld(fit,alpha=.01)
-#>   group letter
-#> 1     A      a
-#> 2     B      a
-#> 3     C      a
-#> 4     D      a
 
 # Example 4: letters from a Conover table that was already computed
 if (requireNamespace("multcompView", quietly = TRUE) &&
@@ -113,11 +108,6 @@ if (requireNamespace("multcompView", quietly = TRUE) &&
   cv <- agri_conover(fit, adjust = "holm")
   agri_cld(cv)
 }
-#>   group letter
-#> 1     B      a
-#> 2     C      a
-#> 3     D      a
-#> 4     A      a
 
 # Example 5: letters within each simple-effect stratum
 if (requireNamespace("multcompView", quietly = TRUE) &&
@@ -131,11 +121,4 @@ if (requireNamespace("multcompView", quietly = TRUE) &&
                  method = "ART")
   agri_cld(f, method = "conover", by = "salinity", factor = "cultivar")
 }
-#>   stratum group letter
-#> 1      S1    C2      a
-#> 2      S1    C3      a
-#> 3      S1    C1      a
-#> 4      S2    C2      a
-#> 5      S2    C3      a
-#> 6      S2    C1      b
 ```

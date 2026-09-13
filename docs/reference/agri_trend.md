@@ -69,109 +69,16 @@ x<-simulate_agri("rcbd");
 x$dose<-rep(c(0,50,100,150),times=6);
 d<-agri_design(yield~dose,x,"rcbd",block=block,quantitative=dose);
 agri_trend(d,B=299)
-#> $design
-#> agriRank experimental design
-#>   Design:   rcbd
-#>   Response: yield
-#>   Factors:  dose
-#>   Block:    block
-#>   Rows:     24
-#> 
-#> $method
-#> [1] "permutation rank trend"
-#> 
-#> $statistic
-#> [1] 0.6352906
-#> 
-#> $p_value
-#> [1] 0.003333333
-#> 
-#> $B
-#> [1] 299
-#> 
-#> $treatment
-#> [1] "dose"
-#> 
-#> $seed
-#> [1] 1
-#> 
-#> $note
-#> [1] "Scores permuted within blocks."
-#> 
-#> attr(,"class")
-#> [1] "agri_trend"
 
 # Example 2
 x<-simulate_agri("rcbd");
 x$dose<-rep(c(0,50,100,150),times=6);
 d<-agri_design(yield~dose,x,"rcbd",block=block,quantitative=dose);
 agri_trend(d,treatment=dose,B=299)
-#> $design
-#> agriRank experimental design
-#>   Design:   rcbd
-#>   Response: yield
-#>   Factors:  dose
-#>   Block:    block
-#>   Rows:     24
-#> 
-#> $method
-#> [1] "permutation rank trend"
-#> 
-#> $statistic
-#> [1] 0.6352906
-#> 
-#> $p_value
-#> [1] 0.003333333
-#> 
-#> $B
-#> [1] 299
-#> 
-#> $treatment
-#> [1] "dose"
-#> 
-#> $seed
-#> [1] 1
-#> 
-#> $note
-#> [1] "Scores permuted within blocks."
-#> 
-#> attr(,"class")
-#> [1] "agri_trend"
 
 # Example 3
 x<-simulate_agri("rcbd");
 x$dose<-rep(c(0,50,100,150),times=6);
 d<-agri_design(yield~dose,x,"rcbd",block=block,quantitative=dose);
 agri_trend(d,treatment=dose,scores=c(`0`=0,`50`=1,`100`=3,`150`=6),B=299)
-#> $design
-#> agriRank experimental design
-#>   Design:   rcbd
-#>   Response: yield
-#>   Factors:  dose
-#>   Block:    block
-#>   Rows:     24
-#> 
-#> $method
-#> [1] "permutation rank trend"
-#> 
-#> $statistic
-#> [1] 0.6357424
-#> 
-#> $p_value
-#> [1] 0.003333333
-#> 
-#> $B
-#> [1] 299
-#> 
-#> $treatment
-#> [1] "dose"
-#> 
-#> $seed
-#> [1] 1
-#> 
-#> $note
-#> [1] "Scores permuted within blocks."
-#> 
-#> attr(,"class")
-#> [1] "agri_trend"
 ```

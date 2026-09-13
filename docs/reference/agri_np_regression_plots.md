@@ -72,7 +72,6 @@ f <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
 b <- agri_np_bootstrap(f, B = 19, n = 25, seed = 1)  # use B >= 999 in analysis
 plot(b)
 
-
 # Example 2: probability mass over admissible plant densities, with the
 # 90 percent decision set highlighted
 fi <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
@@ -80,9 +79,7 @@ fi <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
                          predictor_support = "observed_integer")
 bt <- agri_integer_bootstrap(fi, B = 19, seed = 1)
 plot(bt, level = 0.90)
-
 plot(agri_integer_confset(bt, level = 0.90))
-
 
 # Example 3: cross-validated error of competing engines
 cmp <- agri_np_compare(yield ~ dose, agri_dose, kfold = 4, seed = 1,

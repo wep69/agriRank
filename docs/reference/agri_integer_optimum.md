@@ -50,21 +50,10 @@ fit <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
 # Example 1: the recommended density, obtained by evaluating every admissible
 # integer, not by rounding a continuous optimum
 agri_integer_optimum(fit)
-#> agriRank integer-support optimum
-#>   Objective: max
-#>   Admissible support: {1, 2, 3, 4, 5, 6, 7, 8, 9}
-#>   Optimal integer value(s): 6
-#>   Fitted response: 5.65321
 
 # Example 2: the minimum, for responses where less is better, such as a
 # disease score or a damage index
 agri_integer_optimum(fit, objective = "min")
-#> agriRank integer-support optimum
-#>   Objective: min
-#>   Admissible support: {1, 2, 3, 4, 5, 6, 7, 8, 9}
-#>   Optimal integer value(s): 1
-#>   Fitted response: 3.30398
-#>   Note: at least one optimum is at the support boundary.
 
 # Example 3: a shape-constrained engine on the same data. Two engines that
 # agree on the decision give more confidence than either alone.
@@ -74,18 +63,9 @@ if (requireNamespace("Iso", quietly = TRUE)) {
                            predictor_support = "observed_integer")
   agri_integer_optimum(fu)
 }
-#> agriRank integer-support optimum
-#>   Objective: max
-#>   Admissible support: {1, 2, 3, 4, 5, 6, 7, 8, 9}
-#>   Optimal integer value(s): 6
-#>   Fitted response: 5.72267
 
 # Example 4: a point optimum is not a recommendation. Report the bootstrap
 # confidence set alongside it.
 bt <- agri_integer_bootstrap(fit, B = 199, seed = 1)  # use B >= 999 in analysis
 agri_integer_confset(bt, level = 0.95)
-#> agriRank bootstrap confidence set for an integer optimum
-#>   Level: 95%
-#>   Set: {5, 6}
-#>   Included bootstrap mass: 0.995
 ```

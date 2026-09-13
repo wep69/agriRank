@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -73,41 +73,24 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"smoothing_spline"</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 1: marginal yield, in Mg/ha per kg/ha of nitrogen</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu">agri_np_derivative</span><span class="op">(</span><span class="va">f</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   predictor        x derivative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1      dose 0.000000 0.01598281</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2      dose 1.407035 0.01598149</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3      dose 2.814070 0.01597737</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4      dose 4.221106 0.01597042</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5      dose 5.628141 0.01596065</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6      dose 7.035176 0.01594805</span>
-<span class="r-in"><span><span class="co"># A positive derivative means the next kilogram of nitrogen still pays.</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 2: a finer evaluation grid</span></span></span>
-<span class="r-in"><span><span class="va">d50</span> <span class="op">&lt;-</span> <span class="fu">agri_np_derivative</span><span class="op">(</span><span class="va">f</span>, n <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">d50</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   predictor         x derivative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1      dose  0.000000 0.01598281</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2      dose  5.714286 0.01595996</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3      dose 11.428571 0.01589057</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4      dose 17.142857 0.01577464</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5      dose 22.857143 0.01561215</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6      dose 28.571429 0.01540312</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 3: `h` is the step of the finite difference. A larger step smooths</span></span></span>
-<span class="r-in"><span><span class="co"># the derivative and can hide a local change of slope, so it should be chosen</span></span></span>
-<span class="r-in"><span><span class="co"># on the scale of the treatment, not by trial and error.</span></span></span>
-<span class="r-in"><span><span class="va">h_small</span> <span class="op">&lt;-</span> <span class="fu">agri_np_derivative</span><span class="op">(</span><span class="va">f</span>, n <span class="op">=</span> <span class="fl">25</span>, h <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">h_large</span> <span class="op">&lt;-</span> <span class="fu">agri_np_derivative</span><span class="op">(</span><span class="va">f</span>, n <span class="op">=</span> <span class="fl">25</span>, h <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">h_small</span><span class="op">$</span><span class="va">derivative</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.002633966 0.015982775</span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">h_large</span><span class="op">$</span><span class="va">derivative</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.002702336 0.015888541</span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span>
+<span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"smoothing_spline"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Example 1: marginal yield, in Mg/ha per kg/ha of nitrogen</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu">agri_np_derivative</span><span class="op">(</span><span class="va">f</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># A positive derivative means the next kilogram of nitrogen still pays.</span></span>
+<span></span>
+<span><span class="co"># Example 2: a finer evaluation grid</span></span>
+<span><span class="va">d50</span> <span class="op">&lt;-</span> <span class="fu">agri_np_derivative</span><span class="op">(</span><span class="va">f</span>, n <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">d50</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Example 3: `h` is the step of the finite difference. A larger step smooths</span></span>
+<span><span class="co"># the derivative and can hide a local change of slope, so it should be chosen</span></span>
+<span><span class="co"># on the scale of the treatment, not by trial and error.</span></span>
+<span><span class="va">h_small</span> <span class="op">&lt;-</span> <span class="fu">agri_np_derivative</span><span class="op">(</span><span class="va">f</span>, n <span class="op">=</span> <span class="fl">25</span>, h <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span><span class="va">h_large</span> <span class="op">&lt;-</span> <span class="fu">agri_np_derivative</span><span class="op">(</span><span class="va">f</span>, n <span class="op">=</span> <span class="fl">25</span>, h <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">h_small</span><span class="op">$</span><span class="va">derivative</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">h_large</span><span class="op">$</span><span class="va">derivative</span><span class="op">)</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

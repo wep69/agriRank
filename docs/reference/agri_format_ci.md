@@ -47,12 +47,10 @@ A character string.
 ``` r
 # Pronto para colar no manuscrito: estimativa e intervalo em uma string.
 agri_format_ci(1.056, 0.678, 1.465)
-#> [1] "1.1 (0.68; 1.5)"
 
 # Mais digitos para coeficientes pequenos, como a inclinacao de uma dose
 # em Mg/ha por kg/ha.
 agri_format_ci(0.0076875, 0.0053125, 0.0086167, digits = 3)
-#> [1] "0.00769 (0.00531; 0.00862)"
 
 # O mesmo texto que a floresta de coeficientes mostra graficamente.
 if (requireNamespace("quantreg", quietly = TRUE)) {
@@ -65,22 +63,4 @@ if (requireNamespace("quantreg", quietly = TRUE)) {
   ci <- confint(fit, method = "bootstrap", B = 19, seed = 1)
   apply(ci, 1, function(r) agri_format_ci(r["estimate"], r["lower"], r["upper"]))
 }
-#> Warning: Solution may be nonunique
-#> Warning: B < 999 is a speed device for examples and vignettes; final inference needs B >= 999. Silence this note with options(agriRank.quiet_small_B = TRUE).
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> [1] "3.30700000 (3.0499000; 3.53605000)" "0.00785625 (0.0060500; 0.00925875)"
-#> [3] "1.05575000 (0.9199375; 1.44410000)"
 ```

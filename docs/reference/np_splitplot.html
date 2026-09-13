@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -87,33 +87,14 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Example 1: the automatic method now selects ART for split-plots</span></span></span>
-<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"split_plot"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">np_splitplot</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">irrigation</span> <span class="op">*</span> <span class="va">cultivar</span>, <span class="va">x</span>, <span class="va">block</span>, <span class="va">irrigation</span>, <span class="va">cultivar</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> boundary (singular) fit: see help('isSingular')</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: split_plot</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Aligned Rank Transform</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                  Term         F Df Df.res     Pr(&gt;F)              effect</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1          irrigation 8.1181321  1      5 0.03585593          irrigation</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2            cultivar 0.5095211  2     20 0.60837413            cultivar</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 irrigation:cultivar 1.1429826  2     20 0.33883281 irrigation:cultivar</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 2: explicitly request ART</span></span></span>
-<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"split_plot"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ARTool"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">np_splitplot</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">irrigation</span> <span class="op">*</span> </span></span>
-<span class="r-in"><span>    <span class="va">cultivar</span>, <span class="va">x</span>, <span class="va">block</span>, <span class="va">irrigation</span>, <span class="va">cultivar</span>, <span class="st">"ART"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> boundary (singular) fit: see help('isSingular')</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: split_plot</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Aligned Rank Transform</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                  Term         F Df Df.res     Pr(&gt;F)              effect</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1          irrigation 8.1181321  1      5 0.03585593          irrigation</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2            cultivar 0.5095211  2     20 0.60837413            cultivar</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 irrigation:cultivar 1.1429826  2     20 0.33883281 irrigation:cultivar</span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># Example 1: the automatic method now selects ART for split-plots</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"split_plot"</span><span class="op">)</span></span>
+<span><span class="fu">np_splitplot</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">irrigation</span> <span class="op">*</span> <span class="va">cultivar</span>, <span class="va">x</span>, <span class="va">block</span>, <span class="va">irrigation</span>, <span class="va">cultivar</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Example 2: explicitly request ART</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"split_plot"</span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ARTool"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">np_splitplot</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">irrigation</span> <span class="op">*</span> </span>
+<span>    <span class="va">cultivar</span>, <span class="va">x</span>, <span class="va">block</span>, <span class="va">irrigation</span>, <span class="va">cultivar</span>, <span class="st">"ART"</span><span class="op">)</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

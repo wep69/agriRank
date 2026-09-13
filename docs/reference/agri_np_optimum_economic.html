@@ -11,7 +11,7 @@ cluster-bootstrap interval for that location."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -162,33 +162,28 @@ corn yield response to nitrogen fertilizer. <em>Agronomy Journal</em>, 82(1),
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"mgcv"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"gam"</span>,</span></span>
-<span class="r-in"><span>                            block <span class="op">=</span> <span class="va">block</span>, k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Example 1: the agronomic optimum, for comparison. It is the top of the</span></span></span>
-<span class="r-in"><span>  <span class="co"># curve, and applying it means paying for input that does not return its cost.</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="agri_np_optimum.html">agri_np_optimum</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Example 2: the economic optimum at one price ratio. B is small here for</span></span></span>
-<span class="r-in"><span>  <span class="co"># speed; use at least 999 for anything reported.</span></span></span>
-<span class="r-in"><span>  <span class="fu">agri_np_optimum_economic</span><span class="op">(</span><span class="va">fit</span>, price_ratio <span class="op">=</span> <span class="fl">0.006</span>, B <span class="op">=</span> <span class="fl">99</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Example 3: prices move more than the resampling interval does. Read this as</span></span></span>
-<span class="r-in"><span>  <span class="co"># the sensitivity analysis it is, not as four separate recommendations.</span></span></span>
-<span class="r-in"><span>  <span class="fu">agri_np_optimum_economic</span><span class="op">(</span><span class="va">fit</span>, price_ratio <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.002</span>, <span class="fl">0.006</span>, <span class="fl">0.012</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>                           B <span class="op">=</span> <span class="fl">99</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Example 4: with price_ratio = 0 the function must return the agronomic</span></span></span>
-<span class="r-in"><span>  <span class="co"># optimum. It is a check on the solver, not a recommendation.</span></span></span>
-<span class="r-in"><span>  <span class="fu">agri_np_optimum_economic</span><span class="op">(</span><span class="va">fit</span>, price_ratio <span class="op">=</span> <span class="fl">0</span>, B <span class="op">=</span> <span class="fl">99</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">optimum</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   price_ratio level optimum    lower upper fitted_response p_boundary</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1           0   all     280 250.6849   280        5.023068  0.9322034</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   replicates identified</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1         59      FALSE</span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"mgcv"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"gam"</span>,</span>
+<span>                            block <span class="op">=</span> <span class="va">block</span>, k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Example 1: the agronomic optimum, for comparison. It is the top of the</span></span>
+<span>  <span class="co"># curve, and applying it means paying for input that does not return its cost.</span></span>
+<span>  <span class="fu"><a href="agri_np_optimum.html">agri_np_optimum</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Example 2: the economic optimum at one price ratio. B is small here for</span></span>
+<span>  <span class="co"># speed; use at least 999 for anything reported.</span></span>
+<span>  <span class="fu">agri_np_optimum_economic</span><span class="op">(</span><span class="va">fit</span>, price_ratio <span class="op">=</span> <span class="fl">0.006</span>, B <span class="op">=</span> <span class="fl">99</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Example 3: prices move more than the resampling interval does. Read this as</span></span>
+<span>  <span class="co"># the sensitivity analysis it is, not as four separate recommendations.</span></span>
+<span>  <span class="fu">agri_np_optimum_economic</span><span class="op">(</span><span class="va">fit</span>, price_ratio <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.002</span>, <span class="fl">0.006</span>, <span class="fl">0.012</span><span class="op">)</span>,</span>
+<span>                           B <span class="op">=</span> <span class="fl">99</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Example 4: with price_ratio = 0 the function must return the agronomic</span></span>
+<span>  <span class="co"># optimum. It is a check on the solver, not a recommendation.</span></span>
+<span>  <span class="fu">agri_np_optimum_economic</span><span class="op">(</span><span class="va">fit</span>, price_ratio <span class="op">=</span> <span class="fl">0</span>, B <span class="op">=</span> <span class="fl">99</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">optimum</span></span>
+<span><span class="op">}</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

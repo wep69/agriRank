@@ -93,28 +93,6 @@ f <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
 # Example 1: scaled residuals and their uniformity
 sd1 <- agri_np_simdiag(f, nsim = 150, seed = 1)
 sd1
-#> agriRank simulation-based residual diagnostics
-#>   Engine: smoothing_spline  Simulator: agriRank simulation, DHARMa scaling 
-#>   Simulations: 150  n = 40 
-#>   Scaled residual quartiles: 0.0128  0.2922  0.5421  0.7448  0.9909 
-#>   Expected under a correct model: 0.00  0.25  0.50  0.75  1.00
-#> 
-#>                          check
-#>                     uniformity
-#>    location along the gradient
-#>  dispersion along the gradient
-#>                                                          question statistic
-#>                         Are the scaled residuals uniform overall?   0.06153
-#>  Is the fitted mean systematically off in some part of the range?   3.36293
-#>                        Does the spread change along the gradient?   9.64098
-#>  p_value
-#>   0.9958
-#>   0.8495
-#>   0.2098
-#> 
-#> Descriptive. The overall uniformity check has little power against a mean
-#> that is wrong in a systematic way; the location check along the gradient is
-#> the one that detects it. Neither is a rule for choosing an inferential test.
 
 # Example 2: the two figures
 if (requireNamespace("ggplot2", quietly = TRUE)) {
@@ -122,12 +100,9 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
   plot(sd1, type = "residual_predictor")
 }
 
-
 # Example 3: a deliberately wrong shape. Forcing a monotone increase on a
 # response that plateaus should leave a visible signature in the residuals.
 f_wrong <- agri_np_regression(yield ~ dose, agri_dose, method = "isotonic",
                               shape = "increasing")
 agri_np_simdiag(f_wrong, nsim = 150, seed = 1)$uniformity
-#>    statistic p_value                               test
-#> 1 0.06016409 0.99689 Kolmogorov-Smirnov against uniform
 ```

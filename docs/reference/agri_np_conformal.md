@@ -157,24 +157,6 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   cf <- agri_np_conformal(f, newdata = agri_dose, level = 0.90, seed = 1)
   cf
 }
-#> agriRank split-conformal prediction intervals
-#>   Target coverage: 90% 
-#>   Split unit: block 
-#>   Scope: a future plot in an observed block 
-#>   Fitting rows: 20  Calibration rows: 20 
-#>   Conformal quantile: 0.3502  
-#> 
-#>  block dose yield   fit lower upper
-#>     B1    0 2.612 2.650 2.300 3.001
-#>     B1   40 3.426 3.388 3.038 3.738
-#>     B1   80 3.797 3.961 3.611 4.312
-#>     B1  120 4.423 4.358 4.008 4.709
-#>     B1  160 4.634 4.673 4.322 5.023
-#>     B1  200 4.947 4.842 4.491 5.192
-#>   ...  34 more rows
-#> 
-#> The interval covers a future plot, not the fitted curve, and the coverage
-#> is marginal over the gradient rather than guaranteed at each single rate.
 
 # Example 2: empirical coverage, overall and by block
 if (requireNamespace("mgcv", quietly = TRUE)) {
@@ -182,12 +164,6 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   c(target = cv$target, empirical = cv$empirical, width = cv$mean_width)
   cv$by_block
 }
-#>   block coverage n
-#> 1    B1    1.000 8
-#> 2    B2    0.750 8
-#> 3    B3    0.875 8
-#> 4    B4    1.000 8
-#> 5    B5    1.000 8
 
 # Example 3: the same field, or a field never visited? The second question
 # carries between-block variation and the interval widens accordingly.
@@ -199,8 +175,6 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   c(observed_block = mean(cw$upper - cw$lower),
     new_block = mean(cn$upper - cn$lower))
 }
-#> observed_block      new_block 
-#>      0.7003093      1.3522316 
 
 # Example 4: three kinds of uncertainty at three nitrogen rates. The first two
 # describe the fitted curve; only the conformal one describes a future plot.
@@ -215,77 +189,6 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
              bootstrap = bo$upper - bo$lower,
              conformal = co$upper - co$lower)
 }
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#> Warning: factor levels B3 not in original fit
-#>   dose  analytic bootstrap conformal
-#> 1   80 0.3705168 0.2842573 0.9333657
-#> 2  160 0.3664069 0.1709322 0.9333657
-#> 3  240 0.3751945 0.1699402 0.9333657
 
 # Example 5: locally scaled width, and the figure
 if (requireNamespace("mgcv", quietly = TRUE) &&

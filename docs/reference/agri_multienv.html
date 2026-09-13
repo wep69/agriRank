@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,50 +85,16 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"multienv"</span><span class="op">)</span>;</span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ARTool"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">||</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"permuco"</span>, </span></span>
-<span class="r-in"><span>    quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">agri_multienv</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">genotype</span>, <span class="va">x</span>, <span class="va">environment</span>, <span class="va">block</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> boundary (singular) fit: see help('isSingular')</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> boundary (singular) fit: see help('isSingular')</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> boundary (singular) fit: see help('isSingular')</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: multienv</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Aligned Rank Transform</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                   Term         F Df Df.res       Pr(&gt;F)               effect</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1             genotype 6.8838985  3     45 0.0006496793             genotype</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2          environment 2.1474913  2     15 0.1513043770          environment</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 genotype:environment 0.6783333  6     45 0.6677714985 genotype:environment</span>
-<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"multienv"</span><span class="op">)</span>;</span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ARTool"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">agri_multienv</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">genotype</span> <span class="op">*</span> </span></span>
-<span class="r-in"><span>    <span class="va">environment</span>, <span class="va">x</span>, <span class="va">environment</span>, <span class="va">block</span>, method <span class="op">=</span> <span class="st">"ART"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> boundary (singular) fit: see help('isSingular')</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> boundary (singular) fit: see help('isSingular')</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> boundary (singular) fit: see help('isSingular')</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: multienv</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Aligned Rank Transform</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                   Term         F Df Df.res       Pr(&gt;F)               effect</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1             genotype 6.8838985  3     45 0.0006496793             genotype</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2          environment 2.1474913  2     15 0.1513043770          environment</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 genotype:environment 0.6783333  6     45 0.6677714985 genotype:environment</span>
-<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"multienv"</span><span class="op">)</span>;</span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"permuco"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">agri_multienv</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> </span></span>
-<span class="r-in"><span>    <span class="va">genotype</span>, <span class="va">x</span>, <span class="va">environment</span>, <span class="va">block</span>, method <span class="op">=</span> <span class="st">"permuco"</span>, environment_interaction <span class="op">=</span> <span class="cn">FALSE</span>, </span></span>
-<span class="r-in"><span>    np <span class="op">=</span> <span class="fl">99</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>The number of permutations is below 2000, p-values might be unreliable.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>the distribution of  .agri_env_block, genotype, environment  may be discrete.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: multienv</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: permuco permutation ANOVA on mid-ranks</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                         SS df        F parametric P(&gt;F) resampled P(&gt;F)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> .agri_env_block  2959.2500 17 0.457772      0.960519785      0.94949495</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> genotype         7147.1111  3 6.265067      0.001055334      0.01010101</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> environment       812.4489  2 1.068274      0.351163610      0.62626263</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Residuals       19393.3889 51       NA               NA              NA</span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"multienv"</span><span class="op">)</span>;</span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ARTool"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">||</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"permuco"</span>, </span>
+<span>    quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">agri_multienv</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">genotype</span>, <span class="va">x</span>, <span class="va">environment</span>, <span class="va">block</span><span class="op">)</span></span>
+<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"multienv"</span><span class="op">)</span>;</span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ARTool"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">agri_multienv</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">genotype</span> <span class="op">*</span> </span>
+<span>    <span class="va">environment</span>, <span class="va">x</span>, <span class="va">environment</span>, <span class="va">block</span>, method <span class="op">=</span> <span class="st">"ART"</span><span class="op">)</span></span>
+<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"multienv"</span><span class="op">)</span>;</span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"permuco"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">agri_multienv</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> </span>
+<span>    <span class="va">genotype</span>, <span class="va">x</span>, <span class="va">environment</span>, <span class="va">block</span>, method <span class="op">=</span> <span class="st">"permuco"</span>, environment_interaction <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<span>    np <span class="op">=</span> <span class="fl">99</span><span class="op">)</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

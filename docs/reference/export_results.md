@@ -52,7 +52,6 @@ The normalized path of the RDS file.
 # Example 1: export a CRD analysis
 f <- np_crd(yield ~ treatment, simulate_agri("crd"))
 export_results(f, tempfile(fileext = ".rds"))
-#> [1] "C:/Users/wep69/AppData/Local/Temp/RtmpusEzjj/file5b10352113a7.rds"
 
 # Example 2: inspect a regression bundle
 set.seed(84)
@@ -61,21 +60,11 @@ d$y <- sin(d$x/2) + rnorm(30, 0, .15)
 r <- agri_np_regression(y ~ x, d, method = "loess")
 z <- tempfile(fileext = ".rds")
 export_results(r, z)
-#> [1] "C:/Users/wep69/AppData/Local/Temp/RtmpusEzjj/file5b1033fe2530.rds"
 names(readRDS(z))
-#>  [1] "domain"            "formula"           "formula_used"     
-#>  [4] "response"          "predictors"        "block"            
-#>  [7] "method"            "shape"             "tau"              
-#> [10] "n_original"        "n_omitted"         "na_action"        
-#> [13] "predictor_support" "integer_predictor" "integer_support"  
-#> [16] "base_method"       "metrics"           "fitted"           
-#> [19] "residuals"         "backend_class"     "session"          
 
 # Example 3: export a repeated incomplete fit
 x <- simulate_agri("repeated_missing")
 des <- agri_design(height ~ treatment*time, x, "repeated", subject = subject, within = time)
 fr <- agri_rank(des, "incomplete_wild", B = 99, missing_assumption = "MCAR")
-#> Warning: B < 199 gives coarse Monte Carlo p-values; use >= 999 for analysis and >= 4999 for final work when feasible.
 export_results(fr, tempfile(fileext = ".rds"))
-#> [1] "C:/Users/wep69/AppData/Local/Temp/RtmpusEzjj/file5b109296c03.rds"
 ```

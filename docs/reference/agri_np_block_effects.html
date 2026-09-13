@@ -11,7 +11,7 @@ shrinkage is visible rather than implicit."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -101,66 +101,32 @@ the curve should still come from the package's resampling and conformal tools.</
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 1. Blocks that genuinely differ are barely shrunk, because the data</span></span></span>
-<span class="r-in"><span><span class="co"># say the differences are real.</span></span></span>
-<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"gam"</span>, block <span class="op">=</span> <span class="va">block</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">be</span> <span class="op">&lt;-</span> <span class="fu">agri_np_block_effects</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">be</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Block effects on yield, block = `block`</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Model was fitted with block_effect = "fixed"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  block n     raw   fixed   shrunk shrinkage</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     B1 8 -0.3573 -0.3573 -0.34028   0.04757</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     B2 8 -0.3158 -0.3158 -0.30075   0.04757</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     B3 8 -0.0109 -0.0109 -0.01038   0.04757</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     B4 8  0.3247  0.3247  0.30928   0.04757</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     B5 8  0.3592  0.3592  0.34214   0.04757</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Mean shrinkage: 4.8%. The blocks genuinely differ; almost nothing is borrowed. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Fixed effects exist only for the blocks that were observed. Shrunk</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> effects allow a prediction for a block that was not, at the price of a</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> working assumption about how blocks vary.</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 2. Blocks whose apparent differences are mostly noise are pulled hard</span></span></span>
-<span class="r-in"><span><span class="co"># towards the common mean.</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="va">agri_dose</span></span></span>
-<span class="r-in"><span><span class="va">d</span><span class="op">$</span><span class="va">yield</span> <span class="op">&lt;-</span> <span class="va">d</span><span class="op">$</span><span class="va">yield</span> <span class="op">-</span> <span class="fl">0.9</span> <span class="op">*</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">block</span><span class="op">)</span> <span class="op">-</span> <span class="fl">3</span><span class="op">)</span> <span class="op">*</span> <span class="fl">0.35</span> <span class="op">+</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span>, <span class="fl">0</span>, <span class="fl">0.9</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">f2</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">d</span>, method <span class="op">=</span> <span class="st">"gam"</span>, block <span class="op">=</span> <span class="va">block</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">agri_np_block_effects</span><span class="op">(</span><span class="va">f2</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Block effects on yield, block = `block`</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Model was fitted with block_effect = "fixed"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  block n     raw   fixed     shrunk shrinkage</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     B1 8  0.2429  0.2429  2.177e-05    0.9999</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     B2 8 -0.2249 -0.2249 -2.015e-05    0.9999</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     B3 8 -0.3612 -0.3612 -3.236e-05    0.9999</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     B4 8  0.2286  0.2286  2.048e-05    0.9999</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     B5 8  0.1146  0.1146  1.027e-05    0.9999</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Mean shrinkage: 100%. Most of the apparent spread between blocks is treated as noise. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Fixed effects exist only for the blocks that were observed. Shrunk</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> effects allow a prediction for a block that was not, at the price of a</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> working assumption about how blocks vary.</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 3. The figure shows how far each block travels between the two</span></span></span>
-<span class="r-in"><span><span class="co"># treatments of the block term.</span></span></span>
-<span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">be</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "ggplot2::ggplot" "ggplot"          "ggplot2::gg"     "S7_object"      </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [5] "gg"             </span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 4. A fit without a block has no block effects, and says so.</span></span></span>
-<span class="r-in"><span><span class="va">f3</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"gam"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="fu">agri_np_block_effects</span><span class="op">(</span><span class="va">f3</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">res</span>, <span class="st">"\n"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> This fit declares no block, so there are no block effects to report. Refit with `block =` naming the blocking variable. </span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Example 1. Blocks that genuinely differ are barely shrunk, because the data</span></span>
+<span><span class="co"># say the differences are real.</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"gam"</span>, block <span class="op">=</span> <span class="va">block</span><span class="op">)</span></span>
+<span><span class="va">be</span> <span class="op">&lt;-</span> <span class="fu">agri_np_block_effects</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<span><span class="va">be</span></span>
+<span></span>
+<span><span class="co"># Example 2. Blocks whose apparent differences are mostly noise are pulled hard</span></span>
+<span><span class="co"># towards the common mean.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">d</span> <span class="op">&lt;-</span> <span class="va">agri_dose</span></span>
+<span><span class="va">d</span><span class="op">$</span><span class="va">yield</span> <span class="op">&lt;-</span> <span class="va">d</span><span class="op">$</span><span class="va">yield</span> <span class="op">-</span> <span class="fl">0.9</span> <span class="op">*</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">block</span><span class="op">)</span> <span class="op">-</span> <span class="fl">3</span><span class="op">)</span> <span class="op">*</span> <span class="fl">0.35</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span>, <span class="fl">0</span>, <span class="fl">0.9</span><span class="op">)</span></span>
+<span><span class="va">f2</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">d</span>, method <span class="op">=</span> <span class="st">"gam"</span>, block <span class="op">=</span> <span class="va">block</span><span class="op">)</span></span>
+<span><span class="fu">agri_np_block_effects</span><span class="op">(</span><span class="va">f2</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Example 3. The figure shows how far each block travels between the two</span></span>
+<span><span class="co"># treatments of the block term.</span></span>
+<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">be</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Example 4. A fit without a block has no block effects, and says so.</span></span>
+<span><span class="va">f3</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"gam"</span><span class="op">)</span></span>
+<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="fu">agri_np_block_effects</span><span class="op">(</span><span class="va">f3</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">res</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

@@ -148,5 +148,4 @@ if (requireNamespace("mice", quietly = TRUE) &&
   # noise for no reason
   try(agri_np_impute(yield ~ N, d[!is.na(d$yield), ], block = block, m = 3))
 }
-#> Error : There is nothing missing among the modelled variables, so imputation would only add noise. Use agri_np_regression().
 ```

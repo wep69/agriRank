@@ -64,12 +64,10 @@ f1 <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
 # Example 1: change the engine, keep everything else
 f2 <- update(f1, method = "loess")
 c(f1$method, f2$method)
-#> [1] "smoothing_spline" "loess"           
 
 # Example 2: change the smoothing parameter only
 f3 <- update(f1, method = "gam", k = 8)
 f3$settings$k
-#> [1] 8
 
 # Example 3: impose a shape the agronomy guarantees, and compare
 if (requireNamespace("scam", quietly = TRUE)) {
@@ -78,10 +76,7 @@ if (requireNamespace("scam", quietly = TRUE)) {
   # The constrained fit cannot beat the free one on RMSE. It buys precision
   # where the constraint is true, not a better fit to these data.
 }
-#>        free constrained 
-#>   0.3623191   0.3619582 
 
 # Example 4: an argument that does not exist is named rather than ignored
 try(update(f1, smoothing = 3))
-#> Error : Not an argument of agri_np_regression(): smoothing.
 ```

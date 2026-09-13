@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,7 +64,7 @@ Development Team</h4>
     
 <p><strong>Integrated instructional vignette</strong>
 <strong>Package:</strong> <code>agriRank</code> <strong>Version
-targeted:</strong> <code>0.14.0</code> <strong>Purpose:</strong> a
+targeted:</strong> <code>0.14.1</code> <strong>Purpose:</strong> a
 practical starting point for students, researchers, reviewers and
 analysts who need to move from a field notebook to a defensible
 agronomic recommendation, without losing the logic of the experimental
@@ -696,10 +696,15 @@ what was assumed.</li>
 <span><span class="co">#&gt;   Design: rcbd</span></span>
 <span><span class="co">#&gt;   Method: Aligned Rank Transform</span></span>
 <span><span class="co">#&gt;   Response: biomass</span></span>
-<span><span class="co">#&gt;                  Term         F Df Df.res       Pr(&gt;F)              effect</span></span>
-<span><span class="co">#&gt; 1            cultivar 38.649209  2     44 2.047132e-10            cultivar</span></span>
-<span><span class="co">#&gt; 2          salinity_f 83.755809  3     44 3.226862e-18          salinity_f</span></span>
-<span><span class="co">#&gt; 3 cultivar:salinity_f  1.113167  6     44 3.702442e-01 cultivar:salinity_f</span></span></code></pre></div>
+<span><span class="co">#&gt;   Resampling: none (asymptotic test)</span></span>
+<span><span class="co">#&gt;                effect statistic df      p_value                Term         F</span></span>
+<span><span class="co">#&gt; 1            cultivar 38.649209  2 2.047132e-10            cultivar 38.649209</span></span>
+<span><span class="co">#&gt; 2          salinity_f 83.755809  3 3.226862e-18          salinity_f 83.755809</span></span>
+<span><span class="co">#&gt; 3 cultivar:salinity_f  1.113167  6 3.702442e-01 cultivar:salinity_f  1.113167</span></span>
+<span><span class="co">#&gt;   Df Df.res       Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1  2     44 2.047132e-10</span></span>
+<span><span class="co">#&gt; 2  3     44 3.226862e-18</span></span>
+<span><span class="co">#&gt; 3  6     44 3.702442e-01</span></span></code></pre></div>
 <p>The engine was chosen from the <strong>structure</strong> of the
 design, not from the response. No p-value was consulted in making the
 choice, and none should be: an engine selected because it produced the
@@ -707,10 +712,14 @@ smallest p-value is no longer testing the hypothesis it appears to
 test.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">omnibus</span></span>
-<span><span class="co">#&gt;                  Term         F Df Df.res       Pr(&gt;F)              effect</span></span>
-<span><span class="co">#&gt; 1            cultivar 38.649209  2     44 2.047132e-10            cultivar</span></span>
-<span><span class="co">#&gt; 2          salinity_f 83.755809  3     44 3.226862e-18          salinity_f</span></span>
-<span><span class="co">#&gt; 3 cultivar:salinity_f  1.113167  6     44 3.702442e-01 cultivar:salinity_f</span></span></code></pre></div>
+<span><span class="co">#&gt;                effect statistic df      p_value                Term         F</span></span>
+<span><span class="co">#&gt; 1            cultivar 38.649209  2 2.047132e-10            cultivar 38.649209</span></span>
+<span><span class="co">#&gt; 2          salinity_f 83.755809  3 3.226862e-18          salinity_f 83.755809</span></span>
+<span><span class="co">#&gt; 3 cultivar:salinity_f  1.113167  6 3.702442e-01 cultivar:salinity_f  1.113167</span></span>
+<span><span class="co">#&gt;   Df Df.res       Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1  2     44 2.047132e-10</span></span>
+<span><span class="co">#&gt; 2  3     44 3.226862e-18</span></span>
+<span><span class="co">#&gt; 3  6     44 3.702442e-01</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="reading-the-omnibus-table">6.2 Reading the omnibus table<a class="anchor" aria-label="anchor" href="#reading-the-omnibus-table"></a>
@@ -747,10 +756,14 @@ differs, and quoting them as if they described every cultivar is
 misleading.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                  Term         F Df Df.res       Pr(&gt;F)              effect</span></span>
-<span><span class="co">#&gt; 1            cultivar 38.649209  2     44 2.047132e-10            cultivar</span></span>
-<span><span class="co">#&gt; 2          salinity_f 83.755809  3     44 3.226862e-18          salinity_f</span></span>
-<span><span class="co">#&gt; 3 cultivar:salinity_f  1.113167  6     44 3.702442e-01 cultivar:salinity_f</span></span></code></pre></div>
+<span><span class="co">#&gt;                effect statistic df      p_value                Term         F</span></span>
+<span><span class="co">#&gt; 1            cultivar 38.649209  2 2.047132e-10            cultivar 38.649209</span></span>
+<span><span class="co">#&gt; 2          salinity_f 83.755809  3 3.226862e-18          salinity_f 83.755809</span></span>
+<span><span class="co">#&gt; 3 cultivar:salinity_f  1.113167  6 3.702442e-01 cultivar:salinity_f  1.113167</span></span>
+<span><span class="co">#&gt;   Df Df.res       Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1  2     44 2.047132e-10</span></span>
+<span><span class="co">#&gt; 2  3     44 3.226862e-18</span></span>
+<span><span class="co">#&gt; 3  6     44 3.702442e-01</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="a-result-worth-pausing-on">6.3 A result worth pausing on<a class="anchor" aria-label="anchor" href="#a-result-worth-pausing-on"></a>
@@ -825,19 +838,19 @@ differently.</li>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">eff</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/agri_effects.html">agri_effects</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="va">eff</span></span>
-<span><span class="co">#&gt;     cell n   median mean_rank</span></span>
-<span><span class="co">#&gt; 1  C1::0 5 17.91560      44.2</span></span>
-<span><span class="co">#&gt; 2  C1::2 5 17.00924      28.4</span></span>
-<span><span class="co">#&gt; 3  C1::4 5 15.12592      13.8</span></span>
-<span><span class="co">#&gt; 4  C1::6 5 14.23396       4.8</span></span>
-<span><span class="co">#&gt; 5  C2::0 5 19.93798      56.6</span></span>
-<span><span class="co">#&gt; 6  C2::2 5 17.80665      40.8</span></span>
-<span><span class="co">#&gt; 7  C2::4 5 17.57829      35.0</span></span>
-<span><span class="co">#&gt; 8  C2::6 5 16.62329      24.8</span></span>
-<span><span class="co">#&gt; 9  C3::0 5 19.33881      52.4</span></span>
-<span><span class="co">#&gt; 10 C3::2 5 17.46599      35.6</span></span>
-<span><span class="co">#&gt; 11 C3::4 5 16.15833      20.6</span></span>
-<span><span class="co">#&gt; 12 C3::6 5 14.27567       9.0</span></span></code></pre></div>
+<span><span class="co">#&gt;     cell n   median mean_rank relative_effect</span></span>
+<span><span class="co">#&gt; 1  C1::0 5 17.91560      44.2       0.6866667</span></span>
+<span><span class="co">#&gt; 2  C1::2 5 17.00924      28.4       0.4233333</span></span>
+<span><span class="co">#&gt; 3  C1::4 5 15.12592      13.8       0.1800000</span></span>
+<span><span class="co">#&gt; 4  C1::6 5 14.23396       4.8       0.0300000</span></span>
+<span><span class="co">#&gt; 5  C2::0 5 19.93798      56.6       0.8933333</span></span>
+<span><span class="co">#&gt; 6  C2::2 5 17.80665      40.8       0.6300000</span></span>
+<span><span class="co">#&gt; 7  C2::4 5 17.57829      35.0       0.5333333</span></span>
+<span><span class="co">#&gt; 8  C2::6 5 16.62329      24.8       0.3633333</span></span>
+<span><span class="co">#&gt; 9  C3::0 5 19.33881      52.4       0.8233333</span></span>
+<span><span class="co">#&gt; 10 C3::2 5 17.46599      35.6       0.5433333</span></span>
+<span><span class="co">#&gt; 11 C3::4 5 16.15833      20.6       0.2933333</span></span>
+<span><span class="co">#&gt; 12 C3::6 5 14.27567       9.0       0.1000000</span></span></code></pre></div>
 <p>Two quantities are reported per treatment cell, and the choice is
 deliberate.</p>
 <p><code>median</code> is a <strong>location on the response
@@ -1484,7 +1497,7 @@ experiment.</p>
 <span>                              gam_structure <span class="op">=</span> <span class="st">"varying"</span><span class="op">)</span></span>
 <span><span class="va">fit_var</span><span class="op">$</span><span class="va">formula_used</span></span>
 <span><span class="co">#&gt; biomass ~ cultivar + s(salinity, by = cultivar, k = 3) + block</span></span>
-<span><span class="co">#&gt; &lt;environment: 0x0000018cc65966d0&gt;</span></span></code></pre></div>
+<span><span class="co">#&gt; &lt;environment: 0x0000013c0cc40008&gt;</span></span></code></pre></div>
 <p>One smooth of salinity is now fitted per cultivar:</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ot2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/agri_np_optimum_test.html">agri_np_optimum_test</a></span><span class="op">(</span><span class="va">fit_var</span>, by <span class="op">=</span> <span class="va">cultivar</span>, objective <span class="op">=</span> <span class="st">"min"</span>,</span>
@@ -2185,17 +2198,11 @@ different plants, and the subject has to be declared.</p>
 <span><span class="co">#&gt;   Rows:     240</span></span></code></pre></div>
 <div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/agri_rank.html">agri_rank</a></span><span class="op">(</span><span class="va">des_r</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  F1 LD F1 Model </span></span>
-<span><span class="co">#&gt;  ----------------------- </span></span>
-<span><span class="co">#&gt;  Check that the order of the time and group levels are correct.</span></span>
-<span><span class="co">#&gt;  Time level:   20 35 50 65 </span></span>
-<span><span class="co">#&gt;  Group level:   C1 C2 C3 </span></span>
-<span><span class="co">#&gt;  If the order is not correct, specify the correct order in time.order or group.order.</span></span>
 <span><span class="va">fit_r</span><span class="op">$</span><span class="va">omnibus</span></span>
-<span><span class="co">#&gt;    Statistic       df      p-value        effect</span></span>
-<span><span class="co">#&gt; 1  4.5870835 1.985998 1.034804e-02      cultivar</span></span>
-<span><span class="co">#&gt; 2 49.9673216 2.734477 1.140384e-29          time</span></span>
-<span><span class="co">#&gt; 3  0.4323595 5.187657 8.328565e-01 cultivar:time</span></span></code></pre></div>
+<span><span class="co">#&gt;          effect  statistic       df    p_value</span></span>
+<span><span class="co">#&gt; 1      cultivar  4.5870835 1.985998 0.01034804</span></span>
+<span><span class="co">#&gt; 2          time 49.9673216 2.734477 0.00000000</span></span>
+<span><span class="co">#&gt; 3 cultivar:time  0.4323595 5.187657 0.83285651</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="reading-a-repeated-measures-rank-analysis">17.2 Reading a repeated-measures rank analysis<a class="anchor" aria-label="anchor" href="#reading-a-repeated-measures-rank-analysis"></a>
@@ -3665,6 +3672,7 @@ itself, not a smooth curve fitted through cumulative percentages.
 </h3>
 <div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/agri_rankings.html">agri_rankings</a></span><span class="op">(</span><span class="va">biomass</span> <span class="op">~</span> <span class="va">cultivar</span>, <span class="va">base</span>, block <span class="op">=</span> <span class="va">block</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Recoded rankings that are not in dense form</span></span>
 <span><span class="va">r</span><span class="op">$</span><span class="va">summary</span></span>
 <span><span class="co">#&gt;   item blocks mean_rank rank_sum wins win_share</span></span>
 <span><span class="co">#&gt; 1   C2     20      4.65       NA    3      0.15</span></span>
@@ -3712,16 +3720,17 @@ the quantity the data contain, and decline the one they do not.</p>
 </h3>
 <div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sens</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/agri_sensitivity.html">agri_sensitivity</a></span><span class="op">(</span><span class="va">fit</span>, methods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"primary"</span>, <span class="st">"permuco"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in aovperm_fix(formula = formula, data = data, method = method, : The</span></span>
+<span><span class="co">#&gt; number of permutations is below 2000, p-values might be unreliable.</span></span>
 <span><span class="va">sens</span><span class="op">$</span><span class="va">table</span></span>
 <span><span class="co">#&gt;            method              effect      p_value note</span></span>
 <span><span class="co">#&gt; primary.1 primary            cultivar 2.047132e-10     </span></span>
 <span><span class="co">#&gt; primary.2 primary          salinity_f 3.226862e-18     </span></span>
 <span><span class="co">#&gt; primary.3 primary cultivar:salinity_f 3.702442e-01     </span></span>
-<span><span class="co">#&gt; permuco.1 permuco         .agri_block 2.408443e-01     </span></span>
-<span><span class="co">#&gt; permuco.2 permuco            cultivar 7.344754e-08     </span></span>
-<span><span class="co">#&gt; permuco.3 permuco          salinity_f 0.000000e+00     </span></span>
-<span><span class="co">#&gt; permuco.4 permuco cultivar:salinity_f 4.924299e-01     </span></span>
-<span><span class="co">#&gt; permuco.5 permuco           Residuals           NA</span></span>
+<span><span class="co">#&gt; permuco.1 permuco         .agri_block 2.391196e-01     </span></span>
+<span><span class="co">#&gt; permuco.2 permuco            cultivar 5.002501e-04     </span></span>
+<span><span class="co">#&gt; permuco.3 permuco          salinity_f 5.002501e-04     </span></span>
+<span><span class="co">#&gt; permuco.4 permuco cultivar:salinity_f 4.827414e-01</span></span>
 <span><span class="va">sens</span><span class="op">$</span><span class="va">interpretation</span></span>
 <span><span class="co">#&gt; [1] "Differences across methods quantify model sensitivity. They must not be used to choose the smallest p-value."</span></span></code></pre></div>
 <p>Every analysis contains choices that are defensible but not unique. A
@@ -3766,25 +3775,29 @@ conclusion about the software.</p>
 </h3>
 <div class="sourceCode" id="cb72"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/agri_table.html">agri_table</a></span><span class="op">(</span><span class="va">fit</span>, what <span class="op">=</span> <span class="st">"omnibus"</span>, format <span class="op">=</span> <span class="st">"data.frame"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                  Term         F Df Df.res       Pr(&gt;F)              effect</span></span>
-<span><span class="co">#&gt; 1            cultivar 38.649209  2     44 2.047132e-10            cultivar</span></span>
-<span><span class="co">#&gt; 2          salinity_f 83.755809  3     44 3.226862e-18          salinity_f</span></span>
-<span><span class="co">#&gt; 3 cultivar:salinity_f  1.113167  6     44 3.702442e-01 cultivar:salinity_f</span></span></code></pre></div>
+<span><span class="co">#&gt;                effect statistic df      p_value                Term         F</span></span>
+<span><span class="co">#&gt; 1            cultivar 38.649209  2 2.047132e-10            cultivar 38.649209</span></span>
+<span><span class="co">#&gt; 2          salinity_f 83.755809  3 3.226862e-18          salinity_f 83.755809</span></span>
+<span><span class="co">#&gt; 3 cultivar:salinity_f  1.113167  6 3.702442e-01 cultivar:salinity_f  1.113167</span></span>
+<span><span class="co">#&gt;   Df Df.res       Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1  2     44 2.047132e-10</span></span>
+<span><span class="co">#&gt; 2  3     44 3.226862e-18</span></span>
+<span><span class="co">#&gt; 3  6     44 3.702442e-01</span></span></code></pre></div>
 <div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/agri_table.html">agri_table</a></span><span class="op">(</span><span class="va">fit</span>, what <span class="op">=</span> <span class="st">"effects"</span>, format <span class="op">=</span> <span class="st">"data.frame"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;     cell n   median mean_rank</span></span>
-<span><span class="co">#&gt; 1  C1::0 5 17.91560      44.2</span></span>
-<span><span class="co">#&gt; 2  C1::2 5 17.00924      28.4</span></span>
-<span><span class="co">#&gt; 3  C1::4 5 15.12592      13.8</span></span>
-<span><span class="co">#&gt; 4  C1::6 5 14.23396       4.8</span></span>
-<span><span class="co">#&gt; 5  C2::0 5 19.93798      56.6</span></span>
-<span><span class="co">#&gt; 6  C2::2 5 17.80665      40.8</span></span>
-<span><span class="co">#&gt; 7  C2::4 5 17.57829      35.0</span></span>
-<span><span class="co">#&gt; 8  C2::6 5 16.62329      24.8</span></span>
-<span><span class="co">#&gt; 9  C3::0 5 19.33881      52.4</span></span>
-<span><span class="co">#&gt; 10 C3::2 5 17.46599      35.6</span></span>
-<span><span class="co">#&gt; 11 C3::4 5 16.15833      20.6</span></span>
-<span><span class="co">#&gt; 12 C3::6 5 14.27567       9.0</span></span></code></pre></div>
+<span><span class="co">#&gt;     cell n   median mean_rank relative_effect</span></span>
+<span><span class="co">#&gt; 1  C1::0 5 17.91560      44.2       0.6866667</span></span>
+<span><span class="co">#&gt; 2  C1::2 5 17.00924      28.4       0.4233333</span></span>
+<span><span class="co">#&gt; 3  C1::4 5 15.12592      13.8       0.1800000</span></span>
+<span><span class="co">#&gt; 4  C1::6 5 14.23396       4.8       0.0300000</span></span>
+<span><span class="co">#&gt; 5  C2::0 5 19.93798      56.6       0.8933333</span></span>
+<span><span class="co">#&gt; 6  C2::2 5 17.80665      40.8       0.6300000</span></span>
+<span><span class="co">#&gt; 7  C2::4 5 17.57829      35.0       0.5333333</span></span>
+<span><span class="co">#&gt; 8  C2::6 5 16.62329      24.8       0.3633333</span></span>
+<span><span class="co">#&gt; 9  C3::0 5 19.33881      52.4       0.8233333</span></span>
+<span><span class="co">#&gt; 10 C3::2 5 17.46599      35.6       0.5433333</span></span>
+<span><span class="co">#&gt; 11 C3::4 5 16.15833      20.6       0.2933333</span></span>
+<span><span class="co">#&gt; 12 C3::6 5 14.27567       9.0       0.1000000</span></span></code></pre></div>
 <p><code>format = "auto"</code> returns a <code>gt</code> object when
 that package is installed, which is what a manuscript wants.
 <code>format = "data.frame"</code> is used here so the vignette prints
@@ -3938,10 +3951,14 @@ for a reviewer.</p>
 <div class="sourceCode" id="cb82"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">f1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/agri_rank.html">agri_rank</a></span><span class="op">(</span><span class="va">des1</span><span class="op">)</span></span>
 <span><span class="va">f1</span><span class="op">$</span><span class="va">omnibus</span></span>
-<span><span class="co">#&gt;                  Term         F Df Df.res       Pr(&gt;F)              effect</span></span>
-<span><span class="co">#&gt; 1            cultivar 38.649209  2     44 2.047132e-10            cultivar</span></span>
-<span><span class="co">#&gt; 2          salinity_f 83.755809  3     44 3.226862e-18          salinity_f</span></span>
-<span><span class="co">#&gt; 3 cultivar:salinity_f  1.113167  6     44 3.702442e-01 cultivar:salinity_f</span></span></code></pre></div>
+<span><span class="co">#&gt;                effect statistic df      p_value                Term         F</span></span>
+<span><span class="co">#&gt; 1            cultivar 38.649209  2 2.047132e-10            cultivar 38.649209</span></span>
+<span><span class="co">#&gt; 2          salinity_f 83.755809  3 3.226862e-18          salinity_f 83.755809</span></span>
+<span><span class="co">#&gt; 3 cultivar:salinity_f  1.113167  6 3.702442e-01 cultivar:salinity_f  1.113167</span></span>
+<span><span class="co">#&gt;   Df Df.res       Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1  2     44 2.047132e-10</span></span>
+<span><span class="co">#&gt; 2  3     44 3.226862e-18</span></span>
+<span><span class="co">#&gt; 3  6     44 3.702442e-01</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="step-4-read-the-interaction-first">Step 4: read the interaction first<a class="anchor" aria-label="anchor" href="#step-4-read-the-interaction-first"></a>
@@ -3963,13 +3980,13 @@ for a reviewer.</p>
 </h4>
 <div class="sourceCode" id="cb84"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/agri_effects.html">agri_effects</a></span><span class="op">(</span><span class="va">f1</span><span class="op">)</span><span class="op">)</span>, <span class="fl">6</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    cell n   median mean_rank</span></span>
-<span><span class="co">#&gt; 1 C1::0 5 17.91560      44.2</span></span>
-<span><span class="co">#&gt; 2 C1::2 5 17.00924      28.4</span></span>
-<span><span class="co">#&gt; 3 C1::4 5 15.12592      13.8</span></span>
-<span><span class="co">#&gt; 4 C1::6 5 14.23396       4.8</span></span>
-<span><span class="co">#&gt; 5 C2::0 5 19.93798      56.6</span></span>
-<span><span class="co">#&gt; 6 C2::2 5 17.80665      40.8</span></span></code></pre></div>
+<span><span class="co">#&gt;    cell n   median mean_rank relative_effect</span></span>
+<span><span class="co">#&gt; 1 C1::0 5 17.91560      44.2       0.6866667</span></span>
+<span><span class="co">#&gt; 2 C1::2 5 17.00924      28.4       0.4233333</span></span>
+<span><span class="co">#&gt; 3 C1::4 5 15.12592      13.8       0.1800000</span></span>
+<span><span class="co">#&gt; 4 C1::6 5 14.23396       4.8       0.0300000</span></span>
+<span><span class="co">#&gt; 5 C2::0 5 19.93798      56.6       0.8933333</span></span>
+<span><span class="co">#&gt; 6 C2::2 5 17.80665      40.8       0.6300000</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="step-6-comparisons-with-compact-letters">Step 6: comparisons with compact letters<a class="anchor" aria-label="anchor" href="#step-6-comparisons-with-compact-letters"></a>
@@ -3995,15 +4012,16 @@ for a reviewer.</p>
 </h4>
 <div class="sourceCode" id="cb86"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/agri_sensitivity.html">agri_sensitivity</a></span><span class="op">(</span><span class="va">f1</span>, methods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"primary"</span>, <span class="st">"permuco"</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">table</span></span>
+<span><span class="co">#&gt; Warning in aovperm_fix(formula = formula, data = data, method = method, : The</span></span>
+<span><span class="co">#&gt; number of permutations is below 2000, p-values might be unreliable.</span></span>
 <span><span class="co">#&gt;            method              effect      p_value note</span></span>
 <span><span class="co">#&gt; primary.1 primary            cultivar 2.047132e-10     </span></span>
 <span><span class="co">#&gt; primary.2 primary          salinity_f 3.226862e-18     </span></span>
 <span><span class="co">#&gt; primary.3 primary cultivar:salinity_f 3.702442e-01     </span></span>
-<span><span class="co">#&gt; permuco.1 permuco         .agri_block 2.408443e-01     </span></span>
-<span><span class="co">#&gt; permuco.2 permuco            cultivar 7.344754e-08     </span></span>
-<span><span class="co">#&gt; permuco.3 permuco          salinity_f 0.000000e+00     </span></span>
-<span><span class="co">#&gt; permuco.4 permuco cultivar:salinity_f 4.924299e-01     </span></span>
-<span><span class="co">#&gt; permuco.5 permuco           Residuals           NA</span></span></code></pre></div>
+<span><span class="co">#&gt; permuco.1 permuco         .agri_block 2.391196e-01     </span></span>
+<span><span class="co">#&gt; permuco.2 permuco            cultivar 5.002501e-04     </span></span>
+<span><span class="co">#&gt; permuco.3 permuco          salinity_f 5.002501e-04     </span></span>
+<span><span class="co">#&gt; permuco.4 permuco cultivar:salinity_f 4.827414e-01</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="step-8-the-design-figure">Step 8: the design figure<a class="anchor" aria-label="anchor" href="#step-8-the-design-figure"></a>
@@ -4021,10 +4039,14 @@ Interaction figure for the factorial analysis.
 </h4>
 <div class="sourceCode" id="cb88"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/agri_table.html">agri_table</a></span><span class="op">(</span><span class="va">f1</span>, what <span class="op">=</span> <span class="st">"omnibus"</span>, format <span class="op">=</span> <span class="st">"data.frame"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                  Term         F Df Df.res       Pr(&gt;F)              effect</span></span>
-<span><span class="co">#&gt; 1            cultivar 38.649209  2     44 2.047132e-10            cultivar</span></span>
-<span><span class="co">#&gt; 2          salinity_f 83.755809  3     44 3.226862e-18          salinity_f</span></span>
-<span><span class="co">#&gt; 3 cultivar:salinity_f  1.113167  6     44 3.702442e-01 cultivar:salinity_f</span></span></code></pre></div>
+<span><span class="co">#&gt;                effect statistic df      p_value                Term         F</span></span>
+<span><span class="co">#&gt; 1            cultivar 38.649209  2 2.047132e-10            cultivar 38.649209</span></span>
+<span><span class="co">#&gt; 2          salinity_f 83.755809  3 3.226862e-18          salinity_f 83.755809</span></span>
+<span><span class="co">#&gt; 3 cultivar:salinity_f  1.113167  6 3.702442e-01 cultivar:salinity_f  1.113167</span></span>
+<span><span class="co">#&gt;   Df Df.res       Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1  2     44 2.047132e-10</span></span>
+<span><span class="co">#&gt; 2  3     44 3.226862e-18</span></span>
+<span><span class="co">#&gt; 3  6     44 3.702442e-01</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="step-10-report">Step 10: report<a class="anchor" aria-label="anchor" href="#step-10-report"></a>

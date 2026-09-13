@@ -1,7 +1,7 @@
 # Hierarchical Plot Designs, Trends, ANCOVA, and Power
 
 **Hierarchical designs vignette** **Package:** `agriRank` **Version
-targeted:** `0.14.0` **Owns:** designs with more than one randomization
+targeted:** `0.14.1` **Owns:** designs with more than one randomization
 level, ordered-dose trend tests, rank-based covariance adjustment, and
 simulation-based power.
 
@@ -167,19 +167,28 @@ fit_sp
 #>   Design: split_plot
 #>   Method: Aligned Rank Transform
 #>   Response: yield
-#>                  Term          F Df Df.res      Pr(>F)              effect
-#> 1          irrigation 24.8976617  1      4 0.007544962          irrigation
-#> 2            cultivar  0.3494287  2     16 0.710339266            cultivar
-#> 3 irrigation:cultivar  0.3872747  2     16 0.685098385 irrigation:cultivar
+#>   Resampling: none (asymptotic test)
+#>                effect  statistic df     p_value                Term          F
+#> 1          irrigation 24.8976617  1 0.007544962          irrigation 24.8976617
+#> 2            cultivar  0.3494287  2 0.710339266            cultivar  0.3494287
+#> 3 irrigation:cultivar  0.3872747  2 0.685098385 irrigation:cultivar  0.3872747
+#>   Df Df.res      Pr(>F)
+#> 1  1      4 0.007544962
+#> 2  2     16 0.710339266
+#> 3  2     16 0.685098385
 ```
 
 ``` r
 
 anova(fit_sp)
-#>                  Term          F Df Df.res      Pr(>F)              effect
-#> 1          irrigation 24.8976617  1      4 0.007544962          irrigation
-#> 2            cultivar  0.3494287  2     16 0.710339266            cultivar
-#> 3 irrigation:cultivar  0.3872747  2     16 0.685098385 irrigation:cultivar
+#>                effect  statistic df     p_value                Term          F
+#> 1          irrigation 24.8976617  1 0.007544962          irrigation 24.8976617
+#> 2            cultivar  0.3494287  2 0.710339266            cultivar  0.3494287
+#> 3 irrigation:cultivar  0.3872747  2 0.685098385 irrigation:cultivar  0.3872747
+#>   Df Df.res      Pr(>F)
+#> 1  1      4 0.007544962
+#> 2  2     16 0.710339266
+#> 3  2     16 0.685098385
 ```
 
 ### 4.4 Reading the table
@@ -250,10 +259,14 @@ anova(agri_rank(des_wrong, method = "ART"))
 #> boundary (singular) fit: see help('isSingular')
 #> boundary (singular) fit: see help('isSingular')
 #> boundary (singular) fit: see help('isSingular')
-#>                  Term          F Df Df.res       Pr(>F)              effect
-#> 1          irrigation 25.9799406  1     20 5.500914e-05          irrigation
-#> 2            cultivar  0.3494287  2     20 7.093103e-01            cultivar
-#> 3 irrigation:cultivar  0.3872747  2     20 6.838862e-01 irrigation:cultivar
+#>                effect  statistic df      p_value                Term          F
+#> 1          irrigation 25.9799406  1 5.500914e-05          irrigation 25.9799406
+#> 2            cultivar  0.3494287  2 7.093103e-01            cultivar  0.3494287
+#> 3 irrigation:cultivar  0.3872747  2 6.838862e-01 irrigation:cultivar  0.3872747
+#>   Df Df.res       Pr(>F)
+#> 1  1     20 5.500914e-05
+#> 2  2     20 7.093103e-01
+#> 3  2     20 6.838862e-01
 ```
 
 Compare that table against the split-plot output of section 4.3. The
@@ -304,43 +317,44 @@ fit_ssp
 #>   Design: split_split
 #>   Method: Aligned Rank Transform
 #>   Response: yield
-#>                         Term         F Df Df.res     Pr(>F)
-#> 1                 irrigation 3.2109321  1      3 0.17106139
-#> 2                   cultivar 1.1005679  2     12 0.36403990
-#> 3                     timing 6.9463417  1     18 0.01679214
-#> 4        irrigation:cultivar 1.1564317  2     12 0.34731881
-#> 5          irrigation:timing 0.5726530  1     18 0.45899785
-#> 6            cultivar:timing 0.1398468  2     18 0.87042701
-#> 7 irrigation:cultivar:timing 1.5564518  2     18 0.23796926
-#>                       effect
-#> 1                 irrigation
-#> 2                   cultivar
-#> 3                     timing
-#> 4        irrigation:cultivar
-#> 5          irrigation:timing
-#> 6            cultivar:timing
-#> 7 irrigation:cultivar:timing
+#>   Resampling: none (asymptotic test)
+#>                       effect statistic df    p_value                       Term
+#> 1                 irrigation 3.2109321  1 0.17106139                 irrigation
+#> 2                   cultivar 1.1005679  2 0.36403990                   cultivar
+#> 3                     timing 6.9463417  1 0.01679214                     timing
+#> 4        irrigation:cultivar 1.1564317  2 0.34731881        irrigation:cultivar
+#> 5          irrigation:timing 0.5726530  1 0.45899785          irrigation:timing
+#> 6            cultivar:timing 0.1398468  2 0.87042701            cultivar:timing
+#> 7 irrigation:cultivar:timing 1.5564518  2 0.23796926 irrigation:cultivar:timing
+#>           F Df Df.res     Pr(>F)
+#> 1 3.2109321  1      3 0.17106139
+#> 2 1.1005679  2     12 0.36403990
+#> 3 6.9463417  1     18 0.01679214
+#> 4 1.1564317  2     12 0.34731881
+#> 5 0.5726530  1     18 0.45899785
+#> 6 0.1398468  2     18 0.87042701
+#> 7 1.5564518  2     18 0.23796926
 ```
 
 ``` r
 
 anova(fit_ssp)
-#>                         Term         F Df Df.res     Pr(>F)
-#> 1                 irrigation 3.2109321  1      3 0.17106139
-#> 2                   cultivar 1.1005679  2     12 0.36403990
-#> 3                     timing 6.9463417  1     18 0.01679214
-#> 4        irrigation:cultivar 1.1564317  2     12 0.34731881
-#> 5          irrigation:timing 0.5726530  1     18 0.45899785
-#> 6            cultivar:timing 0.1398468  2     18 0.87042701
-#> 7 irrigation:cultivar:timing 1.5564518  2     18 0.23796926
-#>                       effect
-#> 1                 irrigation
-#> 2                   cultivar
-#> 3                     timing
-#> 4        irrigation:cultivar
-#> 5          irrigation:timing
-#> 6            cultivar:timing
-#> 7 irrigation:cultivar:timing
+#>                       effect statistic df    p_value                       Term
+#> 1                 irrigation 3.2109321  1 0.17106139                 irrigation
+#> 2                   cultivar 1.1005679  2 0.36403990                   cultivar
+#> 3                     timing 6.9463417  1 0.01679214                     timing
+#> 4        irrigation:cultivar 1.1564317  2 0.34731881        irrigation:cultivar
+#> 5          irrigation:timing 0.5726530  1 0.45899785          irrigation:timing
+#> 6            cultivar:timing 0.1398468  2 0.87042701            cultivar:timing
+#> 7 irrigation:cultivar:timing 1.5564518  2 0.23796926 irrigation:cultivar:timing
+#>           F Df Df.res     Pr(>F)
+#> 1 3.2109321  1      3 0.17106139
+#> 2 1.1005679  2     12 0.36403990
+#> 3 6.9463417  1     18 0.01679214
+#> 4 1.1564317  2     12 0.34731881
+#> 5 0.5726530  1     18 0.45899785
+#> 6 0.1398468  2     18 0.87042701
+#> 7 1.5564518  2     18 0.23796926
 ```
 
 ### 5.2 The strata
@@ -435,19 +449,28 @@ fit_strip
 #>   Design: strip_plot
 #>   Method: Aligned Rank Transform
 #>   Response: yield
-#>                  Term         F Df Df.res      Pr(>F)              effect
-#> 1          irrigation 13.064883  2      8 0.003018747          irrigation
-#> 2            nitrogen 10.255426  3     12 0.001247053            nitrogen
-#> 3 irrigation:nitrogen  4.295343  6     24 0.004444566 irrigation:nitrogen
+#>   Resampling: none (asymptotic test)
+#>                effect statistic df     p_value                Term         F Df
+#> 1          irrigation 13.064883  2 0.003018747          irrigation 13.064883  2
+#> 2            nitrogen 10.255426  3 0.001247053            nitrogen 10.255426  3
+#> 3 irrigation:nitrogen  4.295343  6 0.004444566 irrigation:nitrogen  4.295343  6
+#>   Df.res      Pr(>F)
+#> 1      8 0.003018747
+#> 2     12 0.001247053
+#> 3     24 0.004444566
 ```
 
 ``` r
 
 anova(fit_strip)
-#>                  Term         F Df Df.res      Pr(>F)              effect
-#> 1          irrigation 13.064883  2      8 0.003018747          irrigation
-#> 2            nitrogen 10.255426  3     12 0.001247053            nitrogen
-#> 3 irrigation:nitrogen  4.295343  6     24 0.004444566 irrigation:nitrogen
+#>                effect statistic df     p_value                Term         F Df
+#> 1          irrigation 13.064883  2 0.003018747          irrigation 13.064883  2
+#> 2            nitrogen 10.255426  3 0.001247053            nitrogen 10.255426  3
+#> 3 irrigation:nitrogen  4.295343  6 0.004444566 irrigation:nitrogen  4.295343  6
+#>   Df.res      Pr(>F)
+#> 1      8 0.003018747
+#> 2     12 0.001247053
+#> 3     24 0.004444566
 ```
 
 ### 6.2 Why the interaction has its own stratum
@@ -830,13 +853,18 @@ if (requireNamespace("permuco", quietly = TRUE)) {
   )
   print(anc_fit$omnibus)
 }
+#> Warning: `np` was renamed to `nperm`: it is the number of permutations, not a
+#> switch for nonparametric analysis.
 #> Warning in aovperm_fix(formula = formula, data = data, method = method, : The
 #> number of permutations is below 2000, p-values might be unreliable.
-#>                         SS df          F parametric P(>F) resampled P(>F)
-#> block             32.38264  5   1.040711     4.142295e-01    0.4092046023
-#> initial_biomass 2307.80754  1 370.840694     0.000000e+00    0.0005002501
-#> treatment        532.97206  2  42.821537     4.220853e-09    0.0005002501
-#> Residuals        168.02580 27         NA               NA              NA
+#>            effect  statistic df      p_value         SS          F
+#> 1           block   1.040711  5 0.4092046023   32.38264   1.040711
+#> 2 initial_biomass 370.840694  1 0.0005002501 2307.80754 370.840694
+#> 3       treatment  42.821537  2 0.0005002501  532.97206  42.821537
+#>   parametric P(>F) resampled P(>F)
+#> 1     4.142295e-01    0.4092046023
+#> 2     0.000000e+00    0.0005002501
+#> 3     4.220853e-09    0.0005002501
 ```
 
 ### 9.3 What it buys
@@ -846,8 +874,8 @@ if (requireNamespace("permuco", quietly = TRUE)) {
 des_noanc <- agri_design(final_biomass ~ treatment, anc, design = "rcbd",
                          block = block)
 anova(agri_rank(des_noanc, method = "ART"))
-#>        Term        F Df Df.res     Pr(>F)    effect
-#> 1 treatment 4.939347  2     28 0.01454396 treatment
+#>      effect statistic df    p_value      Term        F Df Df.res     Pr(>F)
+#> 1 treatment  4.939347  2 0.01454396 treatment 4.939347  2     28 0.01454396
 ```
 
 The covariate absorbs the initial-size variation, which would otherwise

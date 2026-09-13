@@ -128,5 +128,4 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   fa <- agri_np_regression(yield ~ N + P, d, method = "gam", block = block, k = 4)
   try(agri_np_optimum_surface(fa, B = 49, n = 12))
 }
-#> Error : The fitted surface is additive in `N` and `P`, so the optimum in each is the same at every level of the other and the joint optimum carries no information the two separate optima do not. Refit with `gam_structure = "tensor"`, which lets the two interact, or use agri_np_optimum() on each predictor and say that the surface was assumed additive.
 ```

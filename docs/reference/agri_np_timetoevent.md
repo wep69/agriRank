@@ -149,8 +149,4 @@ one <- verbascum[verbascum$Species == "creticum", ]
 agri_np_timetoevent(nSeeds ~ timeBef + timeAf, one)$summary
 
 }
-#>   level subjects responded t10_responders t10_lot t50_responders  t50_lot
-#> 1   all      100      0.97       2.293939 2.30303       3.281818 3.309091
-#>   t90_responders  t90_lot
-#> 1       3.987273 4.222222
 ```

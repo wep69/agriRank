@@ -23,7 +23,12 @@ validate_agri_design(x, error = TRUE)
 ## Details
 
 Fatal structural errors can stop execution; warnings preserve
-information that may affect estimability or interpretation. The vignette
+information that may affect estimability or interpretation. The scope of
+this check is the response and the occupation of the factorial cells,
+not the integrity of the declared randomization: a design that is broken
+structurally can still return `ok = TRUE` here and be refused later,
+with a specific reason, by the engine that would have to analyze it.
+Fitting is therefore the step that validates the structure. The vignette
 suite documents the experimental-design logic, estimand, hypothesis,
 resampling structure, missing/unbalanced-data behavior, and
 backend-specific limitations in greater depth.
@@ -50,46 +55,15 @@ verified references.
 ``` r
 # Example 1
 validate_agri_design(agri_design(yield ~ treatment, simulate_agri("crd"), "crd"), error = FALSE)
-#> $ok
-#> [1] TRUE
-#> 
-#> $problems
-#> [1] severity code     message 
-#> <0 rows> (or 0-length row.names)
-#> 
-#> attr(,"class")
-#> [1] "agri_validation"
 
 # Example 2
 x <- simulate_agri("factorial");
 x <- subset(x, !(A=="A2" & B=="B3"));
 validate_agri_design(agri_design(yield~A*B,x,"factorial"), error=FALSE)
-#> $ok
-#> [1] TRUE
-#> 
-#> $problems
-#>   severity                 code
-#> 1  warning empty_factorial_cell
-#>                                                                              message
-#> 1 At least one factorial treatment cell is empty; some effects may be non-estimable.
-#> 
-#> attr(,"class")
-#> [1] "agri_validation"
 
 # Example 3
 x <- simulate_agri("repeated");
 x <- rbind(x,x[1,]);
 validate_agri_design(agri_design(height ~ treatment * time, x, "repeated", 
     subject = subject, within = time), error = FALSE)
-#> $ok
-#> [1] FALSE
-#> 
-#> $problems
-#>   severity                    code
-#> 1    error duplicate_repeated_cell
-#>                                                                                                                                                                           message
-#> 1 A subject has more than one observation for the same within-subject cell within its between-subject treatment group. Aggregate technical replicates explicitly before analysis.
-#> 
-#> attr(,"class")
-#> [1] "agri_validation"
 ```

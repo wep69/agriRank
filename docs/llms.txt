@@ -439,6 +439,8 @@ Every analysis starts from an explicit randomization structure.
 
 - [`agri_effects()`](https://wep69.github.io/agriRank/reference/agri_effects.md)
   : Extract treatment effect summaries
+- [`agri_p()`](https://wep69.github.io/agriRank/reference/agri_p.md) :
+  Extract the omnibus p-values of a fit
 - [`agri_pairs()`](https://wep69.github.io/agriRank/reference/agri_pairs.md)
   : Compute pairwise treatment comparisons
 - [`agri_conover()`](https://wep69.github.io/agriRank/reference/agri_conover.md)

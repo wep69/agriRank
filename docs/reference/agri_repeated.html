@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -89,52 +89,20 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Example 1</span></span></span>
-<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated"</span><span class="op">)</span>;</span></span>
-<span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">height</span><span class="op">~</span><span class="va">treatment</span><span class="op">*</span><span class="va">time</span>,<span class="va">x</span>,<span class="st">"repeated"</span>,subject<span class="op">=</span><span class="va">subject</span>,within<span class="op">=</span><span class="va">time</span><span class="op">)</span>;</span></span>
-<span class="r-in"><span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"nparLD"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">agri_repeated</span><span class="op">(</span><span class="va">d</span>,<span class="st">"nparLD"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  F1 LD F1 Model </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ----------------------- </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Check that the order of the time and group levels are correct.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Time level:   1 2 3 4 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Group level:   control treated </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  If the order is not correct, specify the correct order in time.order or group.order.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: repeated</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: nparLD ANOVA-type rank inference</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: height</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Statistic       df      p-value         effect</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  1.255810 1.000000 2.624457e-01      treatment</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 10.402598 2.578418 3.603182e-06           time</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  5.676011 2.578418 1.360413e-03 treatment:time</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 2</span></span></span>
-<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated"</span><span class="op">)</span>;</span></span>
-<span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">height</span><span class="op">~</span><span class="va">treatment</span><span class="op">*</span><span class="va">time</span>,<span class="va">x</span>,<span class="st">"repeated"</span>,subject<span class="op">=</span><span class="va">subject</span>,within<span class="op">=</span><span class="va">time</span><span class="op">)</span>;</span></span>
-<span class="r-in"><span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"MANOVA.RM"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">agri_repeated</span><span class="op">(</span><span class="va">d</span>,<span class="st">"MANOVA.RM"</span>,iter<span class="op">=</span><span class="fl">499</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: repeated</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: MANOVA.RM WildBS</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: height</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                Test statistic  df1    df2 p-value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> treatment               0.790 1.00 11.521   0.392</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> time                    9.227 2.48    Inf   0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> treatment:time          4.883 2.48    Inf   0.004</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 3</span></span></span>
-<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated_missing"</span><span class="op">)</span>;</span></span>
-<span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">height</span><span class="op">~</span><span class="va">treatment</span><span class="op">*</span><span class="va">time</span>,<span class="va">x</span>,<span class="st">"repeated"</span>,subject<span class="op">=</span><span class="va">subject</span>,within<span class="op">=</span><span class="va">time</span><span class="op">)</span>;</span></span>
-<span class="r-in"><span><span class="fu">agri_repeated</span><span class="op">(</span><span class="va">d</span>,<span class="st">"native_wild"</span>,B<span class="op">=</span><span class="fl">299</span>,missing_assumption<span class="op">=</span><span class="st">"MCAR"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: repeated</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: incomplete repeated-measures rank wild bootstrap</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: height</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                        effect statistic    value      df p_boot p_asymptotic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> treatment           treatment       ATS 2.400622 1.00000   0.14   0.12128701</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> time                     time       ATS 3.768121 1.42395   0.06   0.03710787</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> treatment:time treatment:time       ATS 1.242759 1.42395   0.32   0.27959642</span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># Example 1</span></span>
+<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated"</span><span class="op">)</span>;</span>
+<span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">height</span><span class="op">~</span><span class="va">treatment</span><span class="op">*</span><span class="va">time</span>,<span class="va">x</span>,<span class="st">"repeated"</span>,subject<span class="op">=</span><span class="va">subject</span>,within<span class="op">=</span><span class="va">time</span><span class="op">)</span>;</span>
+<span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"nparLD"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">agri_repeated</span><span class="op">(</span><span class="va">d</span>,<span class="st">"nparLD"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Example 2</span></span>
+<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated"</span><span class="op">)</span>;</span>
+<span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">height</span><span class="op">~</span><span class="va">treatment</span><span class="op">*</span><span class="va">time</span>,<span class="va">x</span>,<span class="st">"repeated"</span>,subject<span class="op">=</span><span class="va">subject</span>,within<span class="op">=</span><span class="va">time</span><span class="op">)</span>;</span>
+<span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"MANOVA.RM"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">agri_repeated</span><span class="op">(</span><span class="va">d</span>,<span class="st">"MANOVA.RM"</span>,iter<span class="op">=</span><span class="fl">499</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Example 3</span></span>
+<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated_missing"</span><span class="op">)</span>;</span>
+<span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">height</span><span class="op">~</span><span class="va">treatment</span><span class="op">*</span><span class="va">time</span>,<span class="va">x</span>,<span class="st">"repeated"</span>,subject<span class="op">=</span><span class="va">subject</span>,within<span class="op">=</span><span class="va">time</span><span class="op">)</span>;</span>
+<span><span class="fu">agri_repeated</span><span class="op">(</span><span class="va">d</span>,<span class="st">"native_wild"</span>,B<span class="op">=</span><span class="fl">299</span>,missing_assumption<span class="op">=</span><span class="st">"MCAR"</span><span class="op">)</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

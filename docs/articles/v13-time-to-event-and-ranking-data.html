@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,7 +64,7 @@ Development Team</h4>
     
 <p><strong>Non-measurement vignette</strong> <strong>Package:</strong>
 <code>agriRank</code> <strong>Version targeted:</strong>
-<code>0.14.0</code> <strong>Owns:</strong> the two agronomic experiments
+<code>0.14.1</code> <strong>Owns:</strong> the two agronomic experiments
 whose datum is not a measurement. Germination counted inside intervals,
 and on-farm trials returning an order.</p>
 <hr>
@@ -535,7 +535,16 @@ when the package is installed, in its own block and labelled:</p>
 <span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rt</span><span class="op">$</span><span class="va">worth</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="op">-</span><span class="va">rt</span><span class="op">$</span><span class="va">worth</span><span class="op">$</span><span class="va">worth</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="co">#&gt; PlackettLuce is not installed in this environment.</span></span></code></pre></div>
+<span><span class="co">#&gt;   item       worth</span></span>
+<span><span class="co">#&gt; 5   V5 0.424304920</span></span>
+<span><span class="co">#&gt; 8   V8 0.219635152</span></span>
+<span><span class="co">#&gt; 3   V3 0.182102118</span></span>
+<span><span class="co">#&gt; 2   V2 0.071487557</span></span>
+<span><span class="co">#&gt; 6   V6 0.051724145</span></span>
+<span><span class="co">#&gt; 4   V4 0.024119737</span></span>
+<span><span class="co">#&gt; 1   V1 0.018971174</span></span>
+<span><span class="co">#&gt; 7   V7 0.004909403</span></span>
+<span><span class="co">#&gt; 9   V9 0.002745794</span></span></code></pre></div>
 <p>Two things are worth keeping straight.</p>
 <p>It is <strong>not</strong> a distribution-free summary. It assumes
 the rankings arise from one common worth per item, and that assumption

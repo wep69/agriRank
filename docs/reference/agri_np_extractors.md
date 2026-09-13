@@ -123,25 +123,16 @@ if (requireNamespace("mblm", quietly = TRUE)) {
   coef(ts)
   confint(ts, method = "backend")
 }
-#>          term    estimate       lower       upper  method
-#> 1 (Intercept) 3.382166667 3.301833333 3.610166667 backend
-#> 2        dose 0.008008333 0.007473584 0.008547857 backend
 
 # Example 2: the same slope with a bootstrap interval, which makes fewer
 # assumptions and is usually wider
 if (requireNamespace("mblm", quietly = TRUE)) {
   confint(ts, method = "bootstrap", B = 199, seed = 1)
 }
-#>          term    estimate       lower       upper    method
-#> 1 (Intercept) 3.382166667 3.176962500 3.873296429 bootstrap
-#> 2        dose 0.008008333 0.005879042 0.009230208 bootstrap
 
 # Example 3: a smoothing spline has no slope to report, and says so
 ss <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
 length(fitted(ss))
-#> [1] 40
 length(residuals(ss))
-#> [1] 40
 try(coef(ss))
-#> Error : Method `smoothing_spline` does not define interpretable regression coefficients. It estimates a curve, not a finite parameter vector. Use agri_np_predict(), agri_np_derivative() or agri_np_optimum() to describe the fitted response, and coef() only with theil_sen, siegel, quantile.
 ```

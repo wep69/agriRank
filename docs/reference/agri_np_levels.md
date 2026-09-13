@@ -108,19 +108,4 @@ if (requireNamespace("quantreg", quietly = TRUE)) {
   # bootstrap object instead of refitting it.
   agri_np_plot(fit, type = "levels", bootstrap = attr(lv, "bootstrap"))
 }
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
-#> Warning: Solution may be nonunique
 ```

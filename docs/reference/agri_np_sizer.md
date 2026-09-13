@@ -134,19 +134,6 @@ if (requireNamespace("SiZer", quietly = TRUE)) {
   sz <- agri_np_sizer(f)
   sz
 }
-#> agriRank SiZer map
-#>   Predictor: dose  Response: yield  n = 40 
-#>   Derivative order: 1 
-#>   Bandwidths: 21 from 11.2 to 140 
-#>   Reference bandwidth: 39.6 
-#> 
-#> Slope classification at the reference bandwidth:
-#>  from  to      state n_grid bandwidth
-#>     0 182 increasing     27      39.6
-#>   189 280       flat     14      39.6
-#> 
-#> A conclusion that holds across the whole bandwidth column is robust to
-#> the amount of smoothing; one that appears at a single bandwidth is not.
 
 # Example 2: the agronomic statement, robust to the smoothing choice
 if (requireNamespace("SiZer", quietly = TRUE)) {
@@ -155,8 +142,6 @@ if (requireNamespace("SiZer", quietly = TRUE)) {
   # tested range. The optimum answers a different, weaker question.
   agri_np_optimum(f)
 }
-#>   predictor optimum fitted_response objective at_boundary    support
-#> 1      dose     280        5.413311       max        TRUE continuous
 
 # Example 3: the map and the stability profile
 if (requireNamespace("SiZer", quietly = TRUE) &&
@@ -165,13 +150,10 @@ if (requireNamespace("SiZer", quietly = TRUE) &&
   plot(sz, type = "stability")
 }
 
-
 # Example 4: curvature instead of slope
 if (requireNamespace("SiZer", quietly = TRUE)) {
   summary(agri_np_sizer(f, derivative = 2))
 }
-#>   from  to state n_grid bandwidth
-#> 1    0 280  flat     41  39.59798
 
 # Example 5: an integer decision support is refused, with the alternative named
 data(agri_density)
@@ -179,5 +161,4 @@ fi <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
                          integer_base_method = "smoothing_spline",
                          predictor_support = "observed_integer")
 if (requireNamespace("SiZer", quietly = TRUE)) try(agri_np_sizer(fi))
-#> Error : SiZer describes the derivative of a continuous gradient. For an integer decision support use agri_integer_difference(), which reports finite differences between admissible decisions.
 ```
