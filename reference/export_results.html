@@ -71,7 +71,7 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Example 1: export a CRD analysis</span></span></span>
 <span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="np_crd.html">np_crd</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">treatment</span>, <span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">export_results</span><span class="op">(</span><span class="va">f</span>, <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".rds"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpFl2g7x/file1dac3b9c740a.rds"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/Rtmp7DxxUk/file1b5c4b0462bb.rds"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Example 2: inspect a regression bundle</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">84</span><span class="op">)</span></span></span>
@@ -80,7 +80,7 @@
 <span class="r-in"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, <span class="va">d</span>, method <span class="op">=</span> <span class="st">"loess"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".rds"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">export_results</span><span class="op">(</span><span class="va">r</span>, <span class="va">z</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpFl2g7x/file1dac24b3a0e2.rds"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/Rtmp7DxxUk/file1b5c159ae3ee.rds"</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "domain"            "formula"           "formula_used"     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [4] "response"          "predictors"        "block"            </span>
@@ -97,7 +97,7 @@
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`B` = 99 is too small for confirmatory resampling inference: the smallest attainable p-value is 1/(B + 1) = 0.01000, so no result below that can be reported and the Monte Carlo error of any p-value near it is large. Use B &gt;= 1999, or state the p floor explicitly when computing time limits the budget.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>B &lt; 199 gives coarse Monte Carlo p-values; use &gt;= 999 for analysis and &gt;= 4999 for final work when feasible.</span>
 <span class="r-in"><span><span class="fu">export_results</span><span class="op">(</span><span class="va">fr</span>, <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".rds"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpFl2g7x/file1dac781704d4.rds"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/Rtmp7DxxUk/file1b5c23d3c4ff.rds"</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

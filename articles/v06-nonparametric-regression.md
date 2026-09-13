@@ -1179,7 +1179,7 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   print(gvar$formula_used)
 }
 #> yield ~ cultivar + s(dose, by = cultivar, k = 10)
-#> <environment: 0x5652be268068>
+#> <environment: 0x55fd7d522b48>
 ```
 
 ``` r
@@ -1243,7 +1243,7 @@ if (exists("fit_kernel") && requireNamespace("np", quietly = TRUE)) {
 #> 
 #> Individual Significance Tests
 #> P Value: 
-#> cultivar NA 
+#> cultivar < 2.22e-16 ***
 #> ---
 #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 #> 

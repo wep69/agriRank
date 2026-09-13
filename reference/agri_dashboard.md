@@ -52,7 +52,7 @@ The normalized path of the QMD source.
 # Example 1: CRD dashboard source
 f <- np_crd(yield ~ treatment, simulate_agri("crd"))
 agri_dashboard(f, tempfile(fileext = ".qmd"))
-#> [1] "/tmp/RtmpFl2g7x/file1dac653b7772.qmd"
+#> [1] "/tmp/Rtmp7DxxUk/file1b5ccfec9d7.qmd"
 
 # Example 2: smoothing-spline regression dashboard
 set.seed(83)
@@ -60,7 +60,7 @@ d <- data.frame(dose = seq(0, 180, length.out = 35))
 d$yield <- 6 + .06*d$dose - .0002*d$dose^2 + rnorm(35, 0, .4)
 r <- agri_np_regression(yield ~ dose, d, method = "smoothing_spline")
 agri_dashboard(r, tempfile(fileext = ".qmd"))
-#> [1] "/tmp/RtmpFl2g7x/file1dac428d32c7.qmd"
+#> [1] "/tmp/Rtmp7DxxUk/file1b5cb32955.qmd"
 
 # Example 3: incomplete repeated-measures analysis
 x <- simulate_agri("repeated_missing")
@@ -69,5 +69,5 @@ fr <- agri_rank(des, "incomplete_wild", B = 99, missing_assumption = "MCAR")
 #> Warning: `B` = 99 is too small for confirmatory resampling inference: the smallest attainable p-value is 1/(B + 1) = 0.01000, so no result below that can be reported and the Monte Carlo error of any p-value near it is large. Use B >= 1999, or state the p floor explicitly when computing time limits the budget.
 #> Warning: B < 199 gives coarse Monte Carlo p-values; use >= 999 for analysis and >= 4999 for final work when feasible.
 agri_dashboard(fr, tempfile(fileext = ".qmd"))
-#> [1] "/tmp/RtmpFl2g7x/file1dac32325856.qmd"
+#> [1] "/tmp/Rtmp7DxxUk/file1b5c747402ea.qmd"
 ```

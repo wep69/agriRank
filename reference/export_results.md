@@ -52,7 +52,7 @@ The normalized path of the RDS file.
 # Example 1: export a CRD analysis
 f <- np_crd(yield ~ treatment, simulate_agri("crd"))
 export_results(f, tempfile(fileext = ".rds"))
-#> [1] "/tmp/RtmpFl2g7x/file1dac3b9c740a.rds"
+#> [1] "/tmp/Rtmp7DxxUk/file1b5c4b0462bb.rds"
 
 # Example 2: inspect a regression bundle
 set.seed(84)
@@ -61,7 +61,7 @@ d$y <- sin(d$x/2) + rnorm(30, 0, .15)
 r <- agri_np_regression(y ~ x, d, method = "loess")
 z <- tempfile(fileext = ".rds")
 export_results(r, z)
-#> [1] "/tmp/RtmpFl2g7x/file1dac24b3a0e2.rds"
+#> [1] "/tmp/Rtmp7DxxUk/file1b5c159ae3ee.rds"
 names(readRDS(z))
 #>  [1] "domain"            "formula"           "formula_used"     
 #>  [4] "response"          "predictors"        "block"            
@@ -78,5 +78,5 @@ fr <- agri_rank(des, "incomplete_wild", B = 99, missing_assumption = "MCAR")
 #> Warning: `B` = 99 is too small for confirmatory resampling inference: the smallest attainable p-value is 1/(B + 1) = 0.01000, so no result below that can be reported and the Monte Carlo error of any p-value near it is large. Use B >= 1999, or state the p floor explicitly when computing time limits the budget.
 #> Warning: B < 199 gives coarse Monte Carlo p-values; use >= 999 for analysis and >= 4999 for final work when feasible.
 export_results(fr, tempfile(fileext = ".rds"))
-#> [1] "/tmp/RtmpFl2g7x/file1dac781704d4.rds"
+#> [1] "/tmp/Rtmp7DxxUk/file1b5c23d3c4ff.rds"
 ```
