@@ -460,11 +460,11 @@ met_additive
 #>            effect statistic df    p_value       SS         F parametric P(>F)
 #> 1 .agri_env_block 0.8929787 14 0.42321161 3384.300 0.8929787       0.57185652
 #> 2        genotype 3.0978126  3 0.03751876 2515.800 3.0978126       0.03685246
-#> 3     environment 2.2640839  2 0.01850925 1225.807 2.2640839       0.11646626
+#> 3     environment 3.5514160  2 0.01750875 1922.787 3.5514160       0.03758355
 #>   resampled P(>F)
 #> 1      0.42321161
 #> 2      0.03751876
-#> 3      0.01850925
+#> 3      0.01750875
 ```
 
 Dropping the interaction is a **scientific** decision that the genotype

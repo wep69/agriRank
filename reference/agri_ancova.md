@@ -99,7 +99,7 @@ agri_ancova(yield~treatment,x,covariates=base,np=299)}
 #> 
 #> $formula
 #> .agri_rank_y ~ base + treatment
-#> <environment: 0x55a4112e43d8>
+#> <environment: 0x55e46dddaf88>
 #> 
 #> $covariates
 #> [1] "base"
@@ -150,7 +150,7 @@ agri_ancova(yield~treatment,x,covariates=base,np=299,rank_response=FALSE)}
 #> 
 #> $formula
 #> yield ~ base + treatment
-#> <environment: 0x55a41046a7a0>
+#> <environment: 0x55e46d0231c8>
 #> 
 #> $covariates
 #> [1] "base"
@@ -201,7 +201,7 @@ agri_ancova(yield~treatment,x,covariates=base,block=block,np=299)}
 #> 
 #> $formula
 #> .agri_rank_y ~ block + base + treatment
-#> <environment: 0x55a40f3399b8>
+#> <environment: 0x55e46bf3f490>
 #> 
 #> $covariates
 #> [1] "base"
