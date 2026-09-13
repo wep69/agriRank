@@ -80,6 +80,7 @@ agri_batch(d,c("yield","biomass"))
 #>   Design: crd
 #>   Method: Kruskal-Wallis
 #>   Response: yield
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df   p_value
 #> 1 treatment  1.646667  3 0.6488554
 #> 
@@ -88,6 +89,7 @@ agri_batch(d,c("yield","biomass"))
 #>   Design: crd
 #>   Method: Kruskal-Wallis
 #>   Response: biomass
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df   p_value
 #> 1 treatment 0.3266667  3 0.9549376
 #> 
@@ -121,6 +123,7 @@ agri_batch(d,c("yield","biomass"),adjust_across="BH")
 #>   Design: crd
 #>   Method: Kruskal-Wallis
 #>   Response: yield
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df   p_value
 #> 1 treatment  1.646667  3 0.6488554
 #> 
@@ -129,6 +132,7 @@ agri_batch(d,c("yield","biomass"),adjust_across="BH")
 #>   Design: crd
 #>   Method: Kruskal-Wallis
 #>   Response: biomass
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df   p_value
 #> 1 treatment  1.313333  3 0.7259694
 #> 
@@ -163,6 +167,7 @@ agri_batch(d,c("yield","biomass","spad"),adjust_across="holm")
 #>   Design: crd
 #>   Method: Kruskal-Wallis
 #>   Response: yield
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df   p_value
 #> 1 treatment  1.646667  3 0.6488554
 #> 
@@ -171,6 +176,7 @@ agri_batch(d,c("yield","biomass","spad"),adjust_across="holm")
 #>   Design: crd
 #>   Method: Kruskal-Wallis
 #>   Response: biomass
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df   p_value
 #> 1 treatment 0.3533333  3 0.9497047
 #> 
@@ -179,6 +185,7 @@ agri_batch(d,c("yield","biomass","spad"),adjust_across="holm")
 #>   Design: crd
 #>   Method: Kruskal-Wallis
 #>   Response: spad
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df   p_value
 #> 1 treatment      2.18  3 0.5358985
 #> 

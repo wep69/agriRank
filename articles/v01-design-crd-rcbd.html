@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,7 +64,7 @@ Development Team</h4>
     
 <p><strong>Foundational vignette</strong> <strong>Package:</strong>
 <code>agriRank</code> <strong>Version targeted:</strong>
-<code>0.14.0</code> <strong>Owns:</strong> the design-foundation block.
+<code>0.14.1</code> <strong>Owns:</strong> the design-foundation block.
 Declaring the experimental unit and the randomization, validating the
 declaration, and the one-factor rank workflows for completely randomized
 and randomized complete block experiments.</p>
@@ -1271,6 +1271,7 @@ two are different.</p>
 <span><span class="co">#&gt;   Design: crd</span></span>
 <span><span class="co">#&gt;   Method: Kruskal-Wallis</span></span>
 <span><span class="co">#&gt;   Response: yield</span></span>
+<span><span class="co">#&gt;   Resampling: none (asymptotic test)</span></span>
 <span><span class="co">#&gt;      effect statistic df    p_value</span></span>
 <span><span class="co">#&gt; 1 treatment  8.161932  3 0.04278097</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fit_crd</span><span class="op">)</span></span>
@@ -1388,6 +1389,7 @@ Factorial Inference</em>.</p>
 <span><span class="co">#&gt;   Design: rcbd</span></span>
 <span><span class="co">#&gt;   Method: Friedman rank-sum</span></span>
 <span><span class="co">#&gt;   Response: yield</span></span>
+<span><span class="co">#&gt;   Resampling: none (asymptotic test)</span></span>
 <span><span class="co">#&gt;      effect statistic df     p_value</span></span>
 <span><span class="co">#&gt; 1 treatment      12.6  3 0.005586546</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fit_rcbd</span><span class="op">)</span></span>
@@ -2015,8 +2017,10 @@ p-value.</p>
 </h2>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">fit_rcbd</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] "design"   "response" "method"   "estimand" "engine"   "omnibus" </span></span>
-<span><span class="co">#&gt;  [7] "effects"  "missing"  "seed"     "call"</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] "design"          "response"        "method"          "estimand"       </span></span>
+<span><span class="co">#&gt;  [5] "engine"          "omnibus"         "effects"         "missing"        </span></span>
+<span><span class="co">#&gt;  [9] "seed"            "B"               "resampling"      "resampling_used"</span></span>
+<span><span class="co">#&gt; [13] "estimand_source" "call"</span></span></code></pre></div>
 <table class="table">
 <colgroup>
 <col width="33%">

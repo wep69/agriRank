@@ -1,7 +1,7 @@
 # Nonparametric and Shape-Aware Regression for Agronomic Gradients
 
 **Regression vignette** **Package:** `agriRank` **Version targeted:**
-`0.14.0` **Owns:** fitting a curve to a quantitative agronomic gradient
+`0.14.1` **Owns:** fitting a curve to a quantitative agronomic gradient
 without assuming its functional form.
 
 ------------------------------------------------------------------------
@@ -1179,7 +1179,7 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   print(gvar$formula_used)
 }
 #> yield ~ cultivar + s(dose, by = cultivar, k = 10)
-#> <environment: 0x5644482f3fc0>
+#> <environment: 0x5604c6a49490>
 ```
 
 ``` r

@@ -1,7 +1,7 @@
 # Distribution-Free Uncertainty and Model Checking for Agronomic Regression
 
 **Uncertainty vignette** **Package:** `agriRank` **Version targeted:**
-`0.14.0` **Owns:** where a response is really changing, what interval
+`0.14.1` **Owns:** where a response is really changing, what interval
 covers the next plot, and whether a fit describes the data, all without
 assuming a distribution.
 

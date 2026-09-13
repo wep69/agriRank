@@ -1,7 +1,7 @@
 # Design Foundations, CRD, and RCBD
 
 **Foundational vignette** **Package:** `agriRank` **Version targeted:**
-`0.14.0` **Owns:** the design-foundation block. Declaring the
+`0.14.1` **Owns:** the design-foundation block. Declaring the
 experimental unit and the randomization, validating the declaration, and
 the one-factor rank workflows for completely randomized and randomized
 complete block experiments.
@@ -1044,6 +1044,7 @@ fit_crd
 #>   Design: crd
 #>   Method: Kruskal-Wallis
 #>   Response: yield
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df    p_value
 #> 1 treatment  8.161932  3 0.04278097
 anova(fit_crd)
@@ -1137,6 +1138,7 @@ fit_rcbd
 #>   Design: rcbd
 #>   Method: Friedman rank-sum
 #>   Response: yield
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df     p_value
 #> 1 treatment      12.6  3 0.005586546
 anova(fit_rcbd)
@@ -1629,8 +1631,10 @@ documents what each engine assumes.
 ``` r
 
 names(fit_rcbd)
-#>  [1] "design"   "response" "method"   "estimand" "engine"   "omnibus" 
-#>  [7] "effects"  "missing"  "seed"     "call"
+#>  [1] "design"          "response"        "method"          "estimand"       
+#>  [5] "engine"          "omnibus"         "effects"         "missing"        
+#>  [9] "seed"            "B"               "resampling"      "resampling_used"
+#> [13] "estimand_source" "call"
 ```
 
 | Field | What it holds | When you need it |

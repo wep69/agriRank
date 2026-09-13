@@ -6,8 +6,8 @@ response mid-ranks.
 ## Usage
 
 ``` r
-agri_ancova(formula, data, covariates, block = NULL, np = 4999, seed = 1, 
-    rank_response = TRUE, ...)
+agri_ancova(formula, data, covariates, block = NULL, nperm = 4999, seed = 1, 
+    rank_response = TRUE, np = NULL, ...)
 ```
 
 ## Arguments
@@ -29,9 +29,10 @@ agri_ancova(formula, data, covariates, block = NULL, np = 4999, seed = 1,
   Blocking variable(s) identifying the RCBD or nuisance randomization
   stratum.
 
-- np:
+- nperm:
 
-  Number of permutations passed to \`permuco\`.
+  Number of permutations passed to `permuco`. It must be a single
+  positive number; the p-value cannot fall below `1/(nperm + 1)`.
 
 - seed:
 
@@ -42,6 +43,12 @@ agri_ancova(formula, data, covariates, block = NULL, np = 4999, seed = 1,
   Logical; if \`TRUE\`, apply Freedman-Lane ANCOVA to response
   mid-ranks.
 
+- np:
+
+  Deprecated name of `nperm`. In a nonparametric package `np` reads as a
+  switch while being a count, so the argument was renamed; this alias
+  warns and forwards.
+
 - ...:
 
   Additional arguments passed to the selected backend or downstream
@@ -50,10 +57,12 @@ agri_ancova(formula, data, covariates, block = NULL, np = 4999, seed = 1,
 ## Details
 
 This function is not the 2026 resampling NANCOVA method; that remains a
-future engine. The vignette suite documents the experimental-design
-logic, estimand, hypothesis, resampling structure,
-missing/unbalanced-data behavior, and backend-specific limitations in
-greater depth.
+future engine. The examples below use the deprecated `np` name on
+purpose, because that is how the argument appeared in the released
+0.14.0 and the alias must keep them working. The vignette suite
+documents the experimental-design logic, estimand, hypothesis,
+resampling structure, missing/unbalanced-data behavior, and
+backend-specific limitations in greater depth.
 
 ## Value
 
@@ -83,13 +92,14 @@ verified references.
 if(requireNamespace("permuco",quietly=TRUE)){x<-simulate_agri("crd");
 x$base<-rnorm(nrow(x));
 agri_ancova(yield~treatment,x,covariates=base,np=299)}
+#> Warning: `np` was renamed to `nperm`: it is the number of permutations, not a switch for nonparametric analysis.
 #> Warning: The number of permutations is below 2000, p-values might be unreliable.
 #> $method
 #> [1] "Freedman-Lane permutation ANCOVA on response mid-ranks"
 #> 
 #> $formula
 #> .agri_rank_y ~ base + treatment
-#> <environment: 0x55fd838665a0>
+#> <environment: 0x55a4112e43d8>
 #> 
 #> $covariates
 #> [1] "base"
@@ -103,11 +113,16 @@ agri_ancova(yield~treatment,x,covariates=base,np=299)}
 #> $seed
 #> [1] 1
 #> 
+#> $nperm
+#> [1] 299
+#> 
 #> $omnibus
-#>                   SS df         F parametric P(>F) resampled P(>F)
-#> base        50.91219  1 0.9513916        0.3416214       0.3678930
-#> treatment   91.28192  3 0.5685924        0.6424474       0.6120401
-#> Residuals 1016.75448 19        NA               NA              NA
+#>      effect statistic df   p_value       SS         F parametric P(>F)
+#> 1      base 0.9513916  1 0.3678930 50.91219 0.9513916        0.3416214
+#> 2 treatment 0.5685924  3 0.6120401 91.28192 0.5685924        0.6424474
+#>   resampled P(>F)
+#> 1       0.3678930
+#> 2       0.6120401
 #> 
 #> $raw
 #> Anova Table
@@ -128,13 +143,14 @@ agri_ancova(yield~treatment,x,covariates=base,np=299)}
 if(requireNamespace("permuco",quietly=TRUE)){x<-simulate_agri("crd");
 x$base<-rnorm(nrow(x));
 agri_ancova(yield~treatment,x,covariates=base,np=299,rank_response=FALSE)}
+#> Warning: `np` was renamed to `nperm`: it is the number of permutations, not a switch for nonparametric analysis.
 #> Warning: The number of permutations is below 2000, p-values might be unreliable.
 #> $method
 #> [1] "Freedman-Lane permutation ANCOVA"
 #> 
 #> $formula
 #> yield ~ base + treatment
-#> <environment: 0x55fd82b5d848>
+#> <environment: 0x55a41046a7a0>
 #> 
 #> $covariates
 #> [1] "base"
@@ -148,11 +164,16 @@ agri_ancova(yield~treatment,x,covariates=base,np=299,rank_response=FALSE)}
 #> $seed
 #> [1] 1
 #> 
+#> $nperm
+#> [1] 299
+#> 
 #> $omnibus
-#>                   SS df         F parametric P(>F) resampled P(>F)
-#> base        2.288271  1 0.2539565        0.6200962       0.5852843
-#> treatment   9.036498  3 0.3342956        0.8006775       0.7792642
-#> Residuals 171.199235 19        NA               NA              NA
+#>      effect statistic df   p_value       SS         F parametric P(>F)
+#> 1      base 0.2539565  1 0.5852843 2.288271 0.2539565        0.6200962
+#> 2 treatment 0.3342956  3 0.7792642 9.036498 0.3342956        0.8006775
+#>   resampled P(>F)
+#> 1       0.5852843
+#> 2       0.7792642
 #> 
 #> $raw
 #> Anova Table
@@ -164,7 +185,7 @@ agri_ancova(yield~treatment,x,covariates=base,np=299,rank_response=FALSE)}
 #> 
 #> $call
 #> agri_ancova(formula = yield ~ treatment, data = x, covariates = base, 
-#>     np = 299, rank_response = FALSE)
+#>     rank_response = FALSE, np = 299)
 #> 
 #> attr(,"class")
 #> [1] "agri_ancova_fit"
@@ -173,13 +194,14 @@ agri_ancova(yield~treatment,x,covariates=base,np=299,rank_response=FALSE)}
 if(requireNamespace("permuco",quietly=TRUE)){x<-simulate_agri("rcbd");
 x$base<-rnorm(nrow(x));
 agri_ancova(yield~treatment,x,covariates=base,block=block,np=299)}
+#> Warning: `np` was renamed to `nperm`: it is the number of permutations, not a switch for nonparametric analysis.
 #> Warning: The number of permutations is below 2000, p-values might be unreliable.
 #> $method
 #> [1] "Freedman-Lane permutation ANCOVA on response mid-ranks"
 #> 
 #> $formula
 #> .agri_rank_y ~ block + base + treatment
-#> <environment: 0x55fd823d83e8>
+#> <environment: 0x55a40f3399b8>
 #> 
 #> $covariates
 #> [1] "base"
@@ -193,12 +215,18 @@ agri_ancova(yield~treatment,x,covariates=base,block=block,np=299)}
 #> $seed
 #> [1] 1
 #> 
+#> $nperm
+#> [1] 299
+#> 
 #> $omnibus
-#>                  SS df        F parametric P(>F) resampled P(>F)
-#> block     181.47586  5 1.125320       0.39161224      0.40802676
-#> base       57.28844  1 1.776209       0.20390063      0.25752508
-#> treatment 537.37321  3 5.553693       0.01006666      0.01672241
-#> Residuals 451.54489 14       NA               NA              NA
+#>      effect statistic df    p_value        SS        F parametric P(>F)
+#> 1     block  1.125320  5 0.40802676 181.47586 1.125320       0.39161224
+#> 2      base  1.776209  1 0.25752508  57.28844 1.776209       0.20390063
+#> 3 treatment  5.553693  3 0.01672241 537.37321 5.553693       0.01006666
+#>   resampled P(>F)
+#> 1      0.40802676
+#> 2      0.25752508
+#> 3      0.01672241
 #> 
 #> $raw
 #> Anova Table

@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,7 +64,7 @@ Development Team</h4>
     
 <p><strong>Communication vignette</strong> <strong>Package:</strong>
 <code>agriRank</code> <strong>Version targeted:</strong>
-<code>0.14.0</code> <strong>Owns:</strong> turning a fitted object into
+<code>0.14.1</code> <strong>Owns:</strong> turning a fitted object into
 a figure, a table, a report and a record that a reviewer can check and a
 future analyst can rerun.</p>
 <hr>
@@ -303,7 +303,11 @@ Interaction figure. The question is whether the lines are parallel.
 <span>  <span class="fu"><a href="../reference/agri_rank.html">agri_rank</a></span><span class="op">(</span><span class="va">des_miss</span>, method <span class="op">=</span> <span class="st">"incomplete_wild"</span>, B <span class="op">=</span> <span class="fl">299</span>, seed <span class="op">=</span> <span class="fl">1301</span>,</span>
 <span>            missing_assumption <span class="op">=</span> <span class="st">"MCAR"</span><span class="op">)</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"missing"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: `B` = 299 is too small for confirmatory resampling inference: the</span></span>
+<span><span class="co">#&gt; smallest attainable p-value is 1/(B + 1) = 0.00333, so no result below that can</span></span>
+<span><span class="co">#&gt; be reported and the Monte Carlo error of any p-value near it is large. Use B &gt;=</span></span>
+<span><span class="co">#&gt; 1999, or state the p floor explicitly when computing time limits the budget.</span></span></code></pre></div>
 <div class="figure">
 <img src="v08-graphics-reporting-reproducibility_files/figure-html/fig-missing-1.png" class="r-plt" alt="Where the gaps are. Concentration in one treatment or at one occasion is the pattern to look for." width="884"><p class="caption">
 Where the gaps are. Concentration in one treatment or at one occasion is
@@ -637,11 +641,11 @@ smaller text.</p>
 <span><span class="co">#&gt; 1 treatment  9.553333  3 0.0227707</span></span></code></pre></div>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/agri_table.html">agri_table</a></span><span class="op">(</span><span class="va">fit_crd</span>, what <span class="op">=</span> <span class="st">"effects"</span>, format <span class="op">=</span> <span class="st">"data.frame"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   cell n   median mean_rank</span></span>
-<span><span class="co">#&gt; 1    A 6 4.748965  8.166667</span></span>
-<span><span class="co">#&gt; 2    B 6 4.307502  8.166667</span></span>
-<span><span class="co">#&gt; 3    C 6 6.900642 15.333333</span></span>
-<span><span class="co">#&gt; 4    D 6 8.861426 18.333333</span></span></code></pre></div>
+<span><span class="co">#&gt;   cell n   median mean_rank relative_effect</span></span>
+<span><span class="co">#&gt; 1    A 6 4.748965  8.166667       0.1944444</span></span>
+<span><span class="co">#&gt; 2    B 6 4.307502  8.166667       0.1944444</span></span>
+<span><span class="co">#&gt; 3    C 6 6.900642 15.333333       0.4930556</span></span>
+<span><span class="co">#&gt; 4    D 6 8.861426 18.333333       0.6180556</span></span></code></pre></div>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="../reference/agri_table.html">agri_table</a></span><span class="op">(</span><span class="va">fit_crd</span>, what <span class="op">=</span> <span class="st">"pairs"</span>, format <span class="op">=</span> <span class="st">"data.frame"</span><span class="op">)</span>, <span class="fl">6</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   stratum group1 group2 paired_by_block          A cliff_delta hodges_lehmann</span></span>

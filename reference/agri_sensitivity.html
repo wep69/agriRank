@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -80,18 +80,18 @@
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Example 1</span></span></span>
 <span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"factorial"</span><span class="op">)</span>; <span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">A</span><span class="op">*</span><span class="va">B</span>,<span class="va">x</span>,<span class="st">"factorial"</span><span class="op">)</span>; <span class="fu">agri_sensitivity</span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>The number of permutations is below 2000, p-values might be unreliable.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $table</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            method    effect      p_value note</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> primary.1 primary         A 0.0149000000     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> primary.2 primary         B 0.0054000000     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> primary.3 primary       A:B 0.1784000000     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ART.1         ART         A 0.0088775925     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ART.2         ART         B 0.0008957788     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ART.3         ART       A:B 0.0330224447     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> permuco.1 permuco         A 0.0132405802     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> permuco.2 permuco         B 0.0040020429     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> permuco.3 permuco       A:B 0.1726873315     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> permuco.4 permuco Residuals           NA     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            method effect      p_value note</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> primary.1 primary      A 0.0149000000     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> primary.2 primary      B 0.0054000000     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> primary.3 primary    A:B 0.1784000000     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ART.1         ART      A 0.0088775925     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ART.2         ART      B 0.0008957788     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ART.3         ART    A:B 0.0330224447     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> permuco.1 permuco      A 0.0150075038     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> permuco.2 permuco      B 0.0055027514     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> permuco.3 permuco    A:B 0.1840920460     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $fits</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $fits$primary</span>
@@ -99,31 +99,41 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: factorial</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: rankFD pseudo-rank factorial inference</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic    df1     df2 p_value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A    6.9339 1.0000 22.8596  0.0149</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B    6.6740 1.9702 22.8596  0.0054</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B    1.8632 1.9702 22.8596  0.1784</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic     df p_value    df1     df2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A    6.9339 1.0000  0.0149 1.0000 22.8596</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B    6.6740 1.9702  0.0054 1.9702 22.8596</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B    1.8632 1.9702  0.1784 1.9702 22.8596</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $fits$ART</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: factorial</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Aligned Rank Transform</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Term Df Df.res    Sum Sq Sum Sq.res  F value       Pr(&gt;F) effect</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    A  1     30  802.7778   3074.333 7.833677 0.0088775925      A</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2    B  2     30 1441.5000   2416.333 8.948476 0.0008957788      B</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  A:B  2     30  786.0556   3079.000 3.829436 0.0330224447    A:B</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic df      p_value Term Df Df.res    Sum Sq Sum Sq.res  F value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A  7.833677  1 0.0088775925    A  1     30  802.7778   3074.333 7.833677</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B  8.948476  2 0.0008957788    B  2     30 1441.5000   2416.333 8.948476</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B  3.829436  2 0.0330224447  A:B  2     30  786.0556   3079.000 3.829436</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Pr(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.0088775925</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.0008957788</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0.0330224447</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $fits$permuco</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: factorial</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: permuco permutation ANOVA on mid-ranks</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                  SS df        F parametric P(&gt;F) resampled P(&gt;F)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> A          498.7778  1 6.933889      0.013240580      0.01640328</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> B          960.1667  2 6.674004      0.004002043      0.00300060</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> A:B        268.0556  2 1.863222      0.172687331      0.17923585</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Residuals 2158.0000 30       NA               NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling replicates: 1999</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic df     p_value       SS        F parametric P(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A  6.933889  1 0.015007504 498.7778 6.933889      0.013240580</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B  6.674004  2 0.005502751 960.1667 6.674004      0.004002043</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B  1.863222  2 0.184092046 268.0556 1.863222      0.172687331</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   resampled P(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     0.015007504</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2     0.005502751</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     0.184092046</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $interpretation</span>
@@ -152,20 +162,26 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: factorial</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: rankFD pseudo-rank factorial inference</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic    df1     df2 p_value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A    6.9339 1.0000 22.8596  0.0149</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B    6.6740 1.9702 22.8596  0.0054</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B    1.8632 1.9702 22.8596  0.1784</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic     df p_value    df1     df2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A    6.9339 1.0000  0.0149 1.0000 22.8596</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B    6.6740 1.9702  0.0054 1.9702 22.8596</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B    1.8632 1.9702  0.1784 1.9702 22.8596</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $fits$ART</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: factorial</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Aligned Rank Transform</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Term Df Df.res    Sum Sq Sum Sq.res  F value       Pr(&gt;F) effect</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    A  1     30  802.7778   3074.333 7.833677 0.0088775925      A</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2    B  2     30 1441.5000   2416.333 8.948476 0.0008957788      B</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  A:B  2     30  786.0556   3079.000 3.829436 0.0330224447    A:B</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic df      p_value Term Df Df.res    Sum Sq Sum Sq.res  F value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A  7.833677  1 0.0088775925    A  1     30  802.7778   3074.333 7.833677</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B  8.948476  2 0.0008957788    B  2     30 1441.5000   2416.333 8.948476</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B  3.829436  2 0.0330224447  A:B  2     30  786.0556   3079.000 3.829436</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Pr(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.0088775925</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.0008957788</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0.0330224447</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $interpretation</span>
@@ -178,18 +194,18 @@
 <span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"factorial"</span><span class="op">)</span>;</span></span>
 <span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">A</span><span class="op">*</span><span class="va">B</span>,<span class="va">x</span>,<span class="st">"factorial"</span><span class="op">)</span>;</span></span>
 <span class="r-in"><span><span class="fu">agri_sensitivity</span><span class="op">(</span><span class="va">d</span>,<span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"primary"</span>,<span class="st">"ART"</span>,<span class="st">"permuco"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>The number of permutations is below 2000, p-values might be unreliable.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $table</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            method    effect      p_value note</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> primary.1 primary         A 0.0149000000     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> primary.2 primary         B 0.0054000000     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> primary.3 primary       A:B 0.1784000000     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ART.1         ART         A 0.0088775925     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ART.2         ART         B 0.0008957788     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ART.3         ART       A:B 0.0330224447     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> permuco.1 permuco         A 0.0132405802     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> permuco.2 permuco         B 0.0040020429     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> permuco.3 permuco       A:B 0.1726873315     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> permuco.4 permuco Residuals           NA     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            method effect      p_value note</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> primary.1 primary      A 0.0149000000     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> primary.2 primary      B 0.0054000000     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> primary.3 primary    A:B 0.1784000000     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ART.1         ART      A 0.0088775925     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ART.2         ART      B 0.0008957788     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ART.3         ART    A:B 0.0330224447     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> permuco.1 permuco      A 0.0150075038     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> permuco.2 permuco      B 0.0055027514     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> permuco.3 permuco    A:B 0.1840920460     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $fits</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $fits$primary</span>
@@ -197,31 +213,41 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: factorial</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: rankFD pseudo-rank factorial inference</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic    df1     df2 p_value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A    6.9339 1.0000 22.8596  0.0149</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B    6.6740 1.9702 22.8596  0.0054</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B    1.8632 1.9702 22.8596  0.1784</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic     df p_value    df1     df2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A    6.9339 1.0000  0.0149 1.0000 22.8596</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B    6.6740 1.9702  0.0054 1.9702 22.8596</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B    1.8632 1.9702  0.1784 1.9702 22.8596</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $fits$ART</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: factorial</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Aligned Rank Transform</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Term Df Df.res    Sum Sq Sum Sq.res  F value       Pr(&gt;F) effect</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    A  1     30  802.7778   3074.333 7.833677 0.0088775925      A</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2    B  2     30 1441.5000   2416.333 8.948476 0.0008957788      B</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  A:B  2     30  786.0556   3079.000 3.829436 0.0330224447    A:B</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic df      p_value Term Df Df.res    Sum Sq Sum Sq.res  F value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A  7.833677  1 0.0088775925    A  1     30  802.7778   3074.333 7.833677</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B  8.948476  2 0.0008957788    B  2     30 1441.5000   2416.333 8.948476</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B  3.829436  2 0.0330224447  A:B  2     30  786.0556   3079.000 3.829436</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Pr(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.0088775925</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.0008957788</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0.0330224447</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $fits$permuco</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: factorial</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: permuco permutation ANOVA on mid-ranks</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                  SS df        F parametric P(&gt;F) resampled P(&gt;F)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> A          498.7778  1 6.933889      0.013240580      0.01640328</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> B          960.1667  2 6.674004      0.004002043      0.00300060</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> A:B        268.0556  2 1.863222      0.172687331      0.17923585</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Residuals 2158.0000 30       NA               NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling replicates: 1999</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic df     p_value       SS        F parametric P(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A  6.933889  1 0.015007504 498.7778 6.933889      0.013240580</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B  6.674004  2 0.005502751 960.1667 6.674004      0.004002043</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B  1.863222  2 0.184092046 268.0556 1.863222      0.172687331</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   resampled P(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     0.015007504</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2     0.005502751</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     0.184092046</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $interpretation</span>

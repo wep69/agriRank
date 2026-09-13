@@ -1,7 +1,7 @@
 # Integrated Agronomic Case Study: Design to Report
 
 **Integrated instructional vignette** **Package:** `agriRank` **Version
-targeted:** `0.14.0` **Purpose:** a practical starting point for
+targeted:** `0.14.1` **Purpose:** a practical starting point for
 students, researchers, reviewers and analysts who need to move from a
 field notebook to a defensible agronomic recommendation, without losing
 the logic of the experimental design along the way.
@@ -467,10 +467,15 @@ fit
 #>   Design: rcbd
 #>   Method: Aligned Rank Transform
 #>   Response: biomass
-#>                  Term         F Df Df.res       Pr(>F)              effect
-#> 1            cultivar 38.649209  2     44 2.047132e-10            cultivar
-#> 2          salinity_f 83.755809  3     44 3.226862e-18          salinity_f
-#> 3 cultivar:salinity_f  1.113167  6     44 3.702442e-01 cultivar:salinity_f
+#>   Resampling: none (asymptotic test)
+#>                effect statistic df      p_value                Term         F
+#> 1            cultivar 38.649209  2 2.047132e-10            cultivar 38.649209
+#> 2          salinity_f 83.755809  3 3.226862e-18          salinity_f 83.755809
+#> 3 cultivar:salinity_f  1.113167  6 3.702442e-01 cultivar:salinity_f  1.113167
+#>   Df Df.res       Pr(>F)
+#> 1  2     44 2.047132e-10
+#> 2  3     44 3.226862e-18
+#> 3  6     44 3.702442e-01
 ```
 
 The engine was chosen from the **structure** of the design, not from the
@@ -481,10 +486,14 @@ longer testing the hypothesis it appears to test.
 ``` r
 
 fit$omnibus
-#>                  Term         F Df Df.res       Pr(>F)              effect
-#> 1            cultivar 38.649209  2     44 2.047132e-10            cultivar
-#> 2          salinity_f 83.755809  3     44 3.226862e-18          salinity_f
-#> 3 cultivar:salinity_f  1.113167  6     44 3.702442e-01 cultivar:salinity_f
+#>                effect statistic df      p_value                Term         F
+#> 1            cultivar 38.649209  2 2.047132e-10            cultivar 38.649209
+#> 2          salinity_f 83.755809  3 3.226862e-18          salinity_f 83.755809
+#> 3 cultivar:salinity_f  1.113167  6 3.702442e-01 cultivar:salinity_f  1.113167
+#>   Df Df.res       Pr(>F)
+#> 1  2     44 2.047132e-10
+#> 2  3     44 3.226862e-18
+#> 3  6     44 3.702442e-01
 ```
 
 ### 6.2 Reading the omnibus table
@@ -504,10 +513,14 @@ quoting them as if they described every cultivar is misleading.
 ``` r
 
 anova(fit)
-#>                  Term         F Df Df.res       Pr(>F)              effect
-#> 1            cultivar 38.649209  2     44 2.047132e-10            cultivar
-#> 2          salinity_f 83.755809  3     44 3.226862e-18          salinity_f
-#> 3 cultivar:salinity_f  1.113167  6     44 3.702442e-01 cultivar:salinity_f
+#>                effect statistic df      p_value                Term         F
+#> 1            cultivar 38.649209  2 2.047132e-10            cultivar 38.649209
+#> 2          salinity_f 83.755809  3 3.226862e-18          salinity_f 83.755809
+#> 3 cultivar:salinity_f  1.113167  6 3.702442e-01 cultivar:salinity_f  1.113167
+#>   Df Df.res       Pr(>F)
+#> 1  2     44 2.047132e-10
+#> 2  3     44 3.226862e-18
+#> 3  6     44 3.702442e-01
 ```
 
 ### 6.3 A result worth pausing on
@@ -577,19 +590,19 @@ For this experiment the reading is:
 
 eff <- agri_effects(fit)
 eff
-#>     cell n   median mean_rank
-#> 1  C1::0 5 17.91560      44.2
-#> 2  C1::2 5 17.00924      28.4
-#> 3  C1::4 5 15.12592      13.8
-#> 4  C1::6 5 14.23396       4.8
-#> 5  C2::0 5 19.93798      56.6
-#> 6  C2::2 5 17.80665      40.8
-#> 7  C2::4 5 17.57829      35.0
-#> 8  C2::6 5 16.62329      24.8
-#> 9  C3::0 5 19.33881      52.4
-#> 10 C3::2 5 17.46599      35.6
-#> 11 C3::4 5 16.15833      20.6
-#> 12 C3::6 5 14.27567       9.0
+#>     cell n   median mean_rank relative_effect
+#> 1  C1::0 5 17.91560      44.2       0.6866667
+#> 2  C1::2 5 17.00924      28.4       0.4233333
+#> 3  C1::4 5 15.12592      13.8       0.1800000
+#> 4  C1::6 5 14.23396       4.8       0.0300000
+#> 5  C2::0 5 19.93798      56.6       0.8933333
+#> 6  C2::2 5 17.80665      40.8       0.6300000
+#> 7  C2::4 5 17.57829      35.0       0.5333333
+#> 8  C2::6 5 16.62329      24.8       0.3633333
+#> 9  C3::0 5 19.33881      52.4       0.8233333
+#> 10 C3::2 5 17.46599      35.6       0.5433333
+#> 11 C3::4 5 16.15833      20.6       0.2933333
+#> 12 C3::6 5 14.27567       9.0       0.1000000
 ```
 
 Two quantities are reported per treatment cell, and the choice is
@@ -1176,7 +1189,7 @@ fit_var <- agri_np_regression(biomass ~ salinity + cultivar, base,
                               gam_structure = "varying")
 fit_var$formula_used
 #> biomass ~ cultivar + s(salinity, by = cultivar, k = 3) + block
-#> <environment: 0x55c480ccb998>
+#> <environment: 0x5604284b8b50>
 ```
 
 One smooth of salinity is now fitted per cultivar:
@@ -1925,8 +1938,10 @@ des_r
 
 fit_r <- agri_rank(des_r)
 fit_r$omnibus
-#> [1] effect
-#> <0 rows> (or 0-length row.names)
+#>          effect  statistic       df    p_value
+#> 1      cultivar  4.5870835 1.985998 0.01034804
+#> 2          time 49.9673216 2.734477 0.00000000
+#> 3 cultivar:time  0.4323595 5.187657 0.83285651
 ```
 
 ### 17.2 Reading a repeated-measures rank analysis
@@ -3395,6 +3410,7 @@ itself, not a smooth curve fitted through cumulative percentages.
 ``` r
 
 r <- agri_rankings(biomass ~ cultivar, base, block = block)
+#> Recoded rankings that are not in dense form
 r$summary
 #>   item blocks mean_rank rank_sum wins win_share
 #> 1   C2     20      4.65       NA    3      0.15
@@ -3446,16 +3462,17 @@ quantity the data contain, and decline the one they do not.
 ``` r
 
 sens <- agri_sensitivity(fit, methods = c("primary", "permuco"))
+#> Warning in aovperm_fix(formula = formula, data = data, method = method, : The
+#> number of permutations is below 2000, p-values might be unreliable.
 sens$table
 #>            method              effect      p_value note
 #> primary.1 primary            cultivar 2.047132e-10     
 #> primary.2 primary          salinity_f 3.226862e-18     
 #> primary.3 primary cultivar:salinity_f 3.702442e-01     
-#> permuco.1 permuco         .agri_block 2.408443e-01     
-#> permuco.2 permuco            cultivar 7.344754e-08     
-#> permuco.3 permuco          salinity_f 0.000000e+00     
-#> permuco.4 permuco cultivar:salinity_f 4.924299e-01     
-#> permuco.5 permuco           Residuals           NA
+#> permuco.1 permuco         .agri_block 2.391196e-01     
+#> permuco.2 permuco            cultivar 5.002501e-04     
+#> permuco.3 permuco          salinity_f 5.002501e-04     
+#> permuco.4 permuco cultivar:salinity_f 4.827414e-01
 sens$interpretation
 #> [1] "Differences across methods quantify model sensitivity. They must not be used to choose the smallest p-value."
 ```
@@ -3503,28 +3520,32 @@ conclusion about the software.
 ``` r
 
 agri_table(fit, what = "omnibus", format = "data.frame")
-#>                  Term         F Df Df.res       Pr(>F)              effect
-#> 1            cultivar 38.649209  2     44 2.047132e-10            cultivar
-#> 2          salinity_f 83.755809  3     44 3.226862e-18          salinity_f
-#> 3 cultivar:salinity_f  1.113167  6     44 3.702442e-01 cultivar:salinity_f
+#>                effect statistic df      p_value                Term         F
+#> 1            cultivar 38.649209  2 2.047132e-10            cultivar 38.649209
+#> 2          salinity_f 83.755809  3 3.226862e-18          salinity_f 83.755809
+#> 3 cultivar:salinity_f  1.113167  6 3.702442e-01 cultivar:salinity_f  1.113167
+#>   Df Df.res       Pr(>F)
+#> 1  2     44 2.047132e-10
+#> 2  3     44 3.226862e-18
+#> 3  6     44 3.702442e-01
 ```
 
 ``` r
 
 agri_table(fit, what = "effects", format = "data.frame")
-#>     cell n   median mean_rank
-#> 1  C1::0 5 17.91560      44.2
-#> 2  C1::2 5 17.00924      28.4
-#> 3  C1::4 5 15.12592      13.8
-#> 4  C1::6 5 14.23396       4.8
-#> 5  C2::0 5 19.93798      56.6
-#> 6  C2::2 5 17.80665      40.8
-#> 7  C2::4 5 17.57829      35.0
-#> 8  C2::6 5 16.62329      24.8
-#> 9  C3::0 5 19.33881      52.4
-#> 10 C3::2 5 17.46599      35.6
-#> 11 C3::4 5 16.15833      20.6
-#> 12 C3::6 5 14.27567       9.0
+#>     cell n   median mean_rank relative_effect
+#> 1  C1::0 5 17.91560      44.2       0.6866667
+#> 2  C1::2 5 17.00924      28.4       0.4233333
+#> 3  C1::4 5 15.12592      13.8       0.1800000
+#> 4  C1::6 5 14.23396       4.8       0.0300000
+#> 5  C2::0 5 19.93798      56.6       0.8933333
+#> 6  C2::2 5 17.80665      40.8       0.6300000
+#> 7  C2::4 5 17.57829      35.0       0.5333333
+#> 8  C2::6 5 16.62329      24.8       0.3633333
+#> 9  C3::0 5 19.33881      52.4       0.8233333
+#> 10 C3::2 5 17.46599      35.6       0.5433333
+#> 11 C3::4 5 16.15833      20.6       0.2933333
+#> 12 C3::6 5 14.27567       9.0       0.1000000
 ```
 
 `format = "auto"` returns a `gt` object when that package is installed,
@@ -3683,10 +3704,14 @@ validate_agri_design(des1)
 
 f1 <- agri_rank(des1)
 f1$omnibus
-#>                  Term         F Df Df.res       Pr(>F)              effect
-#> 1            cultivar 38.649209  2     44 2.047132e-10            cultivar
-#> 2          salinity_f 83.755809  3     44 3.226862e-18          salinity_f
-#> 3 cultivar:salinity_f  1.113167  6     44 3.702442e-01 cultivar:salinity_f
+#>                effect statistic df      p_value                Term         F
+#> 1            cultivar 38.649209  2 2.047132e-10            cultivar 38.649209
+#> 2          salinity_f 83.755809  3 3.226862e-18          salinity_f 83.755809
+#> 3 cultivar:salinity_f  1.113167  6 3.702442e-01 cultivar:salinity_f  1.113167
+#>   Df Df.res       Pr(>F)
+#> 1  2     44 2.047132e-10
+#> 2  3     44 3.226862e-18
+#> 3  6     44 3.702442e-01
 ```
 
 #### Step 4: read the interaction first
@@ -3710,13 +3735,13 @@ cat(if (ip[["Pr(>F)"]] < 0.10)
 ``` r
 
 head(as.data.frame(agri_effects(f1)), 6)
-#>    cell n   median mean_rank
-#> 1 C1::0 5 17.91560      44.2
-#> 2 C1::2 5 17.00924      28.4
-#> 3 C1::4 5 15.12592      13.8
-#> 4 C1::6 5 14.23396       4.8
-#> 5 C2::0 5 19.93798      56.6
-#> 6 C2::2 5 17.80665      40.8
+#>    cell n   median mean_rank relative_effect
+#> 1 C1::0 5 17.91560      44.2       0.6866667
+#> 2 C1::2 5 17.00924      28.4       0.4233333
+#> 3 C1::4 5 15.12592      13.8       0.1800000
+#> 4 C1::6 5 14.23396       4.8       0.0300000
+#> 5 C2::0 5 19.93798      56.6       0.8933333
+#> 6 C2::2 5 17.80665      40.8       0.6300000
 ```
 
 #### Step 6: comparisons with compact letters
@@ -3744,15 +3769,16 @@ agri_cld(agri_conover(f1))
 ``` r
 
 agri_sensitivity(f1, methods = c("primary", "permuco"))$table
+#> Warning in aovperm_fix(formula = formula, data = data, method = method, : The
+#> number of permutations is below 2000, p-values might be unreliable.
 #>            method              effect      p_value note
 #> primary.1 primary            cultivar 2.047132e-10     
 #> primary.2 primary          salinity_f 3.226862e-18     
 #> primary.3 primary cultivar:salinity_f 3.702442e-01     
-#> permuco.1 permuco         .agri_block 2.408443e-01     
-#> permuco.2 permuco            cultivar 7.344754e-08     
-#> permuco.3 permuco          salinity_f 0.000000e+00     
-#> permuco.4 permuco cultivar:salinity_f 4.924299e-01     
-#> permuco.5 permuco           Residuals           NA
+#> permuco.1 permuco         .agri_block 2.391196e-01     
+#> permuco.2 permuco            cultivar 5.002501e-04     
+#> permuco.3 permuco          salinity_f 5.002501e-04     
+#> permuco.4 permuco cultivar:salinity_f 4.827414e-01
 ```
 
 #### Step 8: the design figure
@@ -3772,10 +3798,14 @@ Interaction figure for the factorial analysis.
 ``` r
 
 agri_table(f1, what = "omnibus", format = "data.frame")
-#>                  Term         F Df Df.res       Pr(>F)              effect
-#> 1            cultivar 38.649209  2     44 2.047132e-10            cultivar
-#> 2          salinity_f 83.755809  3     44 3.226862e-18          salinity_f
-#> 3 cultivar:salinity_f  1.113167  6     44 3.702442e-01 cultivar:salinity_f
+#>                effect statistic df      p_value                Term         F
+#> 1            cultivar 38.649209  2 2.047132e-10            cultivar 38.649209
+#> 2          salinity_f 83.755809  3 3.226862e-18          salinity_f 83.755809
+#> 3 cultivar:salinity_f  1.113167  6 3.702442e-01 cultivar:salinity_f  1.113167
+#>   Df Df.res       Pr(>F)
+#> 1  2     44 2.047132e-10
+#> 2  3     44 3.226862e-18
+#> 3  6     44 3.702442e-01
 ```
 
 #### Step 10: report

@@ -1,5 +1,151 @@
 # Changelog
 
+## agriRank 0.14.1
+
+Patch release. Every item below comes from an independent audit of the
+0.14.0 release, executed against the installed package on a clean
+session and recorded in two documents, a report to the author and a
+technical note of the tutorial book. None of the ten findings was a
+crash. Each one returned a well-formed object that answered a different
+question from the one that was asked, which is why none of them was
+caught by the test suite of 0.14.0.
+
+### The resampling budget now reaches the engine, and says when it cannot
+
+- `agri_rank(B = )` reached only the native engines. `permuco` kept its
+  own default of 4999 permutations, so `B = 199`, `B = 999` and
+  `B = 4999` returned the same p-value with the same seed, and a user
+  who asked for 199 permutations was answered with 4999. `B` now reaches
+  `permuco` as `np` and `MANOVA.RM` as `iter`, while an explicitly
+  supplied engine argument still outranks it and says that it did.
+- An engine that cannot resample now warns when `B` is supplied. The
+  Kruskal- Wallis, Friedman, rankFD, ART and nparLD tests are asymptotic
+  or F-based and draw no resamples, so the budget had no effect on their
+  p-values and nothing said so.
+  [`agri_np_bootstrap()`](https://wep69.github.io/agriRank/reference/agri_np_bootstrap.md),
+  from the same package, honors the `B` it receives, and two sister
+  functions treating the same argument in opposite ways was the
+  inconsistency the audit named.
+- A budget below 999 warns. The smallest attainable resampled p-value is
+  `1/(B + 1)`, so `B = 199` cannot report 0.001 whatever the data say,
+  and that is the region where confirmatory agronomic statements live.
+- The fit records `B`, `resampling` (the replicate count that actually
+  ran) and `resampling_used`, and
+  [`print()`](https://rdrr.io/r/base/print.html) shows the count, so a
+  p-value can no longer be reported without the budget that produced it.
+  [`agri_trend()`](https://wep69.github.io/agriRank/reference/agri_trend.md)
+  already recorded `B`; the audit asked for the same in every function
+  that resamples.
+- `agri_repeated(B = )` warns when the selected backend is driven by
+  `iter` instead.
+
+### The omnibus table has one shape, and one reader
+
+- Every engine named its test table after the package it wraps: the
+  car-style `Pr(>F)` of ARTool, the `p-value` of MANOVA.RM, and
+  permuco’s separated `parametric P(>F)` and `resampled P(>F)`. Generic
+  code that reads `fit$omnibus$p_value` therefore received `NULL`
+  instead of an error in half of the engines, and an empty table passed
+  unnoticed inside a long document. The `omnibus` component now always
+  carries `effect`, `statistic`, `df` and `p_value`, and keeps every
+  native column beside them.
+- The canonical `p_value` of a permutation engine is the resampled one,
+  because that is the distribution the user chose. The parametric value
+  survives in its own column. Error-stratum rows such as `Residuals` are
+  not tests and stay out of `omnibus`; the untouched backend table
+  remains in `fit$engine$raw`.
+- Added
+  [`agri_p()`](https://wep69.github.io/agriRank/reference/agri_p.md), a
+  documented extractor for both, because the book had to write its own
+  extractor to read a p-value out of a fit. `print.agri_rank_fit()`
+  reports the replicate count as well.
+- [`agri_ancova()`](https://wep69.github.io/agriRank/reference/agri_ancova.md)
+  returns the same standardized table, and
+  [`agri_p()`](https://wep69.github.io/agriRank/reference/agri_p.md)
+  explains itself when a backend reports a single p-value.
+
+### The declared estimand selects the estimator
+
+- `estimand` was recorded and changed nothing: the three values returned
+  the same
+  [`agri_effects()`](https://wep69.github.io/agriRank/reference/agri_effects.md)
+  table, so a user who declared a relative-effect analysis received
+  medians and mean ranks without being told. The descriptive block is
+  still reported, and the estimator of the declared estimand is added
+  beside it. `"relative_effect"` adds the Brunner-Munzel relative effect
+  `p_i = (Rbar_i - (n_i + 1)/2) / N`, which is a function of the mean
+  rank already reported; `"location_shift"` adds the Hodges-Lehmann
+  shift against the first level, which is named in a `reference` column
+  because a location shift is a paired statement; `"distribution"`
+  leaves the descriptive block alone, because the target is the whole
+  distribution. `fit$estimand_source` records whether the engine
+  answered the declaration or
+  [`agri_effects()`](https://wep69.github.io/agriRank/reference/agri_effects.md)
+  did.
+
+### Backends that returned nothing without saying so
+
+- [`np_repeated()`](https://wep69.github.io/agriRank/reference/np_repeated.md)
+  returned a zero-row omnibus while the complete nparLD result sat in
+  `fit$engine$raw`. A zero-row table prints exactly like a fit with
+  nothing to report. The adapter now reads the ANOVA-type table of the
+  installed nparLD version, and a test walks every engine constructor
+  and requires a non-empty standardized table, because this is the kind
+  of defect that reappears in another adapter.
+- `agri_rankings(worth = TRUE)` returned `NULL` with PlackettLuce
+  installed: the matrix entry point became `as.rankings()` and the older
+  `rankings()` gained a mandatory `id`, so the call failed and every
+  error was swallowed into `NULL`. It now fits the companion model, and
+  each step that cannot proceed reports why instead of returning a null
+  component.
+- `agri_cld(method = )` moved from `...` into the signature. It decided
+  every letter of the display, so a typo was silently ignored.
+  [`agri_pairs()`](https://wep69.github.io/agriRank/reference/agri_pairs.md)
+  keeps the paired effect sizes (`A`, `cliff_delta`, `hodges_lehmann`)
+  it had dropped: leaving them absent made the blocked design, the most
+  common one in agronomic experimentation, the only one without effect
+  sizes in the table.
+
+### Arguments that misled by their name
+
+- `agri_ancova(np = )` is now `nperm =`, because in a nonparametric
+  package `np` reads as a switch while being a count. The old name warns
+  and forwards, and the count is validated: `np = TRUE` and `np = FALSE`
+  used to fail with errors raised inside `stats` about invalid subscript
+  types and lengths, which name the symptom and not the mistake.
+- `agri_trend(scores = )` accepts an unnamed vector in the order of
+  [`levels()`](https://rdrr.io/r/base/levels.html), which is how a scale
+  is naturally written and how
+  [`stats::contr.poly()`](https://rdrr.io/r/stats/contrast.html) reads
+  one. Matching by name alone made the natural call fail inside
+  [`stats::cor`](https://rdrr.io/r/stats/cor.html) with a message about
+  pairs and complete observations, which points nowhere near the cause.
+  A wrong length or a name that matches no level now says which levels
+  were expected.
+- `agri_sensitivity(methods = )` refuses vocabulary that is not part of
+  its method list instead of returning an empty table, which invited the
+  reader to conclude that the engines agreed when none of them had run.
+
+### Smaller improvements from the same audit
+
+- An unknown `method` now names the engines that exist, as
+  [`agri_integer_threshold()`](https://wep69.github.io/agriRank/reference/agri_integer_threshold.md)
+  already did for its own vocabulary, instead of answering only that the
+  name was not recognised.
+  [`agri_methods()`](https://wep69.github.io/agriRank/reference/agri_methods.md)
+  reports which of them is admissible for each declared design.
+- [`agri_power()`](https://wep69.github.io/agriRank/reference/agri_power.md)
+  states that the generator must be a function of exactly one argument,
+  the simulation index. A generator written as `function()` fails with
+  `unused argument (i)`, and the requirement was implied rather than
+  documented.
+- [`validate_agri_design()`](https://wep69.github.io/agriRank/reference/validate_agri_design.md)
+  documents its scope: it checks the response and the occupation of the
+  factorial cells, not the integrity of the declared randomization. A
+  structurally broken design can return `ok = TRUE` there and be refused
+  later, with a specific reason, by the engine that would have to
+  analyze it.
+
 ## agriRank 0.14.0
 
 ### Regression: making the model justify itself

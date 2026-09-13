@@ -197,6 +197,7 @@ if (requireNamespace("multcompView", quietly = TRUE)) {
                       missing_assumption = "MCAR")
   attr(agri_pairs(fw, B = 99, seed = 1, cld = TRUE), "cld")
 }
+#> Warning: `B` = 99 is too small for confirmatory resampling inference: the smallest attainable p-value is 1/(B + 1) = 0.01000, so no result below that can be reported and the Monte Carlo error of any p-value near it is large. Use B >= 1999, or state the p floor explicitly when computing time limits the budget.
 #> Warning: B < 199 gives coarse Monte Carlo p-values; use >= 999 for analysis and >= 4999 for final work when feasible.
 #>   stratum group letter
 #> 1 control     1      a

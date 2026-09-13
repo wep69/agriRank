@@ -76,10 +76,15 @@ if (requireNamespace("ARTool", quietly = TRUE) || requireNamespace("permuco",
 #>   Design: multienv
 #>   Method: Aligned Rank Transform
 #>   Response: yield
-#>                   Term         F Df Df.res       Pr(>F)               effect
-#> 1             genotype 6.8838985  3     45 0.0006496793             genotype
-#> 2          environment 2.1474913  2     15 0.1513043770          environment
-#> 3 genotype:environment 0.6783333  6     45 0.6677714985 genotype:environment
+#>   Resampling: none (asymptotic test)
+#>                 effect statistic df      p_value                 Term         F
+#> 1             genotype 6.8838985  3 0.0006496793             genotype 6.8838985
+#> 2          environment 2.1474913  2 0.1513043770          environment 2.1474913
+#> 3 genotype:environment 0.6783333  6 0.6677714985 genotype:environment 0.6783333
+#>   Df Df.res       Pr(>F)
+#> 1  3     45 0.0006496793
+#> 2  2     15 0.1513043770
+#> 3  6     45 0.6677714985
 x<-simulate_agri("multienv");
 if (requireNamespace("ARTool", quietly = TRUE)) agri_multienv(yield ~ genotype * 
     environment, x, environment, block, method = "ART")
@@ -90,10 +95,15 @@ if (requireNamespace("ARTool", quietly = TRUE)) agri_multienv(yield ~ genotype *
 #>   Design: multienv
 #>   Method: Aligned Rank Transform
 #>   Response: yield
-#>                   Term         F Df Df.res       Pr(>F)               effect
-#> 1             genotype 6.8838985  3     45 0.0006496793             genotype
-#> 2          environment 2.1474913  2     15 0.1513043770          environment
-#> 3 genotype:environment 0.6783333  6     45 0.6677714985 genotype:environment
+#>   Resampling: none (asymptotic test)
+#>                 effect statistic df      p_value                 Term         F
+#> 1             genotype 6.8838985  3 0.0006496793             genotype 6.8838985
+#> 2          environment 2.1474913  2 0.1513043770          environment 2.1474913
+#> 3 genotype:environment 0.6783333  6 0.6677714985 genotype:environment 0.6783333
+#>   Df Df.res       Pr(>F)
+#> 1  3     45 0.0006496793
+#> 2  2     15 0.1513043770
+#> 3  6     45 0.6677714985
 x<-simulate_agri("multienv");
 if (requireNamespace("permuco", quietly = TRUE)) agri_multienv(yield ~ 
     genotype, x, environment, block, method = "permuco", environment_interaction = FALSE, 
@@ -104,9 +114,13 @@ if (requireNamespace("permuco", quietly = TRUE)) agri_multienv(yield ~
 #>   Design: multienv
 #>   Method: permuco permutation ANOVA on mid-ranks
 #>   Response: yield
-#>                           SS df           F parametric P(>F) resampled P(>F)
-#> .agri_env_block 2.959250e+03 17 0.457771978      0.960519785      0.94949495
-#> genotype        7.147111e+03  3 6.265067420      0.001055334      0.01010101
-#> environment     7.641286e-01  2 0.001004738      0.998995786      0.34343434
-#> Residuals       1.939339e+04 51          NA               NA              NA
+#>   Resampling replicates: 99
+#>            effect   statistic df    p_value           SS           F
+#> 1 .agri_env_block 0.457771978 17 0.94949495 2959.2500000 0.457771978
+#> 2        genotype 6.265067420  3 0.01010101 7147.1111111 6.265067420
+#> 3     environment 0.001004738  2 0.34343434    0.7641286 0.001004738
+#>   parametric P(>F) resampled P(>F)
+#> 1      0.960519785      0.94949495
+#> 2      0.001055334      0.01010101
+#> 3      0.998995786      0.34343434
 ```

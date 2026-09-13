@@ -82,8 +82,11 @@ if(requireNamespace("nparLD",quietly=TRUE)) agri_repeated(d,"nparLD")
 #>   Design: repeated
 #>   Method: nparLD ANOVA-type rank inference
 #>   Response: height
-#> [1] effect
-#> <0 rows> (or 0-length row.names)
+#>   Resampling: none (asymptotic test)
+#>           effect statistic       df      p_value
+#> 1      treatment  1.255810 1.000000 2.624457e-01
+#> 2           time 10.402598 2.578418 3.603182e-06
+#> 3 treatment:time  5.676011 2.578418 1.360413e-03
 
 # Example 2
 x<-simulate_agri("repeated");
@@ -93,21 +96,24 @@ if(requireNamespace("MANOVA.RM",quietly=TRUE)) agri_repeated(d,"MANOVA.RM",iter=
 #>   Design: repeated
 #>   Method: MANOVA.RM WildBS
 #>   Response: height
-#>                Test statistic  df1    df2 p-value
-#> treatment               0.790 1.00 11.521   0.392
-#> time                    9.227 2.48    Inf   0.000
-#> treatment:time          4.883 2.48    Inf   0.004
+#>   Resampling replicates: 499
+#>           effect   df p_value Test statistic  df1    df2 p-value
+#> 1      treatment 1.00   0.392          0.790 1.00 11.521   0.392
+#> 2           time 2.48   0.000          9.227 2.48    Inf   0.000
+#> 3 treatment:time 2.48   0.004          4.883 2.48    Inf   0.004
 
 # Example 3
 x<-simulate_agri("repeated_missing");
 d<-agri_design(height~treatment*time,x,"repeated",subject=subject,within=time);
 agri_repeated(d,"native_wild",B=299,missing_assumption="MCAR")
+#> Warning: `B` = 299 is too small for confirmatory resampling inference: the smallest attainable p-value is 1/(B + 1) = 0.00333, so no result below that can be reported and the Monte Carlo error of any p-value near it is large. Use B >= 1999, or state the p floor explicitly when computing time limits the budget.
 #> agriRank fit
 #>   Design: repeated
 #>   Method: incomplete repeated-measures rank wild bootstrap
 #>   Response: height
-#>                        effect statistic    value      df p_boot p_asymptotic
-#> treatment           treatment       ATS 2.400622 1.00000   0.14   0.12128701
-#> time                     time       ATS 3.768121 1.42395   0.06   0.03710787
-#> treatment:time treatment:time       ATS 1.242759 1.42395   0.32   0.27959642
+#>   Resampling replicates: 299
+#>           effect statistic      df p_value    value p_boot p_asymptotic
+#> 1      treatment        NA 1.00000    0.14 2.400622   0.14   0.12128701
+#> 2           time        NA 1.42395    0.06 3.768121   0.06   0.03710787
+#> 3 treatment:time        NA 1.42395    0.32 1.242759   0.32   0.27959642
 ```

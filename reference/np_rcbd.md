@@ -68,6 +68,7 @@ x<-simulate_agri("rcbd"); np_rcbd(yield~treatment,x,block)
 #>   Design: rcbd
 #>   Method: Friedman rank-sum
 #>   Response: yield
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df    p_value
 #> 1 treatment       8.4  3 0.03842932
 
@@ -77,6 +78,7 @@ x<-simulate_agri("rcbd"); x$score<-round(x$yield); np_rcbd(score~treatment,x,blo
 #>   Design: rcbd
 #>   Method: Friedman rank-sum
 #>   Response: score
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df    p_value
 #> 1 treatment  6.980769  3 0.07251325
 
@@ -86,6 +88,7 @@ x<-simulate_agri("rcbd",n=8); np_rcbd(yield~treatment,x,block,"friedman")
 #>   Design: rcbd
 #>   Method: Friedman rank-sum
 #>   Response: yield
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df     p_value
 #> 1 treatment     12.75  3 0.005209652
 ```

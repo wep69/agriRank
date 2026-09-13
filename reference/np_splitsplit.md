@@ -81,6 +81,15 @@ np_splitsplit(yield ~ irrigation * cultivar * timing, x, block, irrigation, cult
 #>   Design: split_split
 #>   Method: Aligned Rank Transform
 #>   Response: yield
+#>   Resampling: none (asymptotic test)
+#>                       effect statistic df     p_value
+#> 1                 irrigation 2.5774353  1 0.169304670
+#> 2                   cultivar 5.9501449  2 0.009383259
+#> 3                     timing 0.4820337  1 0.492844523
+#> 4        irrigation:cultivar 0.2067273  2 0.814957369
+#> 5          irrigation:timing 0.3304848  1 0.569660338
+#> 6            cultivar:timing 0.6031332  2 0.553594334
+#> 7 irrigation:cultivar:timing 0.2392276  2 0.788723107
 #>                         Term         F Df Df.res      Pr(>F)
 #> 1                 irrigation 2.5774353  1      5 0.169304670
 #> 2                   cultivar 5.9501449  2     20 0.009383259
@@ -89,14 +98,6 @@ np_splitsplit(yield ~ irrigation * cultivar * timing, x, block, irrigation, cult
 #> 5          irrigation:timing 0.3304848  1     30 0.569660338
 #> 6            cultivar:timing 0.6031332  2     30 0.553594334
 #> 7 irrigation:cultivar:timing 0.2392276  2     30 0.788723107
-#>                       effect
-#> 1                 irrigation
-#> 2                   cultivar
-#> 3                     timing
-#> 4        irrigation:cultivar
-#> 5          irrigation:timing
-#> 6            cultivar:timing
-#> 7 irrigation:cultivar:timing
 # Or explicitly:
 if (requireNamespace("ARTool", quietly = TRUE)) np_splitsplit(yield ~ irrigation * 
     cultivar * timing, x, block, irrigation, cultivar, timing, method = "ART")
@@ -111,6 +112,15 @@ if (requireNamespace("ARTool", quietly = TRUE)) np_splitsplit(yield ~ irrigation
 #>   Design: split_split
 #>   Method: Aligned Rank Transform
 #>   Response: yield
+#>   Resampling: none (asymptotic test)
+#>                       effect statistic df     p_value
+#> 1                 irrigation 2.5774353  1 0.169304670
+#> 2                   cultivar 5.9501449  2 0.009383259
+#> 3                     timing 0.4820337  1 0.492844523
+#> 4        irrigation:cultivar 0.2067273  2 0.814957369
+#> 5          irrigation:timing 0.3304848  1 0.569660338
+#> 6            cultivar:timing 0.6031332  2 0.553594334
+#> 7 irrigation:cultivar:timing 0.2392276  2 0.788723107
 #>                         Term         F Df Df.res      Pr(>F)
 #> 1                 irrigation 2.5774353  1      5 0.169304670
 #> 2                   cultivar 5.9501449  2     20 0.009383259
@@ -119,12 +129,4 @@ if (requireNamespace("ARTool", quietly = TRUE)) np_splitsplit(yield ~ irrigation
 #> 5          irrigation:timing 0.3304848  1     30 0.569660338
 #> 6            cultivar:timing 0.6031332  2     30 0.553594334
 #> 7 irrigation:cultivar:timing 0.2392276  2     30 0.788723107
-#>                       effect
-#> 1                 irrigation
-#> 2                   cultivar
-#> 3                     timing
-#> 4        irrigation:cultivar
-#> 5          irrigation:timing
-#> 6            cultivar:timing
-#> 7 irrigation:cultivar:timing
 ```

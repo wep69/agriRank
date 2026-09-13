@@ -1,7 +1,7 @@
 # Effects, Conover, Contrasts, and Factorial Inference
 
 **Comparison vignette** **Package:** `agriRank` **Version targeted:**
-`0.14.0` **Owns:** what happens after a significant omnibus test.
+`0.14.1` **Owns:** what happens after a significant omnibus test.
 Effects, design-aware pairwise comparisons, compact letter displays,
 factorial decomposition, and simple effects.
 
@@ -163,11 +163,11 @@ scientific question about whether the comparisons were planned.
 
 eff_crd <- agri_effects(fit_crd)
 eff_crd
-#>   cell n   median mean_rank
-#> 1    A 8 6.905835    16.750
-#> 2    B 8 5.756625    10.625
-#> 3    C 8 6.277535    14.875
-#> 4    D 8 8.135447    23.750
+#>   cell n   median mean_rank relative_effect
+#> 1    A 8 6.905835    16.750       0.3828125
+#> 2    B 8 5.756625    10.625       0.1914062
+#> 3    C 8 6.277535    14.875       0.3242188
+#> 4    D 8 8.135447    23.750       0.6015625
 ```
 
 Two quantities per cell, and the pairing is deliberate.
@@ -341,12 +341,12 @@ head(as.data.frame(agri_pairs(fit_inc, adjust = "holm")), 5)
 #> Warning: For multifactor ART contrasts, ARTool's ART-C procedure is preferred.
 #> The generic comparisons below operate on observed treatment cells and preserve
 #> blocks when a complete paired block comparison is available.
-#>   stratum group1 group2 paired_by_block  A cliff_delta hodges_lehmann
-#> 1     all      A      B            TRUE NA          NA     -0.2597322
-#> 2     all      A      C            TRUE NA          NA     -0.5081647
-#> 3     all      A      D            TRUE NA          NA     -1.6480506
-#> 4     all      B      C            TRUE NA          NA     -0.5263279
-#> 5     all      B      D            TRUE NA          NA     -1.0515183
+#>   stratum group1 group2 paired_by_block         A cliff_delta hodges_lehmann
+#> 1     all      A      B            TRUE 0.4000000  -0.2000000     -0.2597322
+#> 2     all      A      C            TRUE 0.0000000  -1.0000000     -0.5081647
+#> 3     all      A      D            TRUE 0.0000000  -1.0000000     -1.6480506
+#> 4     all      B      C            TRUE 0.1666667  -0.6666667     -0.5263279
+#> 5     all      B      D            TRUE 0.1666667  -0.6666667     -1.0515183
 #>      p_value p_adjusted
 #> 1 1.00000000  1.0000000
 #> 2 0.05905823  0.2952911
@@ -719,14 +719,15 @@ if (requireNamespace("rankFD", quietly = TRUE)) {
 #>   Design: factorial
 #>   Method: rankFD pseudo-rank factorial inference
 #>   Response: yield
-#>   effect statistic   df1     df2 p_value
-#> 1      A   23.1740 1.000 24.8447  0.0001
-#> 2      B    8.8097 1.947 24.8447  0.0014
-#> 3    A:B    0.7397 1.947 24.8447  0.4841
-#>   effect statistic   df1     df2 p_value
-#> 1      A   23.1740 1.000 24.8447  0.0001
-#> 2      B    8.8097 1.947 24.8447  0.0014
-#> 3    A:B    0.7397 1.947 24.8447  0.4841
+#>   Resampling: none (asymptotic test)
+#>   effect statistic    df p_value   df1     df2
+#> 1      A   23.1740 1.000  0.0001 1.000 24.8447
+#> 2      B    8.8097 1.947  0.0014 1.947 24.8447
+#> 3    A:B    0.7397 1.947  0.4841 1.947 24.8447
+#>   effect statistic    df p_value   df1     df2
+#> 1      A   23.1740 1.000  0.0001 1.000 24.8447
+#> 2      B    8.8097 1.947  0.0014 1.947 24.8447
+#> 3    A:B    0.7397 1.947  0.4841 1.947 24.8447
 ```
 
 ### 14.1 Why pseudo-ranks
@@ -758,10 +759,14 @@ if (requireNamespace("ARTool", quietly = TRUE)) {
   fit_art <- agri_rank(des_fac, method = "ART")
   print(anova(fit_art))
 }
-#>   Term Df Df.res    Sum Sq Sum Sq.res    F value       Pr(>F) effect
-#> 1    A  1     36 2072.0238   4078.000 18.2915295 0.0001333659      A
-#> 2    B  2     36 1723.0000   4426.286  7.0067777 0.0026907038      B
-#> 3  A:B  2     36  186.1429   5958.000  0.5623651 0.5747850869    A:B
+#>   effect  statistic df      p_value Term Df Df.res    Sum Sq Sum Sq.res
+#> 1      A 18.2915295  1 0.0001333659    A  1     36 2072.0238   4078.000
+#> 2      B  7.0067777  2 0.0026907038    B  2     36 1723.0000   4426.286
+#> 3    A:B  0.5623651  2 0.5747850869  A:B  2     36  186.1429   5958.000
+#>      F value       Pr(>F)
+#> 1 18.2915295 0.0001333659
+#> 2  7.0067777 0.0026907038
+#> 3  0.5623651 0.5747850869
 ```
 
 ### 15.1 What alignment does
@@ -787,11 +792,16 @@ if (requireNamespace("permuco", quietly = TRUE)) {
   fit_perm <- agri_rank(des_fac, method = "permuco", B = 999, seed = 401)
   print(anova(fit_perm))
 }
-#>                 SS df          F parametric P(>F) resampled P(>F)
-#> A         1826.881  1 23.1739656     2.649319e-05      0.00020004
-#> B         1389.000  2  8.8097252     7.684977e-04      0.00040008
-#> A:B        116.619  2  0.7396557     4.843911e-01      0.48429686
-#> Residuals 2838.000 36         NA               NA              NA
+#> Warning in aovperm_fix(formula = formula, data = data, method = method, : The
+#> number of permutations is below 2000, p-values might be unreliable.
+#>   effect  statistic df     p_value       SS          F parametric P(>F)
+#> 1      A 23.1739656  1 0.001001001 1826.881 23.1739656     2.649319e-05
+#> 2      B  8.8097252  2 0.001001001 1389.000  8.8097252     7.684977e-04
+#> 3    A:B  0.7396557  2 0.486486486  116.619  0.7396557     4.843911e-01
+#>   resampled P(>F)
+#> 1     0.001001001
+#> 2     0.001001001
+#> 3     0.486486486
 ```
 
 ### 16.1 What permutation buys, and what it assumes
@@ -843,18 +853,19 @@ sens_fac <- agri_sensitivity(
   methods = c("primary", "ART", "permuco"),
   seed = 401
 )
+#> Warning in aovperm_fix(formula = formula, data = data, method = method, : The
+#> number of permutations is below 2000, p-values might be unreliable.
 sens_fac$table
-#>            method    effect      p_value note
-#> primary.1 primary         A 1.000000e-04     
-#> primary.2 primary         B 1.400000e-03     
-#> primary.3 primary       A:B 4.841000e-01     
-#> ART.1         ART         A 1.333659e-04     
-#> ART.2         ART         B 2.690704e-03     
-#> ART.3         ART       A:B 5.747851e-01     
-#> permuco.1 permuco         A 2.649319e-05     
-#> permuco.2 permuco         B 7.684977e-04     
-#> permuco.3 permuco       A:B 4.843911e-01     
-#> permuco.4 permuco Residuals           NA
+#>            method effect      p_value note
+#> primary.1 primary      A 0.0001000000     
+#> primary.2 primary      B 0.0014000000     
+#> primary.3 primary    A:B 0.4841000000     
+#> ART.1         ART      A 0.0001333659     
+#> ART.2         ART      B 0.0026907038     
+#> ART.3         ART    A:B 0.5747850869     
+#> permuco.1 permuco      A 0.0005002501     
+#> permuco.2 permuco      B 0.0005002501     
+#> permuco.3 permuco    A:B 0.4857428714
 ```
 
 ``` r

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -97,8 +97,11 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: repeated</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: nparLD ANOVA-type rank inference</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: height</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] effect</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;0 rows&gt; (or 0-length row.names)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           effect statistic       df      p_value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      treatment  1.255810 1.000000 2.624457e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2           time 10.402598 2.578418 3.603182e-06</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 treatment:time  5.676011 2.578418 1.360413e-03</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Example 2</span></span></span>
 <span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated"</span><span class="op">)</span>;</span></span>
@@ -108,23 +111,26 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: repeated</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: MANOVA.RM WildBS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: height</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                Test statistic  df1    df2 p-value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> treatment               0.790 1.00 11.521   0.392</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> time                    9.227 2.48    Inf   0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> treatment:time          4.883 2.48    Inf   0.004</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling replicates: 499</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           effect   df p_value Test statistic  df1    df2 p-value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      treatment 1.00   0.392          0.790 1.00 11.521   0.392</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2           time 2.48   0.000          9.227 2.48    Inf   0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 treatment:time 2.48   0.004          4.883 2.48    Inf   0.004</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Example 3</span></span></span>
 <span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated_missing"</span><span class="op">)</span>;</span></span>
 <span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">height</span><span class="op">~</span><span class="va">treatment</span><span class="op">*</span><span class="va">time</span>,<span class="va">x</span>,<span class="st">"repeated"</span>,subject<span class="op">=</span><span class="va">subject</span>,within<span class="op">=</span><span class="va">time</span><span class="op">)</span>;</span></span>
 <span class="r-in"><span><span class="fu">agri_repeated</span><span class="op">(</span><span class="va">d</span>,<span class="st">"native_wild"</span>,B<span class="op">=</span><span class="fl">299</span>,missing_assumption<span class="op">=</span><span class="st">"MCAR"</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`B` = 299 is too small for confirmatory resampling inference: the smallest attainable p-value is 1/(B + 1) = 0.00333, so no result below that can be reported and the Monte Carlo error of any p-value near it is large. Use B &gt;= 1999, or state the p floor explicitly when computing time limits the budget.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: repeated</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: incomplete repeated-measures rank wild bootstrap</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: height</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                        effect statistic    value      df p_boot p_asymptotic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> treatment           treatment       ATS 2.400622 1.00000   0.14   0.12128701</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> time                     time       ATS 3.768121 1.42395   0.06   0.03710787</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> treatment:time treatment:time       ATS 1.242759 1.42395   0.32   0.27959642</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling replicates: 299</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           effect statistic      df p_value    value p_boot p_asymptotic</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      treatment        NA 1.00000    0.14 2.400622   0.14   0.12128701</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2           time        NA 1.42395    0.06 3.768121   0.06   0.03710787</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 treatment:time        NA 1.42395    0.32 1.242759   0.32   0.27959642</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

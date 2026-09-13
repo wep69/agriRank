@@ -23,7 +23,12 @@ validate_agri_design(x, error = TRUE)
 ## Details
 
 Fatal structural errors can stop execution; warnings preserve
-information that may affect estimability or interpretation. The vignette
+information that may affect estimability or interpretation. The scope of
+this check is the response and the occupation of the factorial cells,
+not the integrity of the declared randomization: a design that is broken
+structurally can still return `ok = TRUE` here and be refused later,
+with a specific reason, by the engine that would have to analyze it.
+Fitting is therefore the step that validates the structure. The vignette
 suite documents the experimental-design logic, estimand, hypothesis,
 resampling structure, missing/unbalanced-data behavior, and
 backend-specific limitations in greater depth.

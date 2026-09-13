@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,6 +33,59 @@
       <small>Source: <a href="https://github.com/wep69/agriRank/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.14.1" id="agrirank-0141">agriRank 0.14.1<a class="anchor" aria-label="anchor" href="#agrirank-0141"></a></h2>
+<p>Patch release. Every item below comes from an independent audit of the 0.14.0 release, executed against the installed package on a clean session and recorded in two documents, a report to the author and a technical note of the tutorial book. None of the ten findings was a crash. Each one returned a well-formed object that answered a different question from the one that was asked, which is why none of them was caught by the test suite of 0.14.0.</p>
+<div class="section level3">
+<h3 id="the-resampling-budget-now-reaches-the-engine-and-says-when-it-cannot-0-14-1">The resampling budget now reaches the engine, and says when it cannot<a class="anchor" aria-label="anchor" href="#the-resampling-budget-now-reaches-the-engine-and-says-when-it-cannot-0-14-1"></a></h3>
+<ul><li>
+<code>agri_rank(B = )</code> reached only the native engines. <code>permuco</code> kept its own default of 4999 permutations, so <code>B = 199</code>, <code>B = 999</code> and <code>B = 4999</code> returned the same p-value with the same seed, and a user who asked for 199 permutations was answered with 4999. <code>B</code> now reaches <code>permuco</code> as <code>np</code> and <code>MANOVA.RM</code> as <code>iter</code>, while an explicitly supplied engine argument still outranks it and says that it did.</li>
+<li>An engine that cannot resample now warns when <code>B</code> is supplied. The Kruskal- Wallis, Friedman, rankFD, ART and nparLD tests are asymptotic or F-based and draw no resamples, so the budget had no effect on their p-values and nothing said so. <code><a href="../reference/agri_np_bootstrap.html">agri_np_bootstrap()</a></code>, from the same package, honors the <code>B</code> it receives, and two sister functions treating the same argument in opposite ways was the inconsistency the audit named.</li>
+<li>A budget below 999 warns. The smallest attainable resampled p-value is <code>1/(B + 1)</code>, so <code>B = 199</code> cannot report 0.001 whatever the data say, and that is the region where confirmatory agronomic statements live.</li>
+<li>The fit records <code>B</code>, <code>resampling</code> (the replicate count that actually ran) and <code>resampling_used</code>, and <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> shows the count, so a p-value can no longer be reported without the budget that produced it. <code><a href="../reference/agri_trend.html">agri_trend()</a></code> already recorded <code>B</code>; the audit asked for the same in every function that resamples.</li>
+<li>
+<code>agri_repeated(B = )</code> warns when the selected backend is driven by <code>iter</code> instead.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="the-omnibus-table-has-one-shape-and-one-reader-0-14-1">The omnibus table has one shape, and one reader<a class="anchor" aria-label="anchor" href="#the-omnibus-table-has-one-shape-and-one-reader-0-14-1"></a></h3>
+<ul><li>Every engine named its test table after the package it wraps: the car-style <code>Pr(&gt;F)</code> of ARTool, the <code>p-value</code> of MANOVA.RM, and permuco’s separated <code>parametric P(&gt;F)</code> and <code>resampled P(&gt;F)</code>. Generic code that reads <code>fit$omnibus$p_value</code> therefore received <code>NULL</code> instead of an error in half of the engines, and an empty table passed unnoticed inside a long document. The <code>omnibus</code> component now always carries <code>effect</code>, <code>statistic</code>, <code>df</code> and <code>p_value</code>, and keeps every native column beside them.</li>
+<li>The canonical <code>p_value</code> of a permutation engine is the resampled one, because that is the distribution the user chose. The parametric value survives in its own column. Error-stratum rows such as <code>Residuals</code> are not tests and stay out of <code>omnibus</code>; the untouched backend table remains in <code>fit$engine$raw</code>.</li>
+<li>Added <code><a href="../reference/agri_p.html">agri_p()</a></code>, a documented extractor for both, because the book had to write its own extractor to read a p-value out of a fit. <code>print.agri_rank_fit()</code> reports the replicate count as well.</li>
+<li>
+<code><a href="../reference/agri_ancova.html">agri_ancova()</a></code> returns the same standardized table, and <code><a href="../reference/agri_p.html">agri_p()</a></code> explains itself when a backend reports a single p-value.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="the-declared-estimand-selects-the-estimator-0-14-1">The declared estimand selects the estimator<a class="anchor" aria-label="anchor" href="#the-declared-estimand-selects-the-estimator-0-14-1"></a></h3>
+<ul><li>
+<code>estimand</code> was recorded and changed nothing: the three values returned the same <code><a href="../reference/agri_effects.html">agri_effects()</a></code> table, so a user who declared a relative-effect analysis received medians and mean ranks without being told. The descriptive block is still reported, and the estimator of the declared estimand is added beside it. <code>"relative_effect"</code> adds the Brunner-Munzel relative effect <code>p_i = (Rbar_i - (n_i + 1)/2) / N</code>, which is a function of the mean rank already reported; <code>"location_shift"</code> adds the Hodges-Lehmann shift against the first level, which is named in a <code>reference</code> column because a location shift is a paired statement; <code>"distribution"</code> leaves the descriptive block alone, because the target is the whole distribution. <code>fit$estimand_source</code> records whether the engine answered the declaration or <code><a href="../reference/agri_effects.html">agri_effects()</a></code> did.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="backends-that-returned-nothing-without-saying-so-0-14-1">Backends that returned nothing without saying so<a class="anchor" aria-label="anchor" href="#backends-that-returned-nothing-without-saying-so-0-14-1"></a></h3>
+<ul><li>
+<code><a href="../reference/np_repeated.html">np_repeated()</a></code> returned a zero-row omnibus while the complete nparLD result sat in <code>fit$engine$raw</code>. A zero-row table prints exactly like a fit with nothing to report. The adapter now reads the ANOVA-type table of the installed nparLD version, and a test walks every engine constructor and requires a non-empty standardized table, because this is the kind of defect that reappears in another adapter.</li>
+<li>
+<code>agri_rankings(worth = TRUE)</code> returned <code>NULL</code> with PlackettLuce installed: the matrix entry point became <code>as.rankings()</code> and the older <code>rankings()</code> gained a mandatory <code>id</code>, so the call failed and every error was swallowed into <code>NULL</code>. It now fits the companion model, and each step that cannot proceed reports why instead of returning a null component.</li>
+<li>
+<code>agri_cld(method = )</code> moved from <code>...</code> into the signature. It decided every letter of the display, so a typo was silently ignored. <code><a href="../reference/agri_pairs.html">agri_pairs()</a></code> keeps the paired effect sizes (<code>A</code>, <code>cliff_delta</code>, <code>hodges_lehmann</code>) it had dropped: leaving them absent made the blocked design, the most common one in agronomic experimentation, the only one without effect sizes in the table.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="arguments-that-misled-by-their-name-0-14-1">Arguments that misled by their name<a class="anchor" aria-label="anchor" href="#arguments-that-misled-by-their-name-0-14-1"></a></h3>
+<ul><li>
+<code>agri_ancova(np = )</code> is now <code>nperm =</code>, because in a nonparametric package <code>np</code> reads as a switch while being a count. The old name warns and forwards, and the count is validated: <code>np = TRUE</code> and <code>np = FALSE</code> used to fail with errors raised inside <code>stats</code> about invalid subscript types and lengths, which name the symptom and not the mistake.</li>
+<li>
+<code>agri_trend(scores = )</code> accepts an unnamed vector in the order of <code><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels()</a></code>, which is how a scale is naturally written and how <code><a href="https://rdrr.io/r/stats/contrast.html" class="external-link">stats::contr.poly()</a></code> reads one. Matching by name alone made the natural call fail inside <code><a href="https://rdrr.io/r/stats/cor.html" class="external-link">stats::cor</a></code> with a message about pairs and complete observations, which points nowhere near the cause. A wrong length or a name that matches no level now says which levels were expected.</li>
+<li>
+<code>agri_sensitivity(methods = )</code> refuses vocabulary that is not part of its method list instead of returning an empty table, which invited the reader to conclude that the engines agreed when none of them had run.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="smaller-improvements-from-the-same-audit-0-14-1">Smaller improvements from the same audit<a class="anchor" aria-label="anchor" href="#smaller-improvements-from-the-same-audit-0-14-1"></a></h3>
+<ul><li>An unknown <code>method</code> now names the engines that exist, as <code><a href="../reference/agri_integer_threshold.html">agri_integer_threshold()</a></code> already did for its own vocabulary, instead of answering only that the name was not recognised. <code><a href="../reference/agri_methods.html">agri_methods()</a></code> reports which of them is admissible for each declared design.</li>
+<li>
+<code><a href="../reference/agri_power.html">agri_power()</a></code> states that the generator must be a function of exactly one argument, the simulation index. A generator written as <code>function()</code> fails with <code>unused argument (i)</code>, and the requirement was implied rather than documented.</li>
+<li>
+<code><a href="../reference/validate_agri_design.html">validate_agri_design()</a></code> documents its scope: it checks the response and the occupation of the factorial cells, not the integrity of the declared randomization. A structurally broken design can return <code>ok = TRUE</code> there and be refused later, with a specific reason, by the engine that would have to analyze it.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.14.0" id="agrirank-0140">agriRank 0.14.0<a class="anchor" aria-label="anchor" href="#agrirank-0140"></a></h2>
 <div class="section level3">

@@ -73,6 +73,7 @@ verified references.
 x<-simulate_agri("repeated_missing");
 d<-agri_design(height~treatment*time,x,"repeated",subject=subject,within=time);
 f<-agri_rank(d,"incomplete_wild",B=299,missing_assumption="MCAR");
+#> Warning: `B` = 299 is too small for confirmatory resampling inference: the smallest attainable p-value is 1/(B + 1) = 0.00333, so no result below that can be reported and the Monte Carlo error of any p-value near it is large. Use B >= 1999, or state the p floor explicitly when computing time limits the budget.
 k<-nrow(f$engine$prep$cell_grid);
 C<-matrix(c(1,-1,rep(0,k-2)),1);
 agri_contrast(f,C,B=299)
@@ -83,6 +84,7 @@ agri_contrast(f,C,B=299)
 x<-simulate_agri("repeated_missing");
 d<-agri_design(height~treatment*time,x,"repeated",subject=subject,within=time);
 f<-agri_rank(d,"incomplete_wild",B=299,missing_assumption="MCAR");
+#> Warning: `B` = 299 is too small for confirmatory resampling inference: the smallest attainable p-value is 1/(B + 1) = 0.00333, so no result below that can be reported and the Monte Carlo error of any p-value near it is large. Use B >= 1999, or state the p floor explicitly when computing time limits the budget.
 k<-nrow(f$engine$prep$cell_grid);
 C<-rbind(c(1,-1,rep(0,k-2)),c(rep(0,2),1,-1,rep(0,k-4)));
 agri_contrast(f,C,B=299)
@@ -97,6 +99,7 @@ agri_contrast(f,C,B=299)
 x<-simulate_agri("repeated_missing");
 d<-agri_design(height~treatment*time,x,"repeated",subject=subject,within=time);
 f<-agri_rank(d,"incomplete_wild",B=299,missing_assumption="MCAR");
+#> Warning: `B` = 299 is too small for confirmatory resampling inference: the smallest attainable p-value is 1/(B + 1) = 0.00333, so no result below that can be reported and the Monte Carlo error of any p-value near it is large. Use B >= 1999, or state the p floor explicitly when computing time limits the budget.
 k<-nrow(f$engine$prep$cell_grid);
 C<-diag(k)[1,,drop=FALSE]-diag(k)[k,,drop=FALSE];
 agri_contrast(f,C,labels="first-last",B=299)

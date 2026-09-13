@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,7 +47,7 @@
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
     <p></p>
 <dl><dt id="arg-generator">generator<a class="anchor" aria-label="anchor" href="#arg-generator"></a></dt>
-<dd><p>Function receiving simulation index `i` and returning one synthetic data frame.</p></dd>
+<dd><p>Function of exactly one argument, the simulation index `i`, returning one synthetic data frame. A generator written as `function()` fails with `unused argument (i)`, so the expected signature is stated rather than implied.</p></dd>
 
   <dt id="arg-analyzer">analyzer<a class="anchor" aria-label="anchor" href="#arg-analyzer"></a></dt>
 <dd><p>Function receiving one synthetic data frame and returning a p-value or an `agri_rank_fit`.</p></dd>

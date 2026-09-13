@@ -1,7 +1,8 @@
 # Fit design-aware rank-based or permutation inference
 
 Routes a declared design to an explicit or automatically selected
-admissible engine.
+admissible engine. The omnibus test comes back in a canonical shape, so
+a report reads the same table whichever backend ran.
 
 ## Usage
 
@@ -31,12 +32,20 @@ agri_rank(design, method = "auto", response = NULL,
 
 - estimand:
 
-  Target effect representation used to label and interpret the analysis.
+  Target effect representation. It selects the estimator reported by
+  [`agri_effects()`](https://wep69.github.io/agriRank/reference/agri_effects.md):
+  the Brunner-Munzel relative effect for `"relative_effect"`, the
+  Hodges-Lehmann shift against the first level for `"location_shift"`,
+  and the descriptive distribution summary for `"distribution"`.
 
 - B:
 
-  Number of bootstrap or resampling replicates. Small values are for
-  examples only.
+  Number of resampling replicates for the engines that resample. It
+  reaches the native wild bootstrap directly, `permuco` as `np` and
+  `MANOVA.RM` as `iter`. An engine that cannot use it warns when `B` is
+  supplied, and a value below 999 warns because the smallest attainable
+  p-value is `1/(B + 1)`. The number that actually ran is recorded in
+  `fit$resampling`.
 
 - seed:
 
@@ -61,9 +70,25 @@ the experimental-design logic, estimand, hypothesis, resampling
 structure, missing/unbalanced-data behavior, and backend-specific
 limitations in greater depth.
 
+The `omnibus` component always carries the columns `effect`,
+`statistic`, `df` and `p_value`, with the columns the backend itself
+reports kept beside them, so existing engine-specific readers keep
+working. When a backend separates a parametric from a resampled p-value,
+`p_value` is the resampled one, because it is the value the user asked
+for by choosing a resampling engine; the parametric value survives in
+its own column and
+[`agri_p()`](https://wep69.github.io/agriRank/reference/agri_p.md) reads
+either. Error-stratum rows such as `Residuals` are not tests and stay
+out of `omnibus`; the untouched backend table remains in `fit$raw`.
+
 ## Value
 
-An \`agri_rank_fit\` object.
+An \`agri_rank_fit\` object whose \`omnibus\` table carries the
+canonical columns \`effect\`, \`statistic\`, \`df\` and \`p_value\`,
+together with the columns reported by the selected backend. The fields
+\`B\`, \`resampling\` and \`resampling_used\` record the replicate count
+requested, the count that actually ran, and whether the engine could use
+one.
 
 ## References
 
@@ -76,7 +101,7 @@ verified references.
 
 ## See also
 
-`agri_design`, `agri_rank`, `agri_effects`, `agri_report`
+`agri_design`, `agri_rank`, `agri_effects`, `agri_p`, `agri_report`
 
 ## Examples
 
@@ -87,6 +112,7 @@ d<-agri_design(yield~treatment,simulate_agri("crd"),"crd"); agri_rank(d)
 #>   Design: crd
 #>   Method: Kruskal-Wallis
 #>   Response: yield
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df   p_value
 #> 1 treatment  1.646667  3 0.6488554
 
@@ -98,21 +124,23 @@ if(requireNamespace("rankFD",quietly=TRUE)) agri_rank(d,"rankFD")
 #>   Design: factorial
 #>   Method: rankFD pseudo-rank factorial inference
 #>   Response: yield
-#>   effect statistic    df1     df2 p_value
-#> 1      A    6.9339 1.0000 22.8596  0.0149
-#> 2      B    6.6740 1.9702 22.8596  0.0054
-#> 3    A:B    1.8632 1.9702 22.8596  0.1784
+#>   Resampling: none (asymptotic test)
+#>   effect statistic     df p_value    df1     df2
+#> 1      A    6.9339 1.0000  0.0149 1.0000 22.8596
+#> 2      B    6.6740 1.9702  0.0054 1.9702 22.8596
+#> 3    A:B    1.8632 1.9702  0.1784 1.9702 22.8596
 
 # Example 3
 x<-simulate_agri("repeated_missing");
 d<-agri_design(height~treatment*time,x,"repeated",subject=subject,within=time);
-agri_rank(d,"incomplete_wild",B=299,missing_assumption="MCAR")
+agri_rank(d,"incomplete_wild",B=999,missing_assumption="MCAR")
 #> agriRank fit
 #>   Design: repeated
 #>   Method: incomplete repeated-measures rank wild bootstrap
 #>   Response: height
-#>                        effect statistic    value      df p_boot p_asymptotic
-#> treatment           treatment       ATS 2.400622 1.00000   0.14   0.12128701
-#> time                     time       ATS 3.768121 1.42395   0.06   0.03710787
-#> treatment:time treatment:time       ATS 1.242759 1.42395   0.32   0.27959642
+#>   Resampling replicates: 999
+#>           effect statistic      df p_value    value p_boot p_asymptotic
+#> 1      treatment        NA 1.00000   0.163 2.400622  0.163   0.12128701
+#> 2           time        NA 1.42395   0.047 3.768121  0.047   0.03710787
+#> 3 treatment:time        NA 1.42395   0.280 1.242759  0.280   0.27959642
 ```

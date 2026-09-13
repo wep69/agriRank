@@ -68,10 +68,15 @@ np_stripplot(yield ~ irrigation * nitrogen, x, block, irrigation, nitrogen)
 #>   Design: strip_plot
 #>   Method: Aligned Rank Transform
 #>   Response: yield
-#>                  Term         F Df Df.res       Pr(>F)              effect
-#> 1          irrigation 39.563035  2     10 1.778182e-05          irrigation
-#> 2            nitrogen  2.493754  3     15 9.964232e-02            nitrogen
-#> 3 irrigation:nitrogen  4.069144  6     30 4.213868e-03 irrigation:nitrogen
+#>   Resampling: none (asymptotic test)
+#>                effect statistic df      p_value                Term         F
+#> 1          irrigation 39.563035  2 1.778182e-05          irrigation 39.563035
+#> 2            nitrogen  2.493754  3 9.964232e-02            nitrogen  2.493754
+#> 3 irrigation:nitrogen  4.069144  6 4.213868e-03 irrigation:nitrogen  4.069144
+#>   Df Df.res       Pr(>F)
+#> 1  2     10 1.778182e-05
+#> 2  3     15 9.964232e-02
+#> 3  6     30 4.213868e-03
 # Or explicitly:
 if (requireNamespace("ARTool", quietly = TRUE)) np_stripplot(yield ~ irrigation * 
     nitrogen, x, block, irrigation, nitrogen, method = "ART")
@@ -81,8 +86,13 @@ if (requireNamespace("ARTool", quietly = TRUE)) np_stripplot(yield ~ irrigation 
 #>   Design: strip_plot
 #>   Method: Aligned Rank Transform
 #>   Response: yield
-#>                  Term         F Df Df.res       Pr(>F)              effect
-#> 1          irrigation 39.563035  2     10 1.778182e-05          irrigation
-#> 2            nitrogen  2.493754  3     15 9.964232e-02            nitrogen
-#> 3 irrigation:nitrogen  4.069144  6     30 4.213868e-03 irrigation:nitrogen
+#>   Resampling: none (asymptotic test)
+#>                effect statistic df      p_value                Term         F
+#> 1          irrigation 39.563035  2 1.778182e-05          irrigation 39.563035
+#> 2            nitrogen  2.493754  3 9.964232e-02            nitrogen  2.493754
+#> 3 irrigation:nitrogen  4.069144  6 4.213868e-03 irrigation:nitrogen  4.069144
+#>   Df Df.res       Pr(>F)
+#> 1  2     10 1.778182e-05
+#> 2  3     15 9.964232e-02
+#> 3  6     30 4.213868e-03
 ```

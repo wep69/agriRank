@@ -1,7 +1,7 @@
 # Repeated Measures and Missing Longitudinal Data
 
 **Repeated measures vignette** **Package:** `agriRank` **Version
-targeted:** `0.14.0` **Owns:** measurements taken more than once on the
+targeted:** `0.14.1` **Owns:** measurements taken more than once on the
 same unit, and what to do when some of them are absent.
 
 ------------------------------------------------------------------------
@@ -198,8 +198,11 @@ fit_rm
 #>   Design: repeated
 #>   Method: nparLD ANOVA-type rank inference
 #>   Response: height
-#> [1] effect
-#> <0 rows> (or 0-length row.names)
+#>   Resampling: none (asymptotic test)
+#>           effect statistic       df      p_value
+#> 1      treatment  5.312339 1.000000 2.117491e-02
+#> 2           time 18.638338 2.405447 3.797634e-10
+#> 3 treatment:time  9.686918 2.405447 1.587856e-05
 ```
 
 ### 5.1 The three effects, and what each asks
@@ -271,8 +274,11 @@ if (requireNamespace("nparLD", quietly = TRUE)) {
 #>   Design: repeated
 #>   Method: nparLD ANOVA-type rank inference
 #>   Response: height
-#> [1] effect
-#> <0 rows> (or 0-length row.names)
+#>   Resampling: none (asymptotic test)
+#>           effect statistic       df      p_value
+#> 1      treatment  5.312339 1.000000 2.117491e-02
+#> 2           time 18.638338 2.405447 3.797634e-10
+#> 3 treatment:time  9.686918 2.405447 1.587856e-05
 ```
 
 `nparLD` implements the classical rank-based analysis of longitudinal
@@ -293,10 +299,11 @@ if (requireNamespace("MANOVA.RM", quietly = TRUE)) {
 #>   Design: repeated
 #>   Method: MANOVA.RM WildBS
 #>   Response: height
-#>                Test statistic   df1    df2 p-value
-#> treatment               8.883 1.000 39.437   0.005
-#> time                   18.497 1.914    Inf   0.000
-#> treatment:time         14.317 1.914    Inf   0.000
+#>   Resampling replicates: 999
+#>           effect    df p_value Test statistic   df1    df2 p-value
+#> 1      treatment 1.000   0.005          8.883 1.000 39.437   0.005
+#> 2           time 1.914   0.000         18.497 1.914    Inf   0.000
+#> 3 treatment:time 1.914   0.000         14.317 1.914    Inf   0.000
 ```
 
 `MANOVA.RM` provides a Wald-type statistic with a resampling reference
@@ -454,6 +461,10 @@ agri_plot(
   ),
   type = "missing"
 )
+#> Warning: `B` = 299 is too small for confirmatory resampling inference: the
+#> smallest attainable p-value is 1/(B + 1) = 0.00333, so no result below that can
+#> be reported and the Monte Carlo error of any p-value near it is large. Use B >=
+#> 1999, or state the p floor explicitly when computing time limits the budget.
 ```
 
 ![Where the gaps are. Concentration in one treatment or at one occasion

@@ -1,7 +1,7 @@
 # Multivariate, Multi-Environment, Batch, and Sensitivity Workflows
 
 **Scale-up vignette** **Package:** `agriRank` **Version targeted:**
-`0.14.0` **Owns:** what changes when an experiment has several
+`0.14.1` **Owns:** what changes when an experiment has several
 responses, several sites, or when the same design is analysed many
 times.
 
@@ -362,10 +362,15 @@ met_fit
 #>   Design: multienv
 #>   Method: Aligned Rank Transform
 #>   Response: yield
-#>                   Term         F Df Df.res    Pr(>F)               effect
-#> 1             genotype 2.6875630  3     36 0.0608969             genotype
-#> 2          environment 0.8350577  2     12 0.4575667          environment
-#> 3 genotype:environment 0.6991708  6     36 0.6519773 genotype:environment
+#>   Resampling: none (asymptotic test)
+#>                 effect statistic df   p_value                 Term         F Df
+#> 1             genotype 2.6875630  3 0.0608969             genotype 2.6875630  3
+#> 2          environment 0.8350577  2 0.4575667          environment 0.8350577  2
+#> 3 genotype:environment 0.6991708  6 0.6519773 genotype:environment 0.6991708  6
+#>   Df.res    Pr(>F)
+#> 1     36 0.0608969
+#> 2     12 0.4575667
+#> 3     36 0.6519773
 ```
 
 ### 5.1 What the environment term asserts
@@ -444,16 +449,22 @@ met_additive <- agri_multienv(
   environment_interaction = FALSE,
   method                  = "auto"
 )
+#> Warning in aovperm_fix(formula = formula, data = data, method = method, : The
+#> number of permutations is below 2000, p-values might be unreliable.
 met_additive
 #> agriRank fit
 #>   Design: multienv
 #>   Method: permuco permutation ANOVA on mid-ranks
 #>   Response: yield
-#>                        SS df         F parametric P(>F) resampled P(>F)
-#> .agri_env_block  3384.300 14 0.8929787       0.57185652      0.43328666
-#> genotype         2515.800  3 3.0978126       0.03685246      0.03720744
-#> environment      1225.807  2 2.2640839       0.11646626      0.01780356
-#> Residuals       11369.700 42        NA               NA              NA
+#>   Resampling replicates: 1999
+#>            effect statistic df    p_value       SS         F parametric P(>F)
+#> 1 .agri_env_block 0.8929787 14 0.42321161 3384.300 0.8929787       0.57185652
+#> 2        genotype 3.0978126  3 0.03751876 2515.800 3.0978126       0.03685246
+#> 3     environment 2.2640839  2 0.01850925 1225.807 2.2640839       0.11646626
+#>   resampled P(>F)
+#> 1      0.42321161
+#> 2      0.03751876
+#> 3      0.01850925
 ```
 
 Dropping the interaction is a **scientific** decision that the genotype
@@ -641,19 +652,20 @@ sens <- agri_sensitivity(
   methods = c("primary", "ART", "permuco"),
   seed    = 1002
 )
+#> Warning in aovperm_fix(formula = formula, data = data, method = method, : The
+#> number of permutations is below 2000, p-values might be unreliable.
 
 sens$table
-#>            method    effect     p_value note
-#> primary.1 primary         A 0.012300000     
-#> primary.2 primary         B 0.075400000     
-#> primary.3 primary       A:B 0.917700000     
-#> ART.1         ART         A 0.004337396     
-#> ART.2         ART         B 0.071741225     
-#> ART.3         ART       A:B 0.976310271     
-#> permuco.1 permuco         A 0.010859676     
-#> permuco.2 permuco         B 0.065117805     
-#> permuco.3 permuco       A:B 0.936615309     
-#> permuco.4 permuco Residuals          NA
+#>            method effect     p_value note
+#> primary.1 primary      A 0.012300000     
+#> primary.2 primary      B 0.075400000     
+#> primary.3 primary    A:B 0.917700000     
+#> ART.1         ART      A 0.004337396     
+#> ART.2         ART      B 0.071741225     
+#> ART.3         ART    A:B 0.976310271     
+#> permuco.1 permuco      A 0.007503752     
+#> permuco.2 permuco      B 0.068034017     
+#> permuco.3 permuco    A:B 0.933966983
 ```
 
 ``` r
@@ -688,8 +700,6 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
       agri_theme()
   )
 }
-#> Warning: Removed 1 row containing missing values or values outside the scale range
-#> (`geom_point()`).
 ```
 
 ![Sensitivity of factorial inference across admissible engines. Points

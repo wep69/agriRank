@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,10 +95,15 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: strip_plot</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Aligned Rank Transform</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                  Term         F Df Df.res       Pr(&gt;F)              effect</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1          irrigation 39.563035  2     10 1.778182e-05          irrigation</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2            nitrogen  2.493754  3     15 9.964232e-02            nitrogen</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 irrigation:nitrogen  4.069144  6     30 4.213868e-03 irrigation:nitrogen</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                effect statistic df      p_value                Term         F</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1          irrigation 39.563035  2 1.778182e-05          irrigation 39.563035</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2            nitrogen  2.493754  3 9.964232e-02            nitrogen  2.493754</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 irrigation:nitrogen  4.069144  6 4.213868e-03 irrigation:nitrogen  4.069144</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Df Df.res       Pr(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  2     10 1.778182e-05</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  3     15 9.964232e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  6     30 4.213868e-03</span>
 <span class="r-in"><span><span class="co"># Or explicitly:</span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ARTool"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">np_stripplot</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">irrigation</span> <span class="op">*</span> </span></span>
 <span class="r-in"><span>    <span class="va">nitrogen</span>, <span class="va">x</span>, <span class="va">block</span>, <span class="va">irrigation</span>, <span class="va">nitrogen</span>, method <span class="op">=</span> <span class="st">"ART"</span><span class="op">)</span></span></span>
@@ -108,10 +113,15 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: strip_plot</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Aligned Rank Transform</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                  Term         F Df Df.res       Pr(&gt;F)              effect</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1          irrigation 39.563035  2     10 1.778182e-05          irrigation</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2            nitrogen  2.493754  3     15 9.964232e-02            nitrogen</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 irrigation:nitrogen  4.069144  6     30 4.213868e-03 irrigation:nitrogen</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                effect statistic df      p_value                Term         F</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1          irrigation 39.563035  2 1.778182e-05          irrigation 39.563035</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2            nitrogen  2.493754  3 9.964232e-02            nitrogen  2.493754</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 irrigation:nitrogen  4.069144  6 4.213868e-03 irrigation:nitrogen  4.069144</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Df Df.res       Pr(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  2     10 1.778182e-05</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  3     15 9.964232e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  6     30 4.213868e-03</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

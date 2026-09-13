@@ -6,7 +6,8 @@ letters.
 ## Usage
 
 ``` r
-agri_cld(x, adjust = "holm", alpha = 0.05, ...)
+agri_cld(x, method = c("wilcoxon", "conover"), adjust = "holm", 
+    alpha = 0.05, ...)
 ```
 
 ## Arguments
@@ -18,6 +19,15 @@ agri_cld(x, adjust = "holm", alpha = 0.05, ...)
   [`agri_pairs`](https://wep69.github.io/agriRank/reference/agri_pairs.md)
   or
   [`agri_conover`](https://wep69.github.io/agriRank/reference/agri_conover.md).
+
+- method:
+
+  Comparison route, with the same vocabulary as
+  [`agri_pairs`](https://wep69.github.io/agriRank/reference/agri_pairs.md):
+  `"wilcoxon"` for the paired signed-rank route and `"conover"` for
+  design-aware all-pairs comparisons. The two can give different letters
+  on the same fit, so the route is an explicit argument rather than a
+  value forwarded through `...`.
 
 - adjust:
 
@@ -32,7 +42,7 @@ agri_cld(x, adjust = "holm", alpha = 0.05, ...)
 
   Additional arguments passed to
   [`agri_pairs`](https://wep69.github.io/agriRank/reference/agri_pairs.md),
-  such as `method`, `by` and `factor`.
+  such as `by` and `factor`.
 
 ## Details
 

@@ -1,7 +1,7 @@
 # Graphics, Tables, Reports, and Reproducibility
 
 **Communication vignette** **Package:** `agriRank` **Version targeted:**
-`0.14.0` **Owns:** turning a fitted object into a figure, a table, a
+`0.14.1` **Owns:** turning a fitted object into a figure, a table, a
 report and a record that a reviewer can check and a future analyst can
 rerun.
 
@@ -174,6 +174,10 @@ agri_plot(
             missing_assumption = "MCAR"),
   type = "missing"
 )
+#> Warning: `B` = 299 is too small for confirmatory resampling inference: the
+#> smallest attainable p-value is 1/(B + 1) = 0.00333, so no result below that can
+#> be reported and the Monte Carlo error of any p-value near it is large. Use B >=
+#> 1999, or state the p floor explicitly when computing time limits the budget.
 ```
 
 ![Where the gaps are. Concentration in one treatment or at one occasion
@@ -473,11 +477,11 @@ agri_table(fit_crd, what = "omnibus", format = "data.frame")
 ``` r
 
 agri_table(fit_crd, what = "effects", format = "data.frame")
-#>   cell n   median mean_rank
-#> 1    A 6 4.748965  8.166667
-#> 2    B 6 4.307502  8.166667
-#> 3    C 6 6.900642 15.333333
-#> 4    D 6 8.861426 18.333333
+#>   cell n   median mean_rank relative_effect
+#> 1    A 6 4.748965  8.166667       0.1944444
+#> 2    B 6 4.307502  8.166667       0.1944444
+#> 3    C 6 6.900642 15.333333       0.4930556
+#> 4    D 6 8.861426 18.333333       0.6180556
 ```
 
 ``` r

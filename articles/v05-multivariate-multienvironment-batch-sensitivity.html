@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,7 +64,7 @@ Development Team</h4>
     
 <p><strong>Scale-up vignette</strong> <strong>Package:</strong>
 <code>agriRank</code> <strong>Version targeted:</strong>
-<code>0.14.0</code> <strong>Owns:</strong> what changes when an
+<code>0.14.1</code> <strong>Owns:</strong> what changes when an
 experiment has several responses, several sites, or when the same design
 is analysed many times.</p>
 <hr>
@@ -525,10 +525,15 @@ was significant after a multivariate test is not.</p>
 <span><span class="co">#&gt;   Design: multienv</span></span>
 <span><span class="co">#&gt;   Method: Aligned Rank Transform</span></span>
 <span><span class="co">#&gt;   Response: yield</span></span>
-<span><span class="co">#&gt;                   Term         F Df Df.res    Pr(&gt;F)               effect</span></span>
-<span><span class="co">#&gt; 1             genotype 2.6875630  3     36 0.0608969             genotype</span></span>
-<span><span class="co">#&gt; 2          environment 0.8350577  2     12 0.4575667          environment</span></span>
-<span><span class="co">#&gt; 3 genotype:environment 0.6991708  6     36 0.6519773 genotype:environment</span></span></code></pre></div>
+<span><span class="co">#&gt;   Resampling: none (asymptotic test)</span></span>
+<span><span class="co">#&gt;                 effect statistic df   p_value                 Term         F Df</span></span>
+<span><span class="co">#&gt; 1             genotype 2.6875630  3 0.0608969             genotype 2.6875630  3</span></span>
+<span><span class="co">#&gt; 2          environment 0.8350577  2 0.4575667          environment 0.8350577  2</span></span>
+<span><span class="co">#&gt; 3 genotype:environment 0.6991708  6 0.6519773 genotype:environment 0.6991708  6</span></span>
+<span><span class="co">#&gt;   Df.res    Pr(&gt;F)</span></span>
+<span><span class="co">#&gt; 1     36 0.0608969</span></span>
+<span><span class="co">#&gt; 2     12 0.4575667</span></span>
+<span><span class="co">#&gt; 3     36 0.6519773</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="what-the-environment-term-asserts">5.1 What the environment term asserts<a class="anchor" aria-label="anchor" href="#what-the-environment-term-asserts"></a>
 </h3>
@@ -646,16 +651,22 @@ genotype depends on the site.
 <span>  environment_interaction <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  method                  <span class="op">=</span> <span class="st">"auto"</span></span>
 <span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in aovperm_fix(formula = formula, data = data, method = method, : The</span></span>
+<span><span class="co">#&gt; number of permutations is below 2000, p-values might be unreliable.</span></span>
 <span><span class="va">met_additive</span></span>
 <span><span class="co">#&gt; agriRank fit</span></span>
 <span><span class="co">#&gt;   Design: multienv</span></span>
 <span><span class="co">#&gt;   Method: permuco permutation ANOVA on mid-ranks</span></span>
 <span><span class="co">#&gt;   Response: yield</span></span>
-<span><span class="co">#&gt;                        SS df         F parametric P(&gt;F) resampled P(&gt;F)</span></span>
-<span><span class="co">#&gt; .agri_env_block  3384.300 14 0.8929787       0.57185652      0.43328666</span></span>
-<span><span class="co">#&gt; genotype         2515.800  3 3.0978126       0.03685246      0.03720744</span></span>
-<span><span class="co">#&gt; environment      1225.807  2 2.2640839       0.11646626      0.01780356</span></span>
-<span><span class="co">#&gt; Residuals       11369.700 42        NA               NA              NA</span></span></code></pre></div>
+<span><span class="co">#&gt;   Resampling replicates: 1999</span></span>
+<span><span class="co">#&gt;            effect statistic df    p_value       SS         F parametric P(&gt;F)</span></span>
+<span><span class="co">#&gt; 1 .agri_env_block 0.8929787 14 0.42321161 3384.300 0.8929787       0.57185652</span></span>
+<span><span class="co">#&gt; 2        genotype 3.0978126  3 0.03751876 2515.800 3.0978126       0.03685246</span></span>
+<span><span class="co">#&gt; 3     environment 2.2640839  2 0.01850925 1225.807 2.2640839       0.11646626</span></span>
+<span><span class="co">#&gt;   resampled P(&gt;F)</span></span>
+<span><span class="co">#&gt; 1      0.42321161</span></span>
+<span><span class="co">#&gt; 2      0.03751876</span></span>
+<span><span class="co">#&gt; 3      0.01850925</span></span></code></pre></div>
 <p>Dropping the interaction is a <strong>scientific</strong> decision
 that the genotype ranking is stable across environments. It is
 defensible when the interaction was tested and not detected, and when
@@ -856,19 +867,20 @@ three.</p>
 <span>  methods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"primary"</span>, <span class="st">"ART"</span>, <span class="st">"permuco"</span><span class="op">)</span>,</span>
 <span>  seed    <span class="op">=</span> <span class="fl">1002</span></span>
 <span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in aovperm_fix(formula = formula, data = data, method = method, : The</span></span>
+<span><span class="co">#&gt; number of permutations is below 2000, p-values might be unreliable.</span></span>
 <span></span>
 <span><span class="va">sens</span><span class="op">$</span><span class="va">table</span></span>
-<span><span class="co">#&gt;            method    effect     p_value note</span></span>
-<span><span class="co">#&gt; primary.1 primary         A 0.012300000     </span></span>
-<span><span class="co">#&gt; primary.2 primary         B 0.075400000     </span></span>
-<span><span class="co">#&gt; primary.3 primary       A:B 0.917700000     </span></span>
-<span><span class="co">#&gt; ART.1         ART         A 0.004337396     </span></span>
-<span><span class="co">#&gt; ART.2         ART         B 0.071741225     </span></span>
-<span><span class="co">#&gt; ART.3         ART       A:B 0.976310271     </span></span>
-<span><span class="co">#&gt; permuco.1 permuco         A 0.010859676     </span></span>
-<span><span class="co">#&gt; permuco.2 permuco         B 0.065117805     </span></span>
-<span><span class="co">#&gt; permuco.3 permuco       A:B 0.936615309     </span></span>
-<span><span class="co">#&gt; permuco.4 permuco Residuals          NA</span></span></code></pre></div>
+<span><span class="co">#&gt;            method effect     p_value note</span></span>
+<span><span class="co">#&gt; primary.1 primary      A 0.012300000     </span></span>
+<span><span class="co">#&gt; primary.2 primary      B 0.075400000     </span></span>
+<span><span class="co">#&gt; primary.3 primary    A:B 0.917700000     </span></span>
+<span><span class="co">#&gt; ART.1         ART      A 0.004337396     </span></span>
+<span><span class="co">#&gt; ART.2         ART      B 0.071741225     </span></span>
+<span><span class="co">#&gt; ART.3         ART    A:B 0.976310271     </span></span>
+<span><span class="co">#&gt; permuco.1 permuco      A 0.007503752     </span></span>
+<span><span class="co">#&gt; permuco.2 permuco      B 0.068034017     </span></span>
+<span><span class="co">#&gt; permuco.3 permuco    A:B 0.933966983</span></span></code></pre></div>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sens</span><span class="op">$</span><span class="va">interpretation</span></span>
 <span><span class="co">#&gt; [1] "Differences across methods quantify model sensitivity. They must not be used to choose the smallest p-value."</span></span></code></pre></div>
@@ -922,9 +934,7 @@ three.</p>
 <span>                    caption <span class="op">=</span> <span class="st">"Dashed line at 0.05. Engines are alternatives, not competitors."</span><span class="op">)</span> <span class="op">+</span></span>
 <span>      <span class="fu"><a href="../reference/agri_graphics.html">agri_theme</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="co">#&gt; Warning: Removed 1 row containing missing values or values outside the scale range</span></span>
-<span><span class="co">#&gt; (`geom_point()`).</span></span></code></pre></div>
+<span><span class="op">}</span></span></code></pre></div>
 <div class="figure">
 <img src="v05-multivariate-multienvironment-batch-sensitivity_files/figure-html/sens-plot-1.png" class="r-plt" alt="Sensitivity of factorial inference across admissible engines. Points far apart on one row mean the conclusion for that effect depends on the engine." width="884"><p class="caption">
 Sensitivity of factorial inference across admissible engines. Points far

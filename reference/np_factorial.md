@@ -68,10 +68,11 @@ x<-simulate_agri("factorial"); np_factorial(yield~A*B,x)
 #>   Design: factorial
 #>   Method: rankFD pseudo-rank factorial inference
 #>   Response: yield
-#>   effect statistic    df1     df2 p_value
-#> 1      A    6.9339 1.0000 22.8596  0.0149
-#> 2      B    6.6740 1.9702 22.8596  0.0054
-#> 3    A:B    1.8632 1.9702 22.8596  0.1784
+#>   Resampling: none (asymptotic test)
+#>   effect statistic     df p_value    df1     df2
+#> 1      A    6.9339 1.0000  0.0149 1.0000 22.8596
+#> 2      B    6.6740 1.9702  0.0054 1.9702 22.8596
+#> 3    A:B    1.8632 1.9702  0.1784 1.9702 22.8596
 
 # Example 2
 x<-simulate_agri("factorial");
@@ -80,10 +81,11 @@ if(requireNamespace("rankFD",quietly=TRUE)) np_factorial(yield~A*B,x,method="ran
 #>   Design: factorial
 #>   Method: rankFD pseudo-rank factorial inference
 #>   Response: yield
-#>   effect statistic    df1     df2 p_value
-#> 1      A    6.9339 1.0000 22.8596  0.0149
-#> 2      B    6.6740 1.9702 22.8596  0.0054
-#> 3    A:B    1.8632 1.9702 22.8596  0.1784
+#>   Resampling: none (asymptotic test)
+#>   effect statistic     df p_value    df1     df2
+#> 1      A    6.9339 1.0000  0.0149 1.0000 22.8596
+#> 2      B    6.6740 1.9702  0.0054 1.9702 22.8596
+#> 3    A:B    1.8632 1.9702  0.1784 1.9702 22.8596
 
 # Example 3
 x<-simulate_agri("factorial");
@@ -92,8 +94,13 @@ if(requireNamespace("ARTool",quietly=TRUE)) np_factorial(yield~A*B,x,method="ART
 #>   Design: factorial
 #>   Method: Aligned Rank Transform
 #>   Response: yield
-#>   Term Df Df.res    Sum Sq Sum Sq.res  F value       Pr(>F) effect
-#> 1    A  1     30  802.7778   3074.333 7.833677 0.0088775925      A
-#> 2    B  2     30 1441.5000   2416.333 8.948476 0.0008957788      B
-#> 3  A:B  2     30  786.0556   3079.000 3.829436 0.0330224447    A:B
+#>   Resampling: none (asymptotic test)
+#>   effect statistic df      p_value Term Df Df.res    Sum Sq Sum Sq.res  F value
+#> 1      A  7.833677  1 0.0088775925    A  1     30  802.7778   3074.333 7.833677
+#> 2      B  8.948476  2 0.0008957788    B  2     30 1441.5000   2416.333 8.948476
+#> 3    A:B  3.829436  2 0.0330224447  A:B  2     30  786.0556   3079.000 3.829436
+#>         Pr(>F)
+#> 1 0.0088775925
+#> 2 0.0008957788
+#> 3 0.0330224447
 ```

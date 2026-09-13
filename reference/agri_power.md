@@ -13,8 +13,10 @@ agri_power(generator, analyzer, nsim = 1000, alpha = 0.05, seed = 1)
 
 - generator:
 
-  Function receiving simulation index \`i\` and returning one synthetic
-  data frame.
+  Function of exactly one argument, the simulation index \`i\`,
+  returning one synthetic data frame. A generator written as
+  \`function()\` fails with \`unused argument (i)\`, so the expected
+  signature is stated rather than implied.
 
 - analyzer:
 

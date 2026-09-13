@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">agriRank</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,10 +95,15 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: multienv</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Aligned Rank Transform</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                   Term         F Df Df.res       Pr(&gt;F)               effect</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1             genotype 6.8838985  3     45 0.0006496793             genotype</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2          environment 2.1474913  2     15 0.1513043770          environment</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 genotype:environment 0.6783333  6     45 0.6677714985 genotype:environment</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                 effect statistic df      p_value                 Term         F</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1             genotype 6.8838985  3 0.0006496793             genotype 6.8838985</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2          environment 2.1474913  2 0.1513043770          environment 2.1474913</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 genotype:environment 0.6783333  6 0.6677714985 genotype:environment 0.6783333</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Df Df.res       Pr(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  3     45 0.0006496793</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  2     15 0.1513043770</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  6     45 0.6677714985</span>
 <span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"multienv"</span><span class="op">)</span>;</span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ARTool"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">agri_multienv</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">genotype</span> <span class="op">*</span> </span></span>
 <span class="r-in"><span>    <span class="va">environment</span>, <span class="va">x</span>, <span class="va">environment</span>, <span class="va">block</span>, method <span class="op">=</span> <span class="st">"ART"</span><span class="op">)</span></span></span>
@@ -109,10 +114,15 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: multienv</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Aligned Rank Transform</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                   Term         F Df Df.res       Pr(&gt;F)               effect</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1             genotype 6.8838985  3     45 0.0006496793             genotype</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2          environment 2.1474913  2     15 0.1513043770          environment</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 genotype:environment 0.6783333  6     45 0.6677714985 genotype:environment</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                 effect statistic df      p_value                 Term         F</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1             genotype 6.8838985  3 0.0006496793             genotype 6.8838985</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2          environment 2.1474913  2 0.1513043770          environment 2.1474913</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 genotype:environment 0.6783333  6 0.6677714985 genotype:environment 0.6783333</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Df Df.res       Pr(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  3     45 0.0006496793</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  2     15 0.1513043770</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  6     45 0.6677714985</span>
 <span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"multienv"</span><span class="op">)</span>;</span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"permuco"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">agri_multienv</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> </span></span>
 <span class="r-in"><span>    <span class="va">genotype</span>, <span class="va">x</span>, <span class="va">environment</span>, <span class="va">block</span>, method <span class="op">=</span> <span class="st">"permuco"</span>, environment_interaction <span class="op">=</span> <span class="cn">FALSE</span>, </span></span>
@@ -123,11 +133,15 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Design: multienv</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Method: permuco permutation ANOVA on mid-ranks</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                           SS df           F parametric P(&gt;F) resampled P(&gt;F)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> .agri_env_block 2.959250e+03 17 0.457771978      0.960519785      0.94949495</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> genotype        7.147111e+03  3 6.265067420      0.001055334      0.01010101</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> environment     7.641286e-01  2 0.001004738      0.998995786      0.34343434</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Residuals       1.939339e+04 51          NA               NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling replicates: 99</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            effect   statistic df    p_value           SS           F</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 .agri_env_block 0.457771978 17 0.94949495 2959.2500000 0.457771978</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2        genotype 6.265067420  3 0.01010101 7147.1111111 6.265067420</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     environment 0.001004738  2 0.34343434    0.7641286 0.001004738</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   parametric P(&gt;F) resampled P(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      0.960519785      0.94949495</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      0.001055334      0.01010101</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3      0.998995786      0.34343434</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

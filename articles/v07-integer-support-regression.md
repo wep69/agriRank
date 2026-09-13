@@ -1,7 +1,7 @@
 # Integer-Support Nonparametric Regression for Agronomy
 
 **Integer decision vignette** **Package:** `agriRank` **Version
-targeted:** `0.14.0` **Owns:** treatments whose admissible values are
+targeted:** `0.14.1` **Owns:** treatments whose admissible values are
 whole numbers, and the decision support that follows from that fact.
 
 ------------------------------------------------------------------------

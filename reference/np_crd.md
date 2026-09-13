@@ -62,6 +62,7 @@ np_crd(yield~treatment,simulate_agri("crd"))
 #>   Design: crd
 #>   Method: Kruskal-Wallis
 #>   Response: yield
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df   p_value
 #> 1 treatment  1.646667  3 0.6488554
 
@@ -71,6 +72,7 @@ x<-simulate_agri("crd"); x$score<-round(x$yield); np_crd(score~treatment,x,"krus
 #>   Design: crd
 #>   Method: Kruskal-Wallis
 #>   Response: score
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df   p_value
 #> 1 treatment   1.52551  3 0.6763952
 
@@ -80,6 +82,7 @@ x<-simulate_agri("crd"); np_crd(yield~treatment,x[-c(1,2),])
 #>   Design: crd
 #>   Method: Kruskal-Wallis
 #>   Response: yield
+#>   Resampling: none (asymptotic test)
 #>      effect statistic df   p_value
 #> 1 treatment    1.6917  3 0.6387807
 ```
