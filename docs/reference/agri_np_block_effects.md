@@ -78,6 +78,21 @@ data(agri_dose)
 fit <- agri_np_regression(yield ~ dose, agri_dose, method = "gam", block = block)
 be <- agri_np_block_effects(fit)
 be
+#> Block effects on yield, block = `block`
+#>   Model was fitted with block_effect = "fixed"
+#> 
+#>  block n     raw   fixed   shrunk shrinkage
+#>     B1 8 -0.3573 -0.3573 -0.34028   0.04757
+#>     B2 8 -0.3158 -0.3158 -0.30075   0.04757
+#>     B3 8 -0.0109 -0.0109 -0.01038   0.04757
+#>     B4 8  0.3247  0.3247  0.30928   0.04757
+#>     B5 8  0.3592  0.3592  0.34214   0.04757
+#> 
+#> Mean shrinkage: 4.8%. The blocks genuinely differ; almost nothing is borrowed. 
+#> 
+#> Fixed effects exist only for the blocks that were observed. Shrunk
+#> effects allow a prediction for a block that was not, at the price of a
+#> working assumption about how blocks vary.
 
 # Example 2. Blocks whose apparent differences are mostly noise are pulled hard
 # towards the common mean.
@@ -87,14 +102,32 @@ d$yield <- d$yield - 0.9 * (as.numeric(d$block) - 3) * 0.35 +
   rnorm(nrow(d), 0, 0.9)
 f2 <- agri_np_regression(yield ~ dose, d, method = "gam", block = block)
 agri_np_block_effects(f2)
+#> Block effects on yield, block = `block`
+#>   Model was fitted with block_effect = "fixed"
+#> 
+#>  block n     raw   fixed     shrunk shrinkage
+#>     B1 8  0.2429  0.2429  2.177e-05    0.9999
+#>     B2 8 -0.2249 -0.2249 -2.015e-05    0.9999
+#>     B3 8 -0.3612 -0.3612 -3.236e-05    0.9999
+#>     B4 8  0.2286  0.2286  2.048e-05    0.9999
+#>     B5 8  0.1146  0.1146  1.027e-05    0.9999
+#> 
+#> Mean shrinkage: 100%. Most of the apparent spread between blocks is treated as noise. 
+#> 
+#> Fixed effects exist only for the blocks that were observed. Shrunk
+#> effects allow a prediction for a block that was not, at the price of a
+#> working assumption about how blocks vary.
 
 # Example 3. The figure shows how far each block travels between the two
 # treatments of the block term.
 p <- plot(be)
 class(p)
+#> [1] "ggplot2::ggplot" "ggplot"          "ggplot2::gg"     "S7_object"      
+#> [5] "gg"             
 
 # Example 4. A fit without a block has no block effects, and says so.
 f3 <- agri_np_regression(yield ~ dose, agri_dose, method = "gam")
 res <- tryCatch(agri_np_block_effects(f3), error = function(e) conditionMessage(e))
 cat(res, "\n")
+#> This fit declares no block, so there are no block effects to report. Refit with `block =` naming the blocking variable. 
 ```

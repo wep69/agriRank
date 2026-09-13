@@ -96,22 +96,23 @@ if(requireNamespace("MANOVA.RM",quietly=TRUE)){set.seed(1);
 x<-data.frame(trt=factor(rep(1:3,each=8)),y1=rnorm(24),y2=rnorm(24));
 z<-agri_multivariate(cbind(y1,y2)~trt,x,iter=99);
 print(z)}
+#> agriRank multivariate fit
+#>   Mode: MANOVA.wide
+#>   Method: MANOVA.RM::MANOVA.wide (WildBS)
+#>   Responses: y1, y2
+#>   Test statistic df p-value statistic_family effect WildBS (WTS) WildBS (MATS)
+#> 1          0.351  4   0.986              WTS    trt           NA            NA
+#> 2          0.227 NA      NA             MATS    trt           NA            NA
+#> 3             NA NA      NA       resampling    trt            1             1
 if(requireNamespace("MANOVA.RM",quietly=TRUE)){set.seed(2);
 x <- data.frame(block = factor(rep(1:4, each = 6)), trt = factor(rep(rep(1:3, 
     each = 2), 4)), y1 = rnorm(24), y2 = rnorm(24))
 z<-agri_multivariate(cbind(y1,y2)~trt,x,block=block,iter=99);
 agri_table(z)}
-if(requireNamespace("MANOVA.RM",quietly=TRUE)){set.seed(3);
-x<-data.frame(trt=factor(rep(1:2,each=10)),y1=rnorm(20),y2=rnorm(20));
-z<-agri_multivariate(cbind(y1,y2)~trt,x,iter=99);
-f<-tempfile(fileext=".md");
-agri_report(z,f);
-file.exists(f)}
-if(requireNamespace("MANOVA.RM",quietly=TRUE)){set.seed(4);
-x<-expand.grid(subject=factor(1:8),time=factor(c("T1","T2")));
-x$trt<-factor(ifelse(as.integer(x$subject)<=4,"A","B"));
-x$y1<-rnorm(nrow(x));
-x$y2<-rnorm(nrow(x));
-z<-agri_multivariate(cbind(y1,y2)~trt,x,subject=subject,within=time,iter=99);
-z$formula}
+#> Warning: The covariance matrix is singular. The WTS provides no valid test statistic!
+
+
+  
+
+Test statistic
 ```

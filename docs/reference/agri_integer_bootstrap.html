@@ -84,29 +84,58 @@ the empirical bootstrap probabilities summarize uncertainty over actual admissib
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># B = 19 keeps the examples fast. Use B &gt;= 999 for any reported decision.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_density</span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span>
-<span>                          integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span>
-<span>                          predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 1: probability mass over the admissible densities</span></span>
-<span><span class="va">boot_max</span> <span class="op">&lt;-</span> <span class="fu">agri_integer_bootstrap</span><span class="op">(</span><span class="va">fit</span>, B <span class="op">=</span> <span class="fl">19</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">boot_max</span></span>
-<span><span class="co"># Each probability is the share of bootstrap refits in which that density was</span></span>
-<span><span class="co"># optimal. The mass sums to one over the admissible support.</span></span>
-<span></span>
-<span><span class="co"># Example 2: the mass converted into a discrete confidence set</span></span>
-<span><span class="fu"><a href="agri_integer_confset.html">agri_integer_confset</a></span><span class="op">(</span><span class="va">boot_max</span>, level <span class="op">=</span> <span class="fl">0.80</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 3: the minimum, for a response where less is better</span></span>
-<span><span class="va">boot_min</span> <span class="op">&lt;-</span> <span class="fu">agri_integer_bootstrap</span><span class="op">(</span><span class="va">fit</span>, objective <span class="op">=</span> <span class="st">"min"</span>, B <span class="op">=</span> <span class="fl">19</span>, seed <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">boot_min</span><span class="op">$</span><span class="va">probabilities</span></span>
-<span></span>
-<span><span class="co"># Example 4: resampling whole blocks, which preserves the randomization</span></span>
-<span><span class="co"># structure of the trial</span></span>
-<span><span class="va">boot_block</span> <span class="op">&lt;-</span> <span class="fu">agri_integer_bootstrap</span><span class="op">(</span><span class="va">fit</span>, B <span class="op">=</span> <span class="fl">19</span>, seed <span class="op">=</span> <span class="fl">3</span>, cluster <span class="op">=</span> <span class="st">"block"</span><span class="op">)</span></span>
-<span><span class="va">boot_block</span><span class="op">$</span><span class="va">failures</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># B = 19 keeps the examples fast. Use B &gt;= 999 for any reported decision.</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_density</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span></span>
+<span class="r-in"><span>                          integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span></span>
+<span class="r-in"><span>                          predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 1: probability mass over the admissible densities</span></span></span>
+<span class="r-in"><span><span class="va">boot_max</span> <span class="op">&lt;-</span> <span class="fu">agri_integer_bootstrap</span><span class="op">(</span><span class="va">fit</span>, B <span class="op">=</span> <span class="fl">19</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">boot_max</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank bootstrap distribution of the integer optimum</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Objective: max</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Successful refits: 19 / 19</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  plants probability</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       1   0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       2   0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       3   0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       4   0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       5   0.1578947</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       6   0.8421053</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       7   0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       8   0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       9   0.0000000</span>
+<span class="r-in"><span><span class="co"># Each probability is the share of bootstrap refits in which that density was</span></span></span>
+<span class="r-in"><span><span class="co"># optimal. The mass sums to one over the admissible support.</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 2: the mass converted into a discrete confidence set</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="agri_integer_confset.html">agri_integer_confset</a></span><span class="op">(</span><span class="va">boot_max</span>, level <span class="op">=</span> <span class="fl">0.80</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank bootstrap confidence set for an integer optimum</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Level: 80%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Set: {6}</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Included bootstrap mass: 0.8421</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3: the minimum, for a response where less is better</span></span></span>
+<span class="r-in"><span><span class="va">boot_min</span> <span class="op">&lt;-</span> <span class="fu">agri_integer_bootstrap</span><span class="op">(</span><span class="va">fit</span>, objective <span class="op">=</span> <span class="st">"min"</span>, B <span class="op">=</span> <span class="fl">19</span>, seed <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">boot_min</span><span class="op">$</span><span class="va">probabilities</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   plants probability</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      1           1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      2           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3      3           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4      4           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5      5           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6      6           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7      7           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8      8           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9      9           0</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 4: resampling whole blocks, which preserves the randomization</span></span></span>
+<span class="r-in"><span><span class="co"># structure of the trial</span></span></span>
+<span class="r-in"><span><span class="va">boot_block</span> <span class="op">&lt;-</span> <span class="fu">agri_integer_bootstrap</span><span class="op">(</span><span class="va">fit</span>, B <span class="op">=</span> <span class="fl">19</span>, seed <span class="op">=</span> <span class="fl">3</span>, cluster <span class="op">=</span> <span class="st">"block"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">boot_block</span><span class="op">$</span><span class="va">failures</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

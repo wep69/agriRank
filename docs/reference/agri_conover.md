@@ -111,6 +111,20 @@ d1 <- data.frame(
 f1 <- np_crd(yield ~ treatment, d1, method = "kruskal")
 if (requireNamespace("PMCMRplus", quietly = TRUE))
   agri_conover(f1, adjust = "holm")
+#>   stratum group1 group2 paired_by_block statistic     p_value p_adjusted
+#> 1     all      B      A           FALSE 0.6915478 0.494915924 0.98983185
+#> 2     all      C      A           FALSE 2.4053838 0.023008388 0.11504194
+#> 3     all      C      B           FALSE 1.7138359 0.097610655 0.29283196
+#> 4     all      D      A           FALSE 2.9165278 0.006898468 0.04139081
+#> 5     all      D      B           FALSE 2.2249800 0.034315288 0.13726115
+#> 6     all      D      C           FALSE 0.5111441 0.613257377 0.98983185
+#>                                         method
+#> 1 Conover all-pairs after Kruskal-type ranking
+#> 2 Conover all-pairs after Kruskal-type ranking
+#> 3 Conover all-pairs after Kruskal-type ranking
+#> 4 Conover all-pairs after Kruskal-type ranking
+#> 5 Conover all-pairs after Kruskal-type ranking
+#> 6 Conover all-pairs after Kruskal-type ranking
 
 # Example 2: complete RCBD
 set.seed(12)
@@ -119,6 +133,20 @@ d2$yield <- 30 + as.numeric(d2$treatment) * 2 + as.numeric(d2$block) + rnorm(nro
 f2 <- np_rcbd(yield ~ treatment, d2, block = block, method = "friedman")
 if (requireNamespace("PMCMRplus", quietly = TRUE))
   agri_conover(f2, adjust = "bonferroni")
+#>   stratum group1 group2 paired_by_block  statistic      p_value   p_adjusted
+#> 1     all      B      A            TRUE  -3.464102 3.469960e-03 2.081976e-02
+#> 2     all      C      A            TRUE  -9.526279 9.425922e-08 5.655553e-07
+#> 3     all      C      B            TRUE  -6.062178 2.174797e-05 1.304878e-04
+#> 4     all      D      A            TRUE -14.722432 2.526247e-10 1.515748e-09
+#> 5     all      D      B            TRUE -11.258330 1.028566e-08 6.171394e-08
+#> 6     all      D      C            TRUE  -5.196152 1.085497e-04 6.512983e-04
+#>                                          method
+#> 1 Conover all-pairs after Friedman-type ranking
+#> 2 Conover all-pairs after Friedman-type ranking
+#> 3 Conover all-pairs after Friedman-type ranking
+#> 4 Conover all-pairs after Friedman-type ranking
+#> 5 Conover all-pairs after Friedman-type ranking
+#> 6 Conover all-pairs after Friedman-type ranking
 
 # Example 3: factorial simple effects
 if (requireNamespace("rankFD", quietly = TRUE) && requireNamespace("PMCMRplus", quietly = TRUE)) {
@@ -130,6 +158,20 @@ if (requireNamespace("rankFD", quietly = TRUE) && requireNamespace("PMCMRplus", 
   fit3 <- agri_rank(des3, method = "rankFD")
   agri_conover(fit3, by = "salinity", factor = "cultivar")
 }
+#>   stratum group1 group2 paired_by_block  statistic   p_value p_adjusted
+#> 1      S1     C2     C1           FALSE  1.6730038 0.1201737  0.3605210
+#> 2      S1     C3     C1           FALSE  0.9456109 0.3629992  0.7259985
+#> 3      S1     C3     C2           FALSE -0.7273930 0.4809367  0.7259985
+#> 4      S2     C2     C1           FALSE  1.7677030 0.1025043  0.3075129
+#> 5      S2     C3     C1           FALSE  1.1048144 0.2909001  0.5818002
+#> 6      S2     C3     C2           FALSE -0.6628886 0.5199321  0.5818002
+#>                                         method
+#> 1 Conover all-pairs after Kruskal-type ranking
+#> 2 Conover all-pairs after Kruskal-type ranking
+#> 3 Conover all-pairs after Kruskal-type ranking
+#> 4 Conover all-pairs after Kruskal-type ranking
+#> 5 Conover all-pairs after Kruskal-type ranking
+#> 6 Conover all-pairs after Kruskal-type ranking
 
 # Example 4: compact letter display attached to the comparison table
 if (requireNamespace("PMCMRplus", quietly = TRUE) &&
@@ -137,12 +179,22 @@ if (requireNamespace("PMCMRplus", quietly = TRUE) &&
   cv <- agri_conover(f1, adjust = "holm", cld = TRUE)
   attr(cv, "cld")
 }
+#>   group letter
+#> 1     B     ab
+#> 2     C     ab
+#> 3     D      a
+#> 4     A      b
 
 # Example 5: the same letters obtained from the table itself
 if (requireNamespace("PMCMRplus", quietly = TRUE) &&
     requireNamespace("multcompView", quietly = TRUE)) {
   agri_cld(agri_conover(f2, adjust = "bonferroni"))
 }
+#>   group letter
+#> 1     B      a
+#> 2     C      b
+#> 3     D      c
+#> 4     A      d
 
 # Example 6: letters computed within each simple-effect stratum
 if (requireNamespace("rankFD", quietly = TRUE) &&
@@ -151,4 +203,11 @@ if (requireNamespace("rankFD", quietly = TRUE) &&
   cv3 <- agri_conover(fit3, by = "salinity", factor = "cultivar", cld = TRUE)
   attr(cv3, "cld")
 }
+#>   stratum group letter
+#> 1      S1    C2      a
+#> 2      S1    C3      a
+#> 3      S1    C1      a
+#> 4      S2    C2      a
+#> 5      S2    C3      a
+#> 6      S2    C1      a
 ```

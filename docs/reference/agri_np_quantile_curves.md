@@ -120,6 +120,10 @@ nd <- data.frame(dose = c(80, 160, 240),
 data.frame(dose = nd$dose,
            q10 = as.numeric(agri_np_predict(q10, nd)),
            q50 = as.numeric(agri_np_predict(q50, nd)))
+#>   dose      q10      q50
+#> 1   80 3.860366 4.331885
+#> 2  160 4.608361 5.049217
+#> 3  240 4.948512 5.231948
 
 # Example 2. A fan of quantiles on an experiment with variability that grows
 # with the rate. The spread widens, so the treatment raises the level and the
@@ -132,17 +136,34 @@ d <- do.call(rbind, lapply(1:12, function(b) {
   z
 }))
 qc <- agri_np_quantile_curves(yield ~ dose, d, block = block, n = 40)
+#> Warning: The most extreme quantile leaves about 9.6 observations in its tail across 96 plots. The smooth borrows strength along the gradient, so the fit is not driven by those observations alone, but read that curve as indicative rather than as an estimate to quote.
 qc$summary
+#>   quantile fitted_min fitted_max    range   coverage   deviation tracking
+#> 1     0.10   1.837158   3.084522 1.247364 0.02083333 -0.07916667     TRUE
+#> 2     0.25   2.220150   3.866192 1.646043 0.19791667 -0.05208333     TRUE
+#> 3     0.50   2.915966   5.248747 2.332781 0.53125000  0.03125000     TRUE
+#> 4     0.75   3.598625   6.494693 2.896068 0.81250000  0.06250000     TRUE
+#> 5     0.90   4.062938   7.099383 3.036445 0.96875000  0.06875000     TRUE
 
 # Example 3. The spread itself, which is the quantity to read when asking
 # whether an average gain was bought with variability.
 head(qc$spread)
+#>        dose    lower    upper   spread
+#> 1  0.000000 1.837158 4.062938 2.225780
+#> 2  7.179487 1.926898 4.180095 2.253197
+#> 3 14.358974 2.016007 4.296837 2.280830
+#> 4 21.538462 2.103856 4.412748 2.308892
+#> 5 28.717949 2.189814 4.527414 2.337600
+#> 6 35.897436 2.273251 4.640420 2.367169
 p <- plot(qc, type = "spread")
 class(p)
+#> [1] "ggplot2::ggplot" "ggplot"          "ggplot2::gg"     "S7_object"      
+#> [5] "gg"             
 
 # Example 4. A quantile too far into the tail for the replication available is
 # refused rather than fitted from two or three plots.
 res <- tryCatch(agri_np_quantile_curves(yield ~ dose, d, quantiles = c(0.01, 0.99)),
                 error = function(e) conditionMessage(e))
 cat(res, "\n")
+#> The most extreme quantile requested leaves about 1 observations in its tail across 96 plots, so the curve would be determined by two or three values. Ask for less extreme quantiles or replicate further. 
 ```

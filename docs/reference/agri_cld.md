@@ -92,14 +92,29 @@ verified references.
 # Example 1
 fit<-np_crd(yield~treatment,simulate_agri("crd"));
 if(requireNamespace("multcompView",quietly=TRUE)) agri_cld(fit)
+#>   group letter
+#> 1     A      a
+#> 2     B      a
+#> 3     C      a
+#> 4     D      a
 
 # Example 2
 fit<-np_crd(yield~treatment,simulate_agri("crd"));
 if(requireNamespace("multcompView",quietly=TRUE)) agri_cld(fit,adjust="BH")
+#>   group letter
+#> 1     A      a
+#> 2     B      a
+#> 3     C      a
+#> 4     D      a
 
 # Example 3
 fit<-np_crd(yield~treatment,simulate_agri("crd"));
 if(requireNamespace("multcompView",quietly=TRUE)) agri_cld(fit,alpha=.01)
+#>   group letter
+#> 1     A      a
+#> 2     B      a
+#> 3     C      a
+#> 4     D      a
 
 # Example 4: letters from a Conover table that was already computed
 if (requireNamespace("multcompView", quietly = TRUE) &&
@@ -108,6 +123,11 @@ if (requireNamespace("multcompView", quietly = TRUE) &&
   cv <- agri_conover(fit, adjust = "holm")
   agri_cld(cv)
 }
+#>   group letter
+#> 1     B      a
+#> 2     C      a
+#> 3     D      a
+#> 4     A      a
 
 # Example 5: letters within each simple-effect stratum
 if (requireNamespace("multcompView", quietly = TRUE) &&
@@ -121,4 +141,11 @@ if (requireNamespace("multcompView", quietly = TRUE) &&
                  method = "ART")
   agri_cld(f, method = "conover", by = "salinity", factor = "cultivar")
 }
+#>   stratum group letter
+#> 1      S1    C2      a
+#> 2      S1    C3      a
+#> 3      S1    C1      a
+#> 4      S2    C2      a
+#> 5      S2    C3      a
+#> 6      S2    C1      b
 ```

@@ -85,11 +85,91 @@ data(agri_dose)
 # Example 1: smoothing spline
 f1 <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
 agri_np_diagnostics(f1)
+#> $method
+#> [1] "smoothing_spline"
+#> 
+#> $metrics
+#>    n      RMSE       MAE MedAE          bias  Spearman
+#> 1 40 0.3623191 0.3128471 0.279 -1.432245e-15 0.8511985
+#> 
+#> $r2
+#>   pseudo_r2 cv_r2 spearman_r2 effective_df  n
+#> 1 0.8255341    NA   0.7245388     3.490987 40
+#> 
+#> $residual_median
+#> [1] 0.04663906
+#> 
+#> $residual_MAD
+#> [1] 0.4650825
+#> 
+#> $residual_fitted_spearman
+#> [1] 0.03780826
+#> 
+#> $n_missing_response
+#> [1] 0
+#> 
+#> $n_original
+#> [1] 40
+#> 
+#> $n_omitted
+#> [1] 0
+#> 
+#> $na_action
+#> [1] "fail"
+#> 
+#> $details
+#> $details$df
+#> [1] 3.490987
+#> 
+#> $details$spar
+#> [1] 0.4681114
+#> 
+#> 
 # RMSE and MAE are in Mg/ha, the same unit as the response.
 
 # Example 2: LOESS on the same data, for comparison
 f2 <- agri_np_regression(yield ~ dose, agri_dose, method = "loess")
 agri_np_diagnostics(f2)
+#> $method
+#> [1] "loess"
+#> 
+#> $metrics
+#>    n     RMSE       MAE  MedAE         bias  Spearman
+#> 1 40 0.358102 0.3093197 0.3055 -0.002435239 0.8511985
+#> 
+#> $r2
+#>   pseudo_r2 cv_r2 spearman_r2 effective_df  n
+#> 1 0.8295718    NA   0.7245388     4.449117 40
+#> 
+#> $residual_median
+#> [1] 0.03307717
+#> 
+#> $residual_MAD
+#> [1] 0.4245535
+#> 
+#> $residual_fitted_spearman
+#> [1] -0.01134248
+#> 
+#> $n_missing_response
+#> [1] 0
+#> 
+#> $n_original
+#> [1] 40
+#> 
+#> $n_omitted
+#> [1] 0
+#> 
+#> $na_action
+#> [1] "fail"
+#> 
+#> $details
+#> $details$enp
+#> [1] 4.449117
+#> 
+#> $details$trace_hat
+#> [1] 4.868615
+#> 
+#> 
 
 # Example 3: a monotone constraint, which this response violates beyond the
 # plateau. The diagnostics are descriptive: a larger residual error here is
@@ -98,15 +178,55 @@ agri_np_diagnostics(f2)
 f3 <- agri_np_regression(yield ~ dose, agri_dose, method = "isotonic",
                          shape = "increasing")
 agri_np_diagnostics(f3)
+#> $method
+#> [1] "isotonic"
+#> 
+#> $metrics
+#>    n      RMSE      MAE  MedAE         bias  Spearman
+#> 1 40 0.3522095 0.305075 0.2975 -8.21623e-16 0.8670088
+#> 
+#> $r2
+#>   pseudo_r2 cv_r2 spearman_r2 effective_df  n
+#> 1 0.8351344    NA   0.7517042            7 40
+#> 
+#> $residual_median
+#> [1] 0.0138
+#> 
+#> $residual_MAD
+#> [1] 0.4570856
+#> 
+#> $residual_fitted_spearman
+#> [1] 0.007607069
+#> 
+#> $n_missing_response
+#> [1] 0
+#> 
+#> $n_original
+#> [1] 40
+#> 
+#> $n_omitted
+#> [1] 0
+#> 
+#> $na_action
+#> [1] "fail"
+#> 
+#> $details
+#> list()
+#> 
 
 # Example 4: the three explained-variation indices side by side
 agri_np_diagnostics(f1, cv = TRUE, kfold = 5, seed = 1)$r2
+#>   pseudo_r2     cv_r2 spearman_r2 effective_df  n
+#> 1 0.8255341 0.7982628   0.7245388     3.490987 40
 
 # Example 5: flexibility inflates the fitted index but not the honest one
 rbind(
   spline = agri_np_diagnostics(f1, cv = TRUE, seed = 1)$r2,
   loess  = agri_np_diagnostics(f2, cv = TRUE, seed = 1)$r2
 )
+#>        pseudo_r2     cv_r2 spearman_r2 effective_df  n
+#> spline 0.8255341 0.7982628   0.7245388     3.490987 40
+#> loess  0.8295718 0.7931386   0.7245388     4.449117 40
 # LOESS usually shows the larger pseudo_r2 and the larger effective_df, while
 # cv_r2 tells which engine actually predicts an unseen plot better.
 ```

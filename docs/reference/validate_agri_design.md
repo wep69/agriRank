@@ -55,15 +55,46 @@ verified references.
 ``` r
 # Example 1
 validate_agri_design(agri_design(yield ~ treatment, simulate_agri("crd"), "crd"), error = FALSE)
+#> $ok
+#> [1] TRUE
+#> 
+#> $problems
+#> [1] severity code     message 
+#> <0 rows> (or 0-length row.names)
+#> 
+#> attr(,"class")
+#> [1] "agri_validation"
 
 # Example 2
 x <- simulate_agri("factorial");
 x <- subset(x, !(A=="A2" & B=="B3"));
 validate_agri_design(agri_design(yield~A*B,x,"factorial"), error=FALSE)
+#> $ok
+#> [1] TRUE
+#> 
+#> $problems
+#>   severity                 code
+#> 1  warning empty_factorial_cell
+#>                                                                              message
+#> 1 At least one factorial treatment cell is empty; some effects may be non-estimable.
+#> 
+#> attr(,"class")
+#> [1] "agri_validation"
 
 # Example 3
 x <- simulate_agri("repeated");
 x <- rbind(x,x[1,]);
 validate_agri_design(agri_design(height ~ treatment * time, x, "repeated", 
     subject = subject, within = time), error = FALSE)
+#> $ok
+#> [1] FALSE
+#> 
+#> $problems
+#>   severity                    code
+#> 1    error duplicate_repeated_cell
+#>                                                                                                                                                                           message
+#> 1 A subject has more than one observation for the same within-subject cell within its between-subject treatment group. Aggregate technical replicates explicitly before analysis.
+#> 
+#> attr(,"class")
+#> [1] "agri_validation"
 ```

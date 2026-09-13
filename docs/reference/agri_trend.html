@@ -81,23 +81,117 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># Example 1</span></span>
-<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"rcbd"</span><span class="op">)</span>;</span>
-<span><span class="va">x</span><span class="op">$</span><span class="va">dose</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">50</span>,<span class="fl">100</span>,<span class="fl">150</span><span class="op">)</span>,times<span class="op">=</span><span class="fl">6</span><span class="op">)</span>;</span>
-<span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">dose</span>,<span class="va">x</span>,<span class="st">"rcbd"</span>,block<span class="op">=</span><span class="va">block</span>,quantitative<span class="op">=</span><span class="va">dose</span><span class="op">)</span>;</span>
-<span><span class="fu">agri_trend</span><span class="op">(</span><span class="va">d</span>,B<span class="op">=</span><span class="fl">299</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 2</span></span>
-<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"rcbd"</span><span class="op">)</span>;</span>
-<span><span class="va">x</span><span class="op">$</span><span class="va">dose</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">50</span>,<span class="fl">100</span>,<span class="fl">150</span><span class="op">)</span>,times<span class="op">=</span><span class="fl">6</span><span class="op">)</span>;</span>
-<span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">dose</span>,<span class="va">x</span>,<span class="st">"rcbd"</span>,block<span class="op">=</span><span class="va">block</span>,quantitative<span class="op">=</span><span class="va">dose</span><span class="op">)</span>;</span>
-<span><span class="fu">agri_trend</span><span class="op">(</span><span class="va">d</span>,treatment<span class="op">=</span><span class="va">dose</span>,B<span class="op">=</span><span class="fl">299</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 3</span></span>
-<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"rcbd"</span><span class="op">)</span>;</span>
-<span><span class="va">x</span><span class="op">$</span><span class="va">dose</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">50</span>,<span class="fl">100</span>,<span class="fl">150</span><span class="op">)</span>,times<span class="op">=</span><span class="fl">6</span><span class="op">)</span>;</span>
-<span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">dose</span>,<span class="va">x</span>,<span class="st">"rcbd"</span>,block<span class="op">=</span><span class="va">block</span>,quantitative<span class="op">=</span><span class="va">dose</span><span class="op">)</span>;</span>
-<span><span class="fu">agri_trend</span><span class="op">(</span><span class="va">d</span>,treatment<span class="op">=</span><span class="va">dose</span>,scores<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>`0`<span class="op">=</span><span class="fl">0</span>,`50`<span class="op">=</span><span class="fl">1</span>,`100`<span class="op">=</span><span class="fl">3</span>,`150`<span class="op">=</span><span class="fl">6</span><span class="op">)</span>,B<span class="op">=</span><span class="fl">299</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Example 1</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"rcbd"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">$</span><span class="va">dose</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">50</span>,<span class="fl">100</span>,<span class="fl">150</span><span class="op">)</span>,times<span class="op">=</span><span class="fl">6</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">dose</span>,<span class="va">x</span>,<span class="st">"rcbd"</span>,block<span class="op">=</span><span class="va">block</span>,quantitative<span class="op">=</span><span class="va">dose</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="fu">agri_trend</span><span class="op">(</span><span class="va">d</span>,B<span class="op">=</span><span class="fl">299</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $design</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank experimental design</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design:   rcbd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Factors:  dose</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Block:    block</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Rows:     24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $method</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "permutation rank trend"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $statistic</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.6352906</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $p_value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.003333333</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $B</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 299</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $treatment</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "dose"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $seed</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $note</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Scores permuted within blocks."</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_trend"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 2</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"rcbd"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">$</span><span class="va">dose</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">50</span>,<span class="fl">100</span>,<span class="fl">150</span><span class="op">)</span>,times<span class="op">=</span><span class="fl">6</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">dose</span>,<span class="va">x</span>,<span class="st">"rcbd"</span>,block<span class="op">=</span><span class="va">block</span>,quantitative<span class="op">=</span><span class="va">dose</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="fu">agri_trend</span><span class="op">(</span><span class="va">d</span>,treatment<span class="op">=</span><span class="va">dose</span>,B<span class="op">=</span><span class="fl">299</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $design</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank experimental design</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design:   rcbd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Factors:  dose</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Block:    block</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Rows:     24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $method</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "permutation rank trend"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $statistic</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.6352906</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $p_value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.003333333</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $B</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 299</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $treatment</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "dose"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $seed</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $note</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Scores permuted within blocks."</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_trend"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"rcbd"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">$</span><span class="va">dose</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">50</span>,<span class="fl">100</span>,<span class="fl">150</span><span class="op">)</span>,times<span class="op">=</span><span class="fl">6</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">dose</span>,<span class="va">x</span>,<span class="st">"rcbd"</span>,block<span class="op">=</span><span class="va">block</span>,quantitative<span class="op">=</span><span class="va">dose</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="fu">agri_trend</span><span class="op">(</span><span class="va">d</span>,treatment<span class="op">=</span><span class="va">dose</span>,scores<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>`0`<span class="op">=</span><span class="fl">0</span>,`50`<span class="op">=</span><span class="fl">1</span>,`100`<span class="op">=</span><span class="fl">3</span>,`150`<span class="op">=</span><span class="fl">6</span><span class="op">)</span>,B<span class="op">=</span><span class="fl">299</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $design</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank experimental design</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design:   rcbd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Factors:  dose</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Block:    block</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Rows:     24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $method</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "permutation rank trend"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $statistic</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.6357424</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $p_value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.003333333</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $B</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 299</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $treatment</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "dose"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $seed</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $note</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Scores permuted within blocks."</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_trend"</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

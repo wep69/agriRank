@@ -75,26 +75,47 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_density</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 1: predicted yield, in Mg/ha, at every admissible plant density</span></span>
-<span><span class="va">f1</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span>
-<span>                         integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span>
-<span>                         predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span>
-<span><span class="fu">agri_integer_predict</span><span class="op">(</span><span class="va">f1</span><span class="op">)</span></span>
-<span><span class="co"># One row per decision the grower can actually take. No fractional plant</span></span>
-<span><span class="co"># appears, because half a plant cannot be sown.</span></span>
-<span></span>
-<span><span class="co"># Example 2: restricted to the densities under discussion</span></span>
-<span><span class="fu">agri_integer_predict</span><span class="op">(</span><span class="va">f1</span>, support <span class="op">=</span> <span class="fl">4</span><span class="op">:</span><span class="fl">7</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 3: a support extended beyond what was tested. Extrapolating to 10</span></span>
-<span><span class="co"># plants per hill must be justified agronomically, never by convenience.</span></span>
-<span><span class="va">f2</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span>
-<span>                         integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span>
-<span>                         predictor_support <span class="op">=</span> <span class="st">"integer_range"</span>,</span>
-<span>                         integer_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">12</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">agri_integer_predict</span><span class="op">(</span><span class="va">f2</span>, support <span class="op">=</span> <span class="fl">10</span><span class="op">:</span><span class="fl">12</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_density</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 1: predicted yield, in Mg/ha, at every admissible plant density</span></span></span>
+<span class="r-in"><span><span class="va">f1</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span></span>
+<span class="r-in"><span>                         integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span></span>
+<span class="r-in"><span>                         predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">agri_integer_predict</span><span class="op">(</span><span class="va">f1</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   plants      fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      1 3.303982</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      2 4.201545</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3      3 4.858834</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4      4 5.348576</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5      5 5.633219</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6      6 5.653211</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7      7 5.409864</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8      8 5.130370</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9      9 5.004565</span>
+<span class="r-in"><span><span class="co"># One row per decision the grower can actually take. No fractional plant</span></span></span>
+<span class="r-in"><span><span class="co"># appears, because half a plant cannot be sown.</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 2: restricted to the densities under discussion</span></span></span>
+<span class="r-in"><span><span class="fu">agri_integer_predict</span><span class="op">(</span><span class="va">f1</span>, support <span class="op">=</span> <span class="fl">4</span><span class="op">:</span><span class="fl">7</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   plants      fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      4 5.348576</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      5 5.633219</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3      6 5.653211</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4      7 5.409864</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3: a support extended beyond what was tested. Extrapolating to 10</span></span></span>
+<span class="r-in"><span><span class="co"># plants per hill must be justified agronomically, never by convenience.</span></span></span>
+<span class="r-in"><span><span class="va">f2</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span></span>
+<span class="r-in"><span>                         integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span></span>
+<span class="r-in"><span>                         predictor_support <span class="op">=</span> <span class="st">"integer_range"</span>,</span></span>
+<span class="r-in"><span>                         integer_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">12</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">agri_integer_predict</span><span class="op">(</span><span class="va">f2</span>, support <span class="op">=</span> <span class="fl">10</span><span class="op">:</span><span class="fl">12</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`newdata` leaves the range of the data the smoother was fitted to: plants outside [1, 9]. A nonparametric fit carries no information beyond its support, so a value returned there describes the basis rather than the experiment.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   plants      fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     10 4.918467</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2     11 4.832369</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     12 4.746272</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

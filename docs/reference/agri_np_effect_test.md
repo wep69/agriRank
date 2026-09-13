@@ -132,4 +132,17 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   fs <- agri_np_regression(yield ~ N, d, method = "smoothing_spline")
   agri_np_effect_test(fs, B = 49, seed = 1, cluster = NA)
 }
+#> Cluster wild-bootstrap test of predictor contribution
+#>   Response: yield   engine: smoothing_spline   B = 49
+#>   Signs drawn once per row, which assumes complete randomization
+#> 
+#>  term statistic p_value replicates note p_adjusted
+#>     N    0.7871    0.02         49            0.02
+#> 
+#>   A p_value of 0.02 is the floor of 49 replicates,
+#>   not a measurement. Raise B before quoting it.
+#> 
+#>   The null is that the term does not enter the response at all, not
+#>   that its effect is linear or small. A term that is not rejected has
+#>   not been shown to be absent.
 ```

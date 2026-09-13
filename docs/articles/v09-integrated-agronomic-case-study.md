@@ -1189,7 +1189,7 @@ fit_var <- agri_np_regression(biomass ~ salinity + cultivar, base,
                               gam_structure = "varying")
 fit_var$formula_used
 #> biomass ~ cultivar + s(salinity, by = cultivar, k = 3) + block
-#> <environment: 0x0000013c0cc40008>
+#> <environment: 0x000001bde39c2580>
 ```
 
 One smooth of salinity is now fitted per cultivar:

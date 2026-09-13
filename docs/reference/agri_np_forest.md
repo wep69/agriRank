@@ -152,4 +152,19 @@ if (requireNamespace("quantreg", quietly = TRUE)) {
   # 0.9 Mg/ha; reading its interval against the zero line is the point of
   # the figure.
 }
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
 ```

@@ -64,10 +64,31 @@ verified references.
 ``` r
 # Example 1
 x<-simulate_agri("rcbd"); np_rcbd(yield~treatment,x,block)
+#> agriRank fit
+#>   Design: rcbd
+#>   Method: Friedman rank-sum
+#>   Response: yield
+#>   Resampling: none (asymptotic test)
+#>      effect statistic df    p_value
+#> 1 treatment       8.4  3 0.03842932
 
 # Example 2
 x<-simulate_agri("rcbd"); x$score<-round(x$yield); np_rcbd(score~treatment,x,block,"friedman")
+#> agriRank fit
+#>   Design: rcbd
+#>   Method: Friedman rank-sum
+#>   Response: score
+#>   Resampling: none (asymptotic test)
+#>      effect statistic df    p_value
+#> 1 treatment  6.980769  3 0.07251325
 
 # Example 3
 x<-simulate_agri("rcbd",n=8); np_rcbd(yield~treatment,x,block,"friedman")
+#> agriRank fit
+#>   Design: rcbd
+#>   Method: Friedman rank-sum
+#>   Response: yield
+#>   Resampling: none (asymptotic test)
+#>      effect statistic df     p_value
+#> 1 treatment     12.75  3 0.005209652
 ```

@@ -77,17 +77,44 @@ verified references.
 ``` r
 # Example 1
 fit<-np_crd(yield~treatment,simulate_agri("crd")); agri_effects(fit)
+#>   cell n   median mean_rank relative_effect
+#> 1    A 6 5.990484  12.00000       0.3541667
+#> 2    B 6 6.779350  12.50000       0.3750000
+#> 3    C 6 6.583064  15.33333       0.4930556
+#> 4    D 6 5.165202  10.16667       0.2777778
 
 # Example 2
 fit<-np_crd(yield~treatment,simulate_agri("crd")); agri_effects(fit,ci=TRUE,B=199)
+#>   cell n   median mean_rank relative_effect
+#> 1    A 6 5.990484  12.00000       0.3541667
+#> 2    B 6 6.779350  12.50000       0.3750000
+#> 3    C 6 6.583064  15.33333       0.4930556
+#> 4    D 6 5.165202  10.16667       0.2777778
 
 # Example 3
 x<-simulate_agri("factorial");
 if(requireNamespace("rankFD",quietly=TRUE)){fit<-np_factorial(yield~A*B,x,method="rankFD");
 agri_effects(fit)}
+#>     cell n   median mean_rank relative_effect
+#> 1 A1::B1 6 4.329297  13.16667       0.2685185
+#> 2 A1::B2 6 4.706755  12.50000       0.2500000
+#> 3 A1::B3 6 5.516125  18.66667       0.4212963
+#> 4 A2::B1 6 4.640361  13.66667       0.2824074
+#> 5 A2::B2 6 5.503617  20.50000       0.4722222
+#> 6 A2::B3 6 7.978105  32.50000       0.8055556
 
 # Example 4, the declaration selects the estimator
 d<-agri_design(yield~treatment,simulate_agri("crd"),"crd");
 agri_effects(agri_rank(d,estimand="relative_effect"))
+#>   cell n   median mean_rank relative_effect
+#> 1    A 6 5.990484  12.00000       0.3541667
+#> 2    B 6 6.779350  12.50000       0.3750000
+#> 3    C 6 6.583064  15.33333       0.4930556
+#> 4    D 6 5.165202  10.16667       0.2777778
 agri_effects(agri_rank(d,estimand="location_shift"))
+#>   cell n   median mean_rank reference hodges_lehmann
+#> 1    A 6 5.990484  12.00000         A      0.0000000
+#> 2    B 6 6.779350  12.50000         A      0.2155826
+#> 3    C 6 6.583064  15.33333         A      1.1658629
+#> 4    D 6 5.165202  10.16667         A     -0.3961795
 ```

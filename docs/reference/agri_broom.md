@@ -74,12 +74,30 @@ fit <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
 
 # Example 1: the fitted curve, one row per grid point
 head(agri_tidy(fit, n = 25))
+#>   term        x estimate
+#> 1 dose  0.00000 3.096659
+#> 2 dose 11.66667 3.282753
+#> 3 dose 23.33333 3.466594
+#> 4 dose 35.00000 3.645917
+#> 5 dose 46.66667 3.818506
+#> 6 dose 58.33333 3.982912
 
 # Example 2: one row describing the whole fit
 agri_glance(fit)
+#>             method response  n n_omitted pseudo_r2 spearman_r2 effective_df
+#> 1 smoothing_spline    yield 40         0 0.8255341   0.7245388     3.490987
+#>        RMSE       MAE block spatial
+#> 1 0.3623191 0.3128471  <NA>    none
 
 # Example 3: the original rows with fitted values and residuals attached
 head(agri_augment(fit))
+#>   block dose yield  .fitted     .resid
+#> 1    B1    0 2.612 3.096659 -0.4846589
+#> 2    B1   40 3.426 3.720827 -0.2948267
+#> 3    B1   80 3.797 4.263777 -0.4667765
+#> 4    B1  120 4.423 4.688799 -0.2657988
+#> 5    B1  160 4.634 4.991988 -0.3579881
+#> 6    B1  200 4.947 5.185945 -0.2389450
 
 # Example 4: the rank side tidies to one row per term, with a p-value, because
 # there a test was actually performed. Note that the rank engines compare
@@ -91,4 +109,6 @@ if (requireNamespace("ARTool", quietly = TRUE)) {
   des <- agri_design(yield ~ rate, d, design = "rcbd", block = "block")
   agri_tidy(agri_rank(des, method = "ART"))
 }
+#>   term statistic      p.value
+#> 1 rate   38.8874 8.872411e-13
 ```

@@ -67,12 +67,86 @@ x<-simulate_agri("crd");
 x$biomass<-x$yield+rnorm(nrow(x));
 d<-agri_design(yield~treatment,x,"crd");
 agri_batch(d,c("yield","biomass"))
+#> $design
+#> agriRank experimental design
+#>   Design:   crd
+#>   Response: yield
+#>   Factors:  treatment
+#>   Rows:     24
+#> 
+#> $fits
+#> $fits$yield
+#> agriRank fit
+#>   Design: crd
+#>   Method: Kruskal-Wallis
+#>   Response: yield
+#>   Resampling: none (asymptotic test)
+#>      effect statistic df   p_value
+#> 1 treatment  1.646667  3 0.6488554
+#> 
+#> $fits$biomass
+#> agriRank fit
+#>   Design: crd
+#>   Method: Kruskal-Wallis
+#>   Response: biomass
+#>   Resampling: none (asymptotic test)
+#>      effect statistic df   p_value
+#> 1 treatment 0.3266667  3 0.9549376
+#> 
+#> 
+#> $summary
+#>   response    effect   p_value status
+#> 1    yield treatment 0.6488554     ok
+#> 2  biomass treatment 0.9549376     ok
+#> 
+#> $adjust_across
+#> [1] "none"
+#> 
+#> attr(,"class")
+#> [1] "agri_batch"
 
 # Example 2
 x<-simulate_agri("crd");
 x$biomass<-x$yield+rnorm(nrow(x));
 d<-agri_design(yield~treatment,x,"crd");
 agri_batch(d,c("yield","biomass"),adjust_across="BH")
+#> $design
+#> agriRank experimental design
+#>   Design:   crd
+#>   Response: yield
+#>   Factors:  treatment
+#>   Rows:     24
+#> 
+#> $fits
+#> $fits$yield
+#> agriRank fit
+#>   Design: crd
+#>   Method: Kruskal-Wallis
+#>   Response: yield
+#>   Resampling: none (asymptotic test)
+#>      effect statistic df   p_value
+#> 1 treatment  1.646667  3 0.6488554
+#> 
+#> $fits$biomass
+#> agriRank fit
+#>   Design: crd
+#>   Method: Kruskal-Wallis
+#>   Response: biomass
+#>   Resampling: none (asymptotic test)
+#>      effect statistic df   p_value
+#> 1 treatment  1.313333  3 0.7259694
+#> 
+#> 
+#> $summary
+#>   response    effect   p_value status p_across_adjusted
+#> 1    yield treatment 0.6488554     ok         0.7259694
+#> 2  biomass treatment 0.7259694     ok         0.7259694
+#> 
+#> $adjust_across
+#> [1] "BH"
+#> 
+#> attr(,"class")
+#> [1] "agri_batch"
 
 # Example 3
 x<-simulate_agri("crd");
@@ -80,4 +154,51 @@ x$biomass<-x$yield+rnorm(nrow(x));
 x$spad<-30+x$yield+rnorm(nrow(x));
 d<-agri_design(yield~treatment,x,"crd");
 agri_batch(d,c("yield","biomass","spad"),adjust_across="holm")
+#> $design
+#> agriRank experimental design
+#>   Design:   crd
+#>   Response: yield
+#>   Factors:  treatment
+#>   Rows:     24
+#> 
+#> $fits
+#> $fits$yield
+#> agriRank fit
+#>   Design: crd
+#>   Method: Kruskal-Wallis
+#>   Response: yield
+#>   Resampling: none (asymptotic test)
+#>      effect statistic df   p_value
+#> 1 treatment  1.646667  3 0.6488554
+#> 
+#> $fits$biomass
+#> agriRank fit
+#>   Design: crd
+#>   Method: Kruskal-Wallis
+#>   Response: biomass
+#>   Resampling: none (asymptotic test)
+#>      effect statistic df   p_value
+#> 1 treatment 0.3533333  3 0.9497047
+#> 
+#> $fits$spad
+#> agriRank fit
+#>   Design: crd
+#>   Method: Kruskal-Wallis
+#>   Response: spad
+#>   Resampling: none (asymptotic test)
+#>      effect statistic df   p_value
+#> 1 treatment      2.18  3 0.5358985
+#> 
+#> 
+#> $summary
+#>   response    effect   p_value status p_across_adjusted
+#> 1    yield treatment 0.6488554     ok                 1
+#> 2  biomass treatment 0.9497047     ok                 1
+#> 3     spad treatment 0.5358985     ok                 1
+#> 
+#> $adjust_across
+#> [1] "holm"
+#> 
+#> attr(,"class")
+#> [1] "agri_batch"
 ```

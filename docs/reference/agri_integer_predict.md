@@ -54,11 +54,26 @@ f1 <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
                          integer_base_method = "smoothing_spline",
                          predictor_support = "observed_integer")
 agri_integer_predict(f1)
+#>   plants      fit
+#> 1      1 3.303982
+#> 2      2 4.201545
+#> 3      3 4.858834
+#> 4      4 5.348576
+#> 5      5 5.633219
+#> 6      6 5.653211
+#> 7      7 5.409864
+#> 8      8 5.130370
+#> 9      9 5.004565
 # One row per decision the grower can actually take. No fractional plant
 # appears, because half a plant cannot be sown.
 
 # Example 2: restricted to the densities under discussion
 agri_integer_predict(f1, support = 4:7)
+#>   plants      fit
+#> 1      4 5.348576
+#> 2      5 5.633219
+#> 3      6 5.653211
+#> 4      7 5.409864
 
 # Example 3: a support extended beyond what was tested. Extrapolating to 10
 # plants per hill must be justified agronomically, never by convenience.
@@ -67,4 +82,9 @@ f2 <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
                          predictor_support = "integer_range",
                          integer_range = c(1, 12))
 agri_integer_predict(f2, support = 10:12)
+#> Warning: `newdata` leaves the range of the data the smoother was fitted to: plants outside [1, 9]. A nonparametric fit carries no information beyond its support, so a value returned there describes the basis rather than the experiment.
+#>   plants      fit
+#> 1     10 4.918467
+#> 2     11 4.832369
+#> 3     12 4.746272
 ```

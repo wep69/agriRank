@@ -82,24 +82,146 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># Example 1</span></span>
-<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>;</span>
-<span><span class="va">x</span><span class="op">$</span><span class="va">biomass</span><span class="op">&lt;-</span><span class="va">x</span><span class="op">$</span><span class="va">yield</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>;</span>
-<span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">treatment</span>,<span class="va">x</span>,<span class="st">"crd"</span><span class="op">)</span>;</span>
-<span><span class="fu">agri_batch</span><span class="op">(</span><span class="va">d</span>,<span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"yield"</span>,<span class="st">"biomass"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 2</span></span>
-<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>;</span>
-<span><span class="va">x</span><span class="op">$</span><span class="va">biomass</span><span class="op">&lt;-</span><span class="va">x</span><span class="op">$</span><span class="va">yield</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>;</span>
-<span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">treatment</span>,<span class="va">x</span>,<span class="st">"crd"</span><span class="op">)</span>;</span>
-<span><span class="fu">agri_batch</span><span class="op">(</span><span class="va">d</span>,<span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"yield"</span>,<span class="st">"biomass"</span><span class="op">)</span>,adjust_across<span class="op">=</span><span class="st">"BH"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 3</span></span>
-<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>;</span>
-<span><span class="va">x</span><span class="op">$</span><span class="va">biomass</span><span class="op">&lt;-</span><span class="va">x</span><span class="op">$</span><span class="va">yield</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>;</span>
-<span><span class="va">x</span><span class="op">$</span><span class="va">spad</span><span class="op">&lt;-</span><span class="fl">30</span><span class="op">+</span><span class="va">x</span><span class="op">$</span><span class="va">yield</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>;</span>
-<span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">treatment</span>,<span class="va">x</span>,<span class="st">"crd"</span><span class="op">)</span>;</span>
-<span><span class="fu">agri_batch</span><span class="op">(</span><span class="va">d</span>,<span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"yield"</span>,<span class="st">"biomass"</span>,<span class="st">"spad"</span><span class="op">)</span>,adjust_across<span class="op">=</span><span class="st">"holm"</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Example 1</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">$</span><span class="va">biomass</span><span class="op">&lt;-</span><span class="va">x</span><span class="op">$</span><span class="va">yield</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">treatment</span>,<span class="va">x</span>,<span class="st">"crd"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="fu">agri_batch</span><span class="op">(</span><span class="va">d</span>,<span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"yield"</span>,<span class="st">"biomass"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $design</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank experimental design</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design:   crd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Factors:  treatment</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Rows:     24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $fits</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $fits$yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: crd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Kruskal-Wallis</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      effect statistic df   p_value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 treatment  1.646667  3 0.6488554</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $fits$biomass</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: crd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Kruskal-Wallis</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: biomass</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      effect statistic df   p_value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 treatment 0.3266667  3 0.9549376</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $summary</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   response    effect   p_value status</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    yield treatment 0.6488554     ok</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  biomass treatment 0.9549376     ok</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $adjust_across</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "none"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_batch"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 2</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">$</span><span class="va">biomass</span><span class="op">&lt;-</span><span class="va">x</span><span class="op">$</span><span class="va">yield</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">treatment</span>,<span class="va">x</span>,<span class="st">"crd"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="fu">agri_batch</span><span class="op">(</span><span class="va">d</span>,<span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"yield"</span>,<span class="st">"biomass"</span><span class="op">)</span>,adjust_across<span class="op">=</span><span class="st">"BH"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $design</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank experimental design</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design:   crd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Factors:  treatment</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Rows:     24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $fits</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $fits$yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: crd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Kruskal-Wallis</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      effect statistic df   p_value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 treatment  1.646667  3 0.6488554</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $fits$biomass</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: crd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Kruskal-Wallis</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: biomass</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      effect statistic df   p_value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 treatment  1.313333  3 0.7259694</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $summary</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   response    effect   p_value status p_across_adjusted</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    yield treatment 0.6488554     ok         0.7259694</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  biomass treatment 0.7259694     ok         0.7259694</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $adjust_across</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BH"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_batch"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">$</span><span class="va">biomass</span><span class="op">&lt;-</span><span class="va">x</span><span class="op">$</span><span class="va">yield</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">$</span><span class="va">spad</span><span class="op">&lt;-</span><span class="fl">30</span><span class="op">+</span><span class="va">x</span><span class="op">$</span><span class="va">yield</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">treatment</span>,<span class="va">x</span>,<span class="st">"crd"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="fu">agri_batch</span><span class="op">(</span><span class="va">d</span>,<span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"yield"</span>,<span class="st">"biomass"</span>,<span class="st">"spad"</span><span class="op">)</span>,adjust_across<span class="op">=</span><span class="st">"holm"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $design</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank experimental design</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design:   crd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Factors:  treatment</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Rows:     24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $fits</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $fits$yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: crd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Kruskal-Wallis</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      effect statistic df   p_value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 treatment  1.646667  3 0.6488554</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $fits$biomass</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: crd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Kruskal-Wallis</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: biomass</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      effect statistic df   p_value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 treatment 0.3533333  3 0.9497047</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $fits$spad</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: crd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Kruskal-Wallis</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: spad</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      effect statistic df   p_value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 treatment      2.18  3 0.5358985</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $summary</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   response    effect   p_value status p_across_adjusted</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    yield treatment 0.6488554     ok                 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  biomass treatment 0.9497047     ok                 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     spad treatment 0.5358985     ok                 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $adjust_across</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "holm"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_batch"</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

@@ -140,41 +140,61 @@ curves. <em>Journal of the American Statistical Association</em>, 94(447),
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span>
-<span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"smoothing_spline"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 1: where is the nitrogen response still rising?</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SiZer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">sz</span> <span class="op">&lt;-</span> <span class="fu">agri_np_sizer</span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
-<span>  <span class="va">sz</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="co"># Example 2: the agronomic statement, robust to the smoothing choice</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SiZer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu">agri_np_significant_slope</span><span class="op">(</span><span class="va">sz</span><span class="op">)</span></span>
-<span>  <span class="co"># Compare with the pointwise optimum, which sits at the boundary of the</span></span>
-<span>  <span class="co"># tested range. The optimum answers a different, weaker question.</span></span>
-<span>  <span class="fu"><a href="agri_np_optimum.html">agri_np_optimum</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="co"># Example 3: the map and the stability profile</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SiZer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sz</span>, type <span class="op">=</span> <span class="st">"map"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sz</span>, type <span class="op">=</span> <span class="st">"stability"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="co"># Example 4: curvature instead of slope</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SiZer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="fu">agri_np_sizer</span><span class="op">(</span><span class="va">f</span>, derivative <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="co"># Example 5: an integer decision support is refused, with the alternative named</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_density</span><span class="op">)</span></span>
-<span><span class="va">fi</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span>
-<span>                         integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span>
-<span>                         predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SiZer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu">agri_np_sizer</span><span class="op">(</span><span class="va">fi</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"smoothing_spline"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 1: where is the nitrogen response still rising?</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SiZer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="va">sz</span> <span class="op">&lt;-</span> <span class="fu">agri_np_sizer</span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">sz</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank SiZer map</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Predictor: dose  Response: yield  n = 40 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Derivative order: 1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Bandwidths: 21 from 11.2 to 140 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Reference bandwidth: 39.6 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Slope classification at the reference bandwidth:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  from  to      state n_grid bandwidth</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     0 182 increasing     27      39.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   189 280       flat     14      39.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> A conclusion that holds across the whole bandwidth column is robust to</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> the amount of smoothing; one that appears at a single bandwidth is not.</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 2: the agronomic statement, robust to the smoothing choice</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SiZer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="fu">agri_np_significant_slope</span><span class="op">(</span><span class="va">sz</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="co"># Compare with the pointwise optimum, which sits at the boundary of the</span></span></span>
+<span class="r-in"><span>  <span class="co"># tested range. The optimum answers a different, weaker question.</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="agri_np_optimum.html">agri_np_optimum</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   predictor optimum fitted_response objective at_boundary    support</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      dose     280        5.413311       max        TRUE continuous</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3: the map and the stability profile</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SiZer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sz</span>, type <span class="op">=</span> <span class="st">"map"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sz</span>, type <span class="op">=</span> <span class="st">"stability"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-plt img"><img src="agri_np_sizer-1.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 4: curvature instead of slope</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SiZer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="fu">agri_np_sizer</span><span class="op">(</span><span class="va">f</span>, derivative <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   from  to state n_grid bandwidth</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    0 280  flat     41  39.59798</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 5: an integer decision support is refused, with the alternative named</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_density</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fi</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span></span>
+<span class="r-in"><span>                         integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span></span>
+<span class="r-in"><span>                         predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SiZer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu">agri_np_sizer</span><span class="op">(</span><span class="va">fi</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Error : SiZer describes the derivative of a continuous gradient. For an integer decision support use agri_integer_difference(), which reports finite differences between admissible decisions.</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

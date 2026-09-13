@@ -94,18 +94,44 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># Example 1</span></span>
-<span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">treatment</span>,<span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>,<span class="st">"crd"</span><span class="op">)</span>; <span class="fu">agri_rank</span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 2</span></span>
-<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"factorial"</span><span class="op">)</span>;</span>
-<span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">A</span><span class="op">*</span><span class="va">B</span>,<span class="va">x</span>,<span class="st">"factorial"</span><span class="op">)</span>;</span>
-<span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rankFD"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">agri_rank</span><span class="op">(</span><span class="va">d</span>,<span class="st">"rankFD"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 3</span></span>
-<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated_missing"</span><span class="op">)</span>;</span>
-<span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">height</span><span class="op">~</span><span class="va">treatment</span><span class="op">*</span><span class="va">time</span>,<span class="va">x</span>,<span class="st">"repeated"</span>,subject<span class="op">=</span><span class="va">subject</span>,within<span class="op">=</span><span class="va">time</span><span class="op">)</span>;</span>
-<span><span class="fu">agri_rank</span><span class="op">(</span><span class="va">d</span>,<span class="st">"incomplete_wild"</span>,B<span class="op">=</span><span class="fl">999</span>,missing_assumption<span class="op">=</span><span class="st">"MCAR"</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Example 1</span></span></span>
+<span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">treatment</span>,<span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>,<span class="st">"crd"</span><span class="op">)</span>; <span class="fu">agri_rank</span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: crd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Kruskal-Wallis</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      effect statistic df   p_value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 treatment  1.646667  3 0.6488554</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 2</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"factorial"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">A</span><span class="op">*</span><span class="va">B</span>,<span class="va">x</span>,<span class="st">"factorial"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rankFD"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">agri_rank</span><span class="op">(</span><span class="va">d</span>,<span class="st">"rankFD"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: factorial</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: rankFD pseudo-rank factorial inference</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic     df p_value    df1     df2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A    6.9339 1.0000  0.0149 1.0000 22.8596</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B    6.6740 1.9702  0.0054 1.9702 22.8596</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B    1.8632 1.9702  0.1784 1.9702 22.8596</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated_missing"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">height</span><span class="op">~</span><span class="va">treatment</span><span class="op">*</span><span class="va">time</span>,<span class="va">x</span>,<span class="st">"repeated"</span>,subject<span class="op">=</span><span class="va">subject</span>,within<span class="op">=</span><span class="va">time</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="fu">agri_rank</span><span class="op">(</span><span class="va">d</span>,<span class="st">"incomplete_wild"</span>,B<span class="op">=</span><span class="fl">999</span>,missing_assumption<span class="op">=</span><span class="st">"MCAR"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: repeated</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: incomplete repeated-measures rank wild bootstrap</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: height</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling replicates: 999</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           effect statistic      df p_value    value p_boot p_asymptotic</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      treatment        NA 1.00000   0.163 2.400622  0.163   0.12128701</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2           time        NA 1.42395   0.047 3.768121  0.047   0.03710787</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 treatment:time        NA 1.42395   0.280 1.242759  0.280   0.27959642</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

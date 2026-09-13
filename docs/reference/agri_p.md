@@ -52,10 +52,15 @@ d$y <- 10 + ifelse(d$trat == "T4", 1.5, 0) + stats::rnorm(nrow(d))
 dg <- agri_design(y ~ trat, data = d, design = "crd")
 fit <- agri_rank(dg, method = "kruskal")
 agri_p(fit)
+#>   effect   p_value
+#> 1   trat 0.0169713
 
 if (requireNamespace("permuco", quietly = TRUE)) {
   fp <- agri_rank(dg, method = "permuco", B = 999, seed = 1)
   agri_p(fp)
   agri_p(fp, which = "parametric")
 }
+#> Warning: The number of permutations is below 2000, p-values might be unreliable.
+#>   effect     p_value
+#> 1   trat 0.009941774
 ```

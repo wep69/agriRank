@@ -92,10 +92,26 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   agri_np_compare(yield ~ dose, agri_dose, kfold = 4, seed = 1,
                   methods = c("smoothing_spline", "loess", "gam", "quantile"))
 }
+#>             method  n      RMSE       MAE     MedAE        bias  Spearman
+#> 1 smoothing_spline 40 0.4201032 0.3621619 0.3304382 0.007771652 0.8116464
+#> 2              gam 40 0.4221668 0.3628213 0.3292572 0.008997814 0.8060113
+#> 3            loess 40 0.4384154 0.3775750 0.3461109 0.011263442 0.8037572
+#> 4         quantile 40 0.4743565 0.3768898 0.3642500 0.076072679 0.8304439
+#>   selected_metric failures
+#> 1       0.4201032        0
+#> 2       0.4221668        0
+#> 3       0.4384154        0
+#> 4       0.4743565        0
 
 # Example 2: median absolute error, less sensitive to a single bad plot
 agri_np_compare(yield ~ dose, agri_dose, kfold = 4, seed = 1,
                 methods = c("smoothing_spline", "loess"), metric = "MedAE")
+#>             method  n      RMSE       MAE     MedAE        bias  Spearman
+#> 1 smoothing_spline 40 0.4201032 0.3621619 0.3304382 0.007771652 0.8116464
+#> 2            loess 40 0.4384154 0.3775750 0.3461109 0.011263442 0.8037572
+#>   selected_metric failures
+#> 1       0.3304382        0
+#> 2       0.3461109        0
 
 # Example 3: keeping the agronomic block in every candidate model
 if (requireNamespace("mgcv", quietly = TRUE)) {
@@ -104,4 +120,11 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   # A difference of a few hundredths of a Mg/ha between engines is not
   # agronomic evidence; prefer the engine justified by the design.
 }
+#> Warning: Solution may be nonunique
+#>     method  n      RMSE       MAE    MedAE         bias  Spearman
+#> 1      gam 40 0.2309309 0.1927477 0.159037 -0.005693134 0.9354097
+#> 2 quantile 40 0.4491076 0.3940188 0.420250 -0.048831250 0.8722736
+#>   selected_metric failures
+#> 1       0.2309309        0
+#> 2       0.4491076        0
 ```

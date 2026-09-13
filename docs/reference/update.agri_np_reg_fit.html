@@ -90,27 +90,33 @@ a fresh call.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span>
-<span><span class="va">f1</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"smoothing_spline"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 1: change the engine, keep everything else</span></span>
-<span><span class="va">f2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">f1</span>, method <span class="op">=</span> <span class="st">"loess"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">f1</span><span class="op">$</span><span class="va">method</span>, <span class="va">f2</span><span class="op">$</span><span class="va">method</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 2: change the smoothing parameter only</span></span>
-<span><span class="va">f3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">f1</span>, method <span class="op">=</span> <span class="st">"gam"</span>, k <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span>
-<span><span class="va">f3</span><span class="op">$</span><span class="va">settings</span><span class="op">$</span><span class="va">k</span></span>
-<span></span>
-<span><span class="co"># Example 3: impose a shape the agronomy guarantees, and compare</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"scam"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">f4</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">f1</span>, method <span class="op">=</span> <span class="st">"scam"</span>, shape <span class="op">=</span> <span class="st">"increasing_concave"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>free <span class="op">=</span> <span class="va">f1</span><span class="op">$</span><span class="va">metrics</span><span class="op">$</span><span class="va">RMSE</span>, constrained <span class="op">=</span> <span class="va">f4</span><span class="op">$</span><span class="va">metrics</span><span class="op">$</span><span class="va">RMSE</span><span class="op">)</span></span>
-<span>  <span class="co"># The constrained fit cannot beat the free one on RMSE. It buys precision</span></span>
-<span>  <span class="co"># where the constraint is true, not a better fit to these data.</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="co"># Example 4: an argument that does not exist is named rather than ignored</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">f1</span>, smoothing <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">f1</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"smoothing_spline"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 1: change the engine, keep everything else</span></span></span>
+<span class="r-in"><span><span class="va">f2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">f1</span>, method <span class="op">=</span> <span class="st">"loess"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">f1</span><span class="op">$</span><span class="va">method</span>, <span class="va">f2</span><span class="op">$</span><span class="va">method</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "smoothing_spline" "loess"           </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 2: change the smoothing parameter only</span></span></span>
+<span class="r-in"><span><span class="va">f3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">f1</span>, method <span class="op">=</span> <span class="st">"gam"</span>, k <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">f3</span><span class="op">$</span><span class="va">settings</span><span class="op">$</span><span class="va">k</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 8</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3: impose a shape the agronomy guarantees, and compare</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"scam"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="va">f4</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">f1</span>, method <span class="op">=</span> <span class="st">"scam"</span>, shape <span class="op">=</span> <span class="st">"increasing_concave"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>free <span class="op">=</span> <span class="va">f1</span><span class="op">$</span><span class="va">metrics</span><span class="op">$</span><span class="va">RMSE</span>, constrained <span class="op">=</span> <span class="va">f4</span><span class="op">$</span><span class="va">metrics</span><span class="op">$</span><span class="va">RMSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="co"># The constrained fit cannot beat the free one on RMSE. It buys precision</span></span></span>
+<span class="r-in"><span>  <span class="co"># where the constraint is true, not a better fit to these data.</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        free constrained </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   0.3623191   0.3619582 </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 4: an argument that does not exist is named rather than ignored</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">f1</span>, smoothing <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Error : Not an argument of agri_np_regression(): smoothing.</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

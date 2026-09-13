@@ -62,7 +62,37 @@ d <- agri_design(yield ~ irrigation * nitrogen, x, design = "strip_plot",
     block = block, strip_a = irrigation, strip_b = nitrogen)
 # Auto selects ART when ARTool is installed:
 np_stripplot(yield ~ irrigation * nitrogen, x, block, irrigation, nitrogen)
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> agriRank fit
+#>   Design: strip_plot
+#>   Method: Aligned Rank Transform
+#>   Response: yield
+#>   Resampling: none (asymptotic test)
+#>                effect statistic df      p_value                Term         F
+#> 1          irrigation 39.563035  2 1.778182e-05          irrigation 39.563035
+#> 2            nitrogen  2.493754  3 9.964232e-02            nitrogen  2.493754
+#> 3 irrigation:nitrogen  4.069144  6 4.213868e-03 irrigation:nitrogen  4.069144
+#>   Df Df.res       Pr(>F)
+#> 1  2     10 1.778182e-05
+#> 2  3     15 9.964232e-02
+#> 3  6     30 4.213868e-03
 # Or explicitly:
 if (requireNamespace("ARTool", quietly = TRUE)) np_stripplot(yield ~ irrigation * 
     nitrogen, x, block, irrigation, nitrogen, method = "ART")
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> agriRank fit
+#>   Design: strip_plot
+#>   Method: Aligned Rank Transform
+#>   Response: yield
+#>   Resampling: none (asymptotic test)
+#>                effect statistic df      p_value                Term         F
+#> 1          irrigation 39.563035  2 1.778182e-05          irrigation 39.563035
+#> 2            nitrogen  2.493754  3 9.964232e-02            nitrogen  2.493754
+#> 3 irrigation:nitrogen  4.069144  6 4.213868e-03 irrigation:nitrogen  4.069144
+#>   Df Df.res       Pr(>F)
+#> 1  2     10 1.778182e-05
+#> 2  3     15 9.964232e-02
+#> 3  6     30 4.213868e-03
 ```

@@ -107,29 +107,8 @@ doi:10.18637/jss.v027.i05.
 f1 <- np_crd(yield ~ treatment, simulate_agri("crd"))
 agri_table(f1, "omnibus")
 
-# Example 2: regression diagnostics table
-set.seed(81)
-d <- data.frame(dose = seq(0, 160, length.out = 30))
-d$yield <- 5 + .07*d$dose - .00025*d$dose^2 + rnorm(30, 0, .35)
-r <- agri_np_regression(yield ~ dose, d, method = "smoothing_spline")
-agri_table(r, "metrics")
 
-# Example 3: integer-support decision table
-di <- data.frame(plants = rep(1:8, each = 5))
-di$yield <- 20 + 7*di$plants - .55*di$plants^2 + rnorm(nrow(di))
-ri <- agri_np_regression(yield ~ plants, di, method = "integer_grid",
-  integer_base_method = "smoothing_spline")
-agri_table(ri, "integer_optimum")
+  
 
-# Example 4: coefficient and level tables for a model with a qualitative factor
-if (requireNamespace("quantreg", quietly = TRUE)) {
-  data(agri_dose)
-  dz <- agri_dose
-  dz$cultivar <- factor(rep(c("Ana", "Bela"), length.out = nrow(dz)))
-  dz$yield <- dz$yield + ifelse(dz$cultivar == "Bela", 0.9, 0)
-  fm <- agri_np_regression(yield ~ dose + cultivar, dz, method = "quantile")
-  # B = 19 keeps the example fast; a real analysis needs B >= 999.
-  agri_table(fm, "coefficients", method = "bootstrap", B = 19, seed = 1)
-  agri_table(fm, "levels", B = 19, seed = 1)
-}
+effect
 ```

@@ -78,17 +78,180 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># Example 1</span></span>
-<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated_missing"</span><span class="op">)</span>;</span>
-<span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">height</span><span class="op">~</span><span class="va">treatment</span><span class="op">*</span><span class="va">time</span>,<span class="va">x</span>,<span class="st">"repeated"</span>,subject<span class="op">=</span><span class="va">subject</span>,within<span class="op">=</span><span class="va">time</span><span class="op">)</span>;</span>
-<span><span class="fu">agri_missing_report</span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 2</span></span>
-<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated_missing"</span>,missing_rate<span class="op">=</span><span class="fl">.25</span><span class="op">)</span>;</span>
-<span><span class="fu">agri_missing_report</span><span class="op">(</span><span class="va">x</span>,<span class="st">"height"</span>,<span class="st">"subject"</span>,<span class="st">"time"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 3</span></span>
-<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>; <span class="va">x</span><span class="op">$</span><span class="va">yield</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">&lt;-</span><span class="cn">NA</span>; <span class="fu">agri_missing_report</span><span class="op">(</span><span class="va">x</span>,<span class="st">"yield"</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Example 1</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated_missing"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">d</span><span class="op">&lt;-</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">height</span><span class="op">~</span><span class="va">treatment</span><span class="op">*</span><span class="va">time</span>,<span class="va">x</span>,<span class="st">"repeated"</span>,subject<span class="op">=</span><span class="va">subject</span>,within<span class="op">=</span><span class="va">time</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="fu">agri_missing_report</span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $response</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "height"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $n_rows</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 48</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $n_missing</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 15</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $missing_rate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.3125</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $missing_rows</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 10 13 14 15 20 23 26 28 30 33 34 39 40 43 48</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $assumption_note</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "The missingness mechanism cannot be established from observed data alone. MCAR/MAR/MNAR assumptions require scientific justification and sensitivity analysis."</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$n_subjects</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 12</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$n_occasions</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$complete_subjects</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$incomplete_subjects</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$subjects_with_no_observed_response</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$observed_by_occasion</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  1  2  3  4 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10  7  8  8 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$missing_rate_by_occasion</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         1         2         3         4 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.1666667 0.4166667 0.3333333 0.3333333 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$pattern_counts</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> patterns</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1011 1101 1110 1111 0001 0011 1010 1100 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    2    2    2    2    1    1    1    1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$monotone_subjects</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$nonmonotone_subjects</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$observation_matrix</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                 1     2     3     4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> control@@1   TRUE  TRUE  TRUE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> control@@2   TRUE  TRUE  TRUE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> control@@3   TRUE FALSE  TRUE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> control@@4  FALSE FALSE FALSE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> control@@5   TRUE  TRUE  TRUE FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> control@@6   TRUE  TRUE FALSE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treated@@7   TRUE FALSE  TRUE FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treated@@8   TRUE FALSE  TRUE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treated@@9  FALSE FALSE  TRUE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treated@@10  TRUE  TRUE FALSE FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treated@@11  TRUE  TRUE FALSE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treated@@12  TRUE  TRUE  TRUE FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_missing_report"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 2</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated_missing"</span>,missing_rate<span class="op">=</span><span class="fl">.25</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="fu">agri_missing_report</span><span class="op">(</span><span class="va">x</span>,<span class="st">"height"</span>,<span class="st">"subject"</span>,<span class="st">"time"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $response</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "height"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $n_rows</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 48</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $n_missing</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $missing_rate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.3541667</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $missing_rows</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 10 13 14 15 20 23 25 26 28 29 30 33 34 39 40 43 48</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $assumption_note</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "The missingness mechanism cannot be established from observed data alone. MCAR/MAR/MNAR assumptions require scientific justification and sensitivity analysis."</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$n_subjects</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 12</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$n_occasions</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$complete_subjects</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$incomplete_subjects</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$subjects_with_no_observed_response</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$observed_by_occasion</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 2 3 4 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8 7 8 8 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$missing_rate_by_occasion</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         1         2         3         4 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.3333333 0.4166667 0.3333333 0.3333333 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$pattern_counts</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> patterns</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0011 1101 1110 1111 0001 0010 1011 1100 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    2    2    2    2    1    1    1    1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$monotone_subjects</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$nonmonotone_subjects</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $repeated$observation_matrix</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        1     2     3     4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   TRUE  TRUE  TRUE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   TRUE  TRUE  TRUE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3   TRUE FALSE  TRUE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  FALSE FALSE FALSE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5   TRUE  TRUE  TRUE FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6   TRUE  TRUE FALSE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7  FALSE FALSE  TRUE FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8  FALSE FALSE  TRUE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  FALSE FALSE  TRUE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10  TRUE  TRUE FALSE FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11  TRUE  TRUE FALSE  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12  TRUE  TRUE  TRUE FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_missing_report"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>; <span class="va">x</span><span class="op">$</span><span class="va">yield</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">&lt;-</span><span class="cn">NA</span>; <span class="fu">agri_missing_report</span><span class="op">(</span><span class="va">x</span>,<span class="st">"yield"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $response</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "yield"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $n_rows</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $n_missing</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $missing_rate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.08333333</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $missing_rows</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $assumption_note</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "The missingness mechanism cannot be established from observed data alone. MCAR/MAR/MNAR assumptions require scientific justification and sensitivity analysis."</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_missing_report"</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

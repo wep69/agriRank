@@ -65,28 +65,40 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># B = 19 keeps the examples fast. Use B &gt;= 999 for any reported decision.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_density</span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span>
-<span>                          integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span>
-<span>                          predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span>
-<span><span class="va">bt</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_integer_bootstrap.html">agri_integer_bootstrap</a></span><span class="op">(</span><span class="va">fit</span>, B <span class="op">=</span> <span class="fl">19</span>, seed <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 1: the densities that together carry at least 80 percent of the</span></span>
-<span><span class="co"># bootstrap mass</span></span>
-<span><span class="fu">agri_integer_confset</span><span class="op">(</span><span class="va">bt</span>, level <span class="op">=</span> <span class="fl">0.80</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 2: a higher level admits more densities, exactly as a wider</span></span>
-<span><span class="co"># confidence interval covers more values</span></span>
-<span><span class="fu">agri_integer_confset</span><span class="op">(</span><span class="va">bt</span>, level <span class="op">=</span> <span class="fl">0.90</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 3: `hull` is the closed interval spanning the selected densities.</span></span>
-<span><span class="co"># It is convenient to report, but it may include an intermediate density that</span></span>
-<span><span class="co"># is not itself in the set, so the set remains the primary result.</span></span>
-<span><span class="va">cs</span> <span class="op">&lt;-</span> <span class="fu">agri_integer_confset</span><span class="op">(</span><span class="va">bt</span>, level <span class="op">=</span> <span class="fl">0.80</span><span class="op">)</span></span>
-<span><span class="va">cs</span><span class="op">$</span><span class="va">values</span></span>
-<span><span class="va">cs</span><span class="op">$</span><span class="va">hull</span></span>
-<span><span class="va">cs</span><span class="op">$</span><span class="va">probability_mass</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># B = 19 keeps the examples fast. Use B &gt;= 999 for any reported decision.</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_density</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span></span>
+<span class="r-in"><span>                          integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span></span>
+<span class="r-in"><span>                          predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">bt</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_integer_bootstrap.html">agri_integer_bootstrap</a></span><span class="op">(</span><span class="va">fit</span>, B <span class="op">=</span> <span class="fl">19</span>, seed <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 1: the densities that together carry at least 80 percent of the</span></span></span>
+<span class="r-in"><span><span class="co"># bootstrap mass</span></span></span>
+<span class="r-in"><span><span class="fu">agri_integer_confset</span><span class="op">(</span><span class="va">bt</span>, level <span class="op">=</span> <span class="fl">0.80</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank bootstrap confidence set for an integer optimum</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Level: 80%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Set: {5, 6}</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Included bootstrap mass: 1</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 2: a higher level admits more densities, exactly as a wider</span></span></span>
+<span class="r-in"><span><span class="co"># confidence interval covers more values</span></span></span>
+<span class="r-in"><span><span class="fu">agri_integer_confset</span><span class="op">(</span><span class="va">bt</span>, level <span class="op">=</span> <span class="fl">0.90</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank bootstrap confidence set for an integer optimum</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Level: 90%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Set: {5, 6}</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Included bootstrap mass: 1</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3: `hull` is the closed interval spanning the selected densities.</span></span></span>
+<span class="r-in"><span><span class="co"># It is convenient to report, but it may include an intermediate density that</span></span></span>
+<span class="r-in"><span><span class="co"># is not itself in the set, so the set remains the primary result.</span></span></span>
+<span class="r-in"><span><span class="va">cs</span> <span class="op">&lt;-</span> <span class="fu">agri_integer_confset</span><span class="op">(</span><span class="va">bt</span>, level <span class="op">=</span> <span class="fl">0.80</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">cs</span><span class="op">$</span><span class="va">values</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 5 6</span>
+<span class="r-in"><span><span class="va">cs</span><span class="op">$</span><span class="va">hull</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 5 6</span>
+<span class="r-in"><span><span class="va">cs</span><span class="op">$</span><span class="va">probability_mass</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

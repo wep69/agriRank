@@ -105,9 +105,11 @@ f <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
 p <- agri_np_plot(f, type = "fit")
 p
 
+
 # Units belong in the axis labels; the figure stays fully editable:
 p + ggplot2::labs(x = expression("Nitrogen rate (kg ha"^-1*")"),
                   y = expression("Yield (Mg ha"^-1*")"))
+
 
 # Archival export at one-column width. For submission prefer TIFF or a
 # vector format and the dimensions required by the journal.

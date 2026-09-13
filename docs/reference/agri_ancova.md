@@ -92,14 +92,155 @@ verified references.
 if(requireNamespace("permuco",quietly=TRUE)){x<-simulate_agri("crd");
 x$base<-rnorm(nrow(x));
 agri_ancova(yield~treatment,x,covariates=base,np=299)}
+#> Warning: `np` was renamed to `nperm`: it is the number of permutations, not a switch for nonparametric analysis.
+#> Warning: The number of permutations is below 2000, p-values might be unreliable.
+#> $method
+#> [1] "Freedman-Lane permutation ANCOVA on response mid-ranks"
+#> 
+#> $formula
+#> .agri_rank_y ~ base + treatment
+#> <environment: 0x000002dd3804c268>
+#> 
+#> $covariates
+#> [1] "base"
+#> 
+#> $block
+#> NULL
+#> 
+#> $response
+#> [1] "yield"
+#> 
+#> $seed
+#> [1] 1
+#> 
+#> $nperm
+#> [1] 299
+#> 
+#> $omnibus
+#>      effect statistic df   p_value       SS         F parametric P(>F)
+#> 1      base 0.9513916  1 0.3678930 50.91219 0.9513916        0.3416214
+#> 2 treatment 0.5685924  3 0.6120401 91.28192 0.5685924        0.6424474
+#>   resampled P(>F)
+#> 1       0.3678930
+#> 2       0.6120401
+#> 
+#> $raw
+#> Anova Table
+#> Resampling test using freedman_lane to handle nuisance variables and 299 permutations.
+#>                SS df      F parametric P(>F) resampled P(>F)
+#> base        50.91  1 0.9514           0.3416          0.3679
+#> treatment   91.28  3 0.5686           0.6424          0.6120
+#> Residuals 1016.75 19                                        
+#> 
+#> $call
+#> agri_ancova(formula = yield ~ treatment, data = x, covariates = base, 
+#>     np = 299)
+#> 
+#> attr(,"class")
+#> [1] "agri_ancova_fit"
 
 # Example 2
 if(requireNamespace("permuco",quietly=TRUE)){x<-simulate_agri("crd");
 x$base<-rnorm(nrow(x));
 agri_ancova(yield~treatment,x,covariates=base,np=299,rank_response=FALSE)}
+#> Warning: `np` was renamed to `nperm`: it is the number of permutations, not a switch for nonparametric analysis.
+#> Warning: The number of permutations is below 2000, p-values might be unreliable.
+#> $method
+#> [1] "Freedman-Lane permutation ANCOVA"
+#> 
+#> $formula
+#> yield ~ base + treatment
+#> <environment: 0x000002dd388b1508>
+#> 
+#> $covariates
+#> [1] "base"
+#> 
+#> $block
+#> NULL
+#> 
+#> $response
+#> [1] "yield"
+#> 
+#> $seed
+#> [1] 1
+#> 
+#> $nperm
+#> [1] 299
+#> 
+#> $omnibus
+#>      effect statistic df   p_value       SS         F parametric P(>F)
+#> 1      base 0.2539565  1 0.5852843 2.288271 0.2539565        0.6200962
+#> 2 treatment 0.3342956  3 0.7792642 9.036498 0.3342956        0.8006775
+#>   resampled P(>F)
+#> 1       0.5852843
+#> 2       0.7792642
+#> 
+#> $raw
+#> Anova Table
+#> Resampling test using freedman_lane to handle nuisance variables and 299 permutations.
+#>                SS df      F parametric P(>F) resampled P(>F)
+#> base        2.288  1 0.2540           0.6201          0.5853
+#> treatment   9.036  3 0.3343           0.8007          0.7793
+#> Residuals 171.199 19                                        
+#> 
+#> $call
+#> agri_ancova(formula = yield ~ treatment, data = x, covariates = base, 
+#>     rank_response = FALSE, np = 299)
+#> 
+#> attr(,"class")
+#> [1] "agri_ancova_fit"
 
 # Example 3
 if(requireNamespace("permuco",quietly=TRUE)){x<-simulate_agri("rcbd");
 x$base<-rnorm(nrow(x));
 agri_ancova(yield~treatment,x,covariates=base,block=block,np=299)}
+#> Warning: `np` was renamed to `nperm`: it is the number of permutations, not a switch for nonparametric analysis.
+#> Warning: The number of permutations is below 2000, p-values might be unreliable.
+#> $method
+#> [1] "Freedman-Lane permutation ANCOVA on response mid-ranks"
+#> 
+#> $formula
+#> .agri_rank_y ~ block + base + treatment
+#> <environment: 0x000002dd38e2faf0>
+#> 
+#> $covariates
+#> [1] "base"
+#> 
+#> $block
+#> [1] "block"
+#> 
+#> $response
+#> [1] "yield"
+#> 
+#> $seed
+#> [1] 1
+#> 
+#> $nperm
+#> [1] 299
+#> 
+#> $omnibus
+#>      effect statistic df    p_value        SS        F parametric P(>F)
+#> 1     block  1.125320  5 0.40802676 181.47586 1.125320       0.39161224
+#> 2      base  1.776209  1 0.25752508  57.28844 1.776209       0.20390063
+#> 3 treatment  5.553693  3 0.01672241 537.37321 5.553693       0.01006666
+#>   resampled P(>F)
+#> 1      0.40802676
+#> 2      0.25752508
+#> 3      0.01672241
+#> 
+#> $raw
+#> Anova Table
+#> Resampling test using freedman_lane to handle nuisance variables and 299 permutations.
+#>               SS df     F parametric P(>F) resampled P(>F)
+#> block     181.48  5 1.125          0.39161         0.40803
+#> base       57.29  1 1.776          0.20390         0.25753
+#> treatment 537.37  3 5.554          0.01007         0.01672
+#> Residuals 451.54 14                                       
+#> 
+#> $call
+#> agri_ancova(formula = yield ~ treatment, data = x, covariates = base, 
+#>     block = block, np = 299)
+#> 
+#> attr(,"class")
+#> [1] "agri_ancova_fit"
 ```

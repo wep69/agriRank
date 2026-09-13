@@ -131,14 +131,17 @@ agri_np_plot(f, type = "fit") +
   ggplot2::labs(x = expression("Nitrogen rate (kg ha"^-1*")"),
                 y = expression("Yield (Mg ha"^-1*")"))
 
+
 # Example 2: residuals against the fitted values
 agri_np_plot(f, type = "residuals")
+
 
 # Example 3: derivative, the agronomic return per extra unit of nitrogen
 agri_np_plot(f, type = "derivative") +
   ggplot2::labs(x = expression("Nitrogen rate (kg ha"^-1*")"),
                 y = expression("Marginal yield (Mg ha"^-1*" per kg ha"^-1*")")) +
   ggplot2::geom_hline(yintercept = 0, linetype = 2)
+
 # Where the derivative crosses zero the response stops paying.
 
 # Example 4: response surface over two interacting gradients
@@ -152,14 +155,19 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
                   y = "Irrigation depth (fraction of ETc)")
 }
 
+
 # Example 5: residual diagnostics, all descriptive
 agri_np_plot(f, type = "qq")
+
 agri_np_plot(f, type = "scale_location")
+
 agri_np_plot(f, type = "order")
+
 
 # Example 6: a resampling band for an engine with no analytic interval
 b <- agri_np_bootstrap(f, B = 19, n = 25, seed = 1)   # use B >= 999 in analysis
 agri_np_plot(f, bootstrap = b)
+
 
 # Example 7: integer decisions. The fitted response is a step function and the
 # two decision figures summarize the choice.
@@ -168,8 +176,11 @@ fi <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
                          integer_base_method = "smoothing_spline",
                          predictor_support = "observed_integer")
 agri_np_plot(fi, type = "fit")
+
 agri_np_plot(fi, type = "efficiency")
+
 agri_np_plot(fi, type = "difference")
+
 
 # Example 8: coefficient forest plot for a model with a qualitative factor
 if (requireNamespace("quantreg", quietly = TRUE)) {
@@ -180,11 +191,28 @@ if (requireNamespace("quantreg", quietly = TRUE)) {
   bt <- agri_np_bootstrap(fq, target = "coefficients", B = 19, seed = 1) # B >= 999 in analysis
   agri_np_plot(fq, type = "forest", bootstrap = bt)
 }
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+
 
 # Example 9: observed values, fitted curve and a bootstrap band. The same
 # call serves a model without a qualitative factor...
 bfit <- agri_np_bootstrap(f, B = 19, n = 60, seed = 1)   # B >= 999 in analysis
 agri_np_plot(f, type = "fit", bootstrap = bfit)
+
 
 # ...and, with a factor, one curve and one band per level.
 if (requireNamespace("quantreg", quietly = TRUE)) {
@@ -198,4 +226,33 @@ if (requireNamespace("quantreg", quietly = TRUE)) {
   # fitted response at each level.
   agri_np_plot(fq, type = "levels", B = 19, seed = 1)
 }
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
+#> Warning: Solution may be nonunique
 ```

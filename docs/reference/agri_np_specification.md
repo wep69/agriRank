@@ -111,6 +111,18 @@ if (requireNamespace("np", quietly = TRUE)) {
   # A small p-value means the linear form is too restrictive: the data hold
   # curvature that the straight line cannot represent.
 }
+#> 
+#> Consistent Model Specification Test
+#> Parametric null model: lm(formula = yield ~ dose, data = agri_dose, x = TRUE, y
+#>                           = TRUE)
+#> Number of regressors: 1
+#> Rademacher Wild Bootstrap (19 replications)
+#> 
+#> Test Statistic 'Jn': 2.937034    P Value: < 2.22e-16 ***
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> Null of correct specification is rejected at the 0.1% level
+#> 
 
 # Example 2: and is the quadratic enough?
 if (requireNamespace("np", quietly = TRUE)) {
@@ -119,6 +131,18 @@ if (requireNamespace("np", quietly = TRUE)) {
   # These data plateau beyond 200 kg/ha, a shape no single quadratic
   # reproduces, so rejection here is agronomically meaningful.
 }
+#> 
+#> Consistent Model Specification Test
+#> Parametric null model: lm(formula = yield ~ dose + I(dose^2), data = agri_dose,
+#>                           x = TRUE, y = TRUE)
+#> Number of regressors: 1
+#> Rademacher Wild Bootstrap (19 replications)
+#> 
+#> Test Statistic 'Jn': -1.502519   P Value: 0.84211  
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> Fail to reject the null of correct specification at the 10% level
+#> 
 
 # Example 3: with the agronomic block kept as a nuisance term
 if (requireNamespace("np", quietly = TRUE)) {
@@ -127,4 +151,16 @@ if (requireNamespace("np", quietly = TRUE)) {
   # Failing to reject is not proof that the parametric form is correct; it
   # only means this sample gives no evidence against it.
 }
+#> 
+#> Consistent Model Specification Test
+#> Parametric null model: lm(formula = yield ~ block + dose + I(dose^2), data =
+#>                           agri_dose, x = TRUE, y = TRUE)
+#> Number of regressors: 2
+#> Rademacher Wild Bootstrap (19 replications)
+#> 
+#> Test Statistic 'Jn': -1.576065   P Value: 0.57895  
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> Fail to reject the null of correct specification at the 10% level
+#> 
 ```

@@ -103,4 +103,8 @@ if (requireNamespace("mgcv", quietly = TRUE) &&
     agri_np_significant_slope(agri_np_sizer(fit))
   }
 }
+#>   predictor stability increase_from increase_to stops_increasing_at
+#> 1         N       0.8             0         110                 115
+#>   decrease_from decrease_to
+#> 1            NA          NA
 ```

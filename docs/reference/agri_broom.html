@@ -99,28 +99,49 @@ reporting path.</p></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"smoothing_spline"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 1: the fitted curve, one row per grid point</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu">agri_tidy</span><span class="op">(</span><span class="va">fit</span>, n <span class="op">=</span> <span class="fl">25</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 2: one row describing the whole fit</span></span>
-<span><span class="fu">agri_glance</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 3: the original rows with fitted values and residuals attached</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu">agri_augment</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 4: the rank side tidies to one row per term, with a p-value, because</span></span>
-<span><span class="co"># there a test was actually performed. Note that the rank engines compare</span></span>
-<span><span class="co"># levels, so the rate enters as a factor rather than as a number; for the</span></span>
-<span><span class="co"># quantitative gradient itself, the regression side above is the right tool.</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ARTool"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">d</span> <span class="op">&lt;-</span> <span class="va">agri_dose</span></span>
-<span>  <span class="va">d</span><span class="op">$</span><span class="va">rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">dose</span><span class="op">)</span></span>
-<span>  <span class="va">des</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">rate</span>, <span class="va">d</span>, design <span class="op">=</span> <span class="st">"rcbd"</span>, block <span class="op">=</span> <span class="st">"block"</span><span class="op">)</span></span>
-<span>  <span class="fu">agri_tidy</span><span class="op">(</span><span class="fu"><a href="agri_rank.html">agri_rank</a></span><span class="op">(</span><span class="va">des</span>, method <span class="op">=</span> <span class="st">"ART"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_dose</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">dose</span>, <span class="va">agri_dose</span>, method <span class="op">=</span> <span class="st">"smoothing_spline"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 1: the fitted curve, one row per grid point</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu">agri_tidy</span><span class="op">(</span><span class="va">fit</span>, n <span class="op">=</span> <span class="fl">25</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   term        x estimate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 dose  0.00000 3.096659</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 dose 11.66667 3.282753</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 dose 23.33333 3.466594</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 dose 35.00000 3.645917</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 dose 46.66667 3.818506</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 dose 58.33333 3.982912</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 2: one row describing the whole fit</span></span></span>
+<span class="r-in"><span><span class="fu">agri_glance</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             method response  n n_omitted pseudo_r2 spearman_r2 effective_df</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 smoothing_spline    yield 40         0 0.8255341   0.7245388     3.490987</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        RMSE       MAE block spatial</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.3623191 0.3128471  &lt;NA&gt;    none</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3: the original rows with fitted values and residuals attached</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu">agri_augment</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   block dose yield  .fitted     .resid</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    B1    0 2.612 3.096659 -0.4846589</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    B1   40 3.426 3.720827 -0.2948267</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    B1   80 3.797 4.263777 -0.4667765</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    B1  120 4.423 4.688799 -0.2657988</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5    B1  160 4.634 4.991988 -0.3579881</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6    B1  200 4.947 5.185945 -0.2389450</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 4: the rank side tidies to one row per term, with a p-value, because</span></span></span>
+<span class="r-in"><span><span class="co"># there a test was actually performed. Note that the rank engines compare</span></span></span>
+<span class="r-in"><span><span class="co"># levels, so the rate enters as a factor rather than as a number; for the</span></span></span>
+<span class="r-in"><span><span class="co"># quantitative gradient itself, the regression side above is the right tool.</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ARTool"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="va">d</span> <span class="op">&lt;-</span> <span class="va">agri_dose</span></span></span>
+<span class="r-in"><span>  <span class="va">d</span><span class="op">$</span><span class="va">rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">dose</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">des</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">rate</span>, <span class="va">d</span>, design <span class="op">=</span> <span class="st">"rcbd"</span>, block <span class="op">=</span> <span class="st">"block"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu">agri_tidy</span><span class="op">(</span><span class="fu"><a href="agri_rank.html">agri_rank</a></span><span class="op">(</span><span class="va">des</span>, method <span class="op">=</span> <span class="st">"ART"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   term statistic      p.value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 rate   38.8874 8.872411e-13</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

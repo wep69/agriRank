@@ -113,6 +113,26 @@ if (requireNamespace("np", quietly = TRUE)) {
   # A small p-value says the response is not flat. It does not say the
   # relationship is linear, nor where the optimum is.
 }
+#> 
+#> Kernel Regression Significance Test
+#> Type I Test with Rademacher Wild Bootstrap (19 replications, Pivot = TRUE, joint = FALSE)
+#> Explanatory variables tested for significance:
+#> dose (1)
+#> 
+#>                   dose
+#> Bandwidth(s): 51.51631
+#> 
+#> Individual Significance Tests
+#> P Value: 
+#> dose < 2.22e-16 ***
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> 
+#> 
+#> How this p-value treats the design
+#>   The bootstrap here resamples rows. It is a model-based test of the
+#>   kernel fit, not a randomization test derived from how the treatments
+#>   were allocated in the field.
 
 # Example 2: one gradient in the presence of another
 data(agri_surface)
@@ -120,6 +140,26 @@ if (requireNamespace("np", quietly = TRUE)) {
   f2 <- agri_np_regression(yield ~ nitrogen + water, agri_surface, method = "kernel")
   agri_np_significance(f2, variables = "water", B = 19, boot_type = "I")
 }
+#> 
+#> Kernel Regression Significance Test
+#> Type I Test with Rademacher Wild Bootstrap (19 replications, Pivot = TRUE, joint = FALSE)
+#> Explanatory variables tested for significance:
+#> water (2)
+#> 
+#>               nitrogen     water
+#> Bandwidth(s): 37.57901 0.2490973
+#> 
+#> Individual Significance Tests
+#> P Value: 
+#> water < 2.22e-16 ***
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> 
+#> 
+#> How this p-value treats the design
+#>   The bootstrap here resamples rows. It is a model-based test of the
+#>   kernel fit, not a randomization test derived from how the treatments
+#>   were allocated in the field.
 
 # Example 3: joint significance while retaining the block adjustment
 if (requireNamespace("np", quietly = TRUE)) {
@@ -130,4 +170,28 @@ if (requireNamespace("np", quietly = TRUE)) {
   # The joint test asks whether the two gradients together explain the
   # response, which is the right question when they interact.
 }
+#> 
+#> Kernel Regression Significance Test
+#> Type I Test with Rademacher Wild Bootstrap (19 replications, Pivot = TRUE, joint = TRUE)
+#> Explanatory variables tested for significance:
+#> nitrogen (1), water (2)
+#> 
+#>               nitrogen     water     block
+#> Bandwidth(s): 38.23568 0.2724512 0.4361795
+#> 
+#> Joint Significance Test
+#> P Value:  < 2.22e-16 ***
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> 
+#> 
+#> How this p-value treats the design
+#>   The bootstrap here resamples rows. It is a model-based test of the
+#>   kernel fit, not a randomization test derived from how the treatments
+#>   were allocated in the field.
+#>   This fit adjusts for the block `block`, and the block is in
+#>   the model, but whole blocks are not kept together when resampling.
+#>   The intervals from agri_np_bootstrap(), agri_np_levels() and
+#>   agri_np_optimum_test() do keep them together, so they and this
+#>   p-value do not rest on the same assumption. Report the difference.
 ```

@@ -73,9 +73,37 @@ verified references.
 # Example 1: the automatic method now selects ART for split-plots
 x <- simulate_agri("split_plot")
 np_splitplot(yield ~ irrigation * cultivar, x, block, irrigation, cultivar)
+#> boundary (singular) fit: see help('isSingular')
+#> agriRank fit
+#>   Design: split_plot
+#>   Method: Aligned Rank Transform
+#>   Response: yield
+#>   Resampling: none (asymptotic test)
+#>                effect statistic df    p_value                Term         F Df
+#> 1          irrigation 8.1181321  1 0.03585593          irrigation 8.1181321  1
+#> 2            cultivar 0.5095211  2 0.60837413            cultivar 0.5095211  2
+#> 3 irrigation:cultivar 1.1429826  2 0.33883281 irrigation:cultivar 1.1429826  2
+#>   Df.res     Pr(>F)
+#> 1      5 0.03585593
+#> 2     20 0.60837413
+#> 3     20 0.33883281
 
 # Example 2: explicitly request ART
 x <- simulate_agri("split_plot")
 if (requireNamespace("ARTool", quietly = TRUE)) np_splitplot(yield ~ irrigation * 
     cultivar, x, block, irrigation, cultivar, "ART")
+#> boundary (singular) fit: see help('isSingular')
+#> agriRank fit
+#>   Design: split_plot
+#>   Method: Aligned Rank Transform
+#>   Response: yield
+#>   Resampling: none (asymptotic test)
+#>                effect statistic df    p_value                Term         F Df
+#> 1          irrigation 8.1181321  1 0.03585593          irrigation 8.1181321  1
+#> 2            cultivar 0.5095211  2 0.60837413            cultivar 0.5095211  2
+#> 3 irrigation:cultivar 1.1429826  2 0.33883281 irrigation:cultivar 1.1429826  2
+#>   Df.res     Pr(>F)
+#> 1      5 0.03585593
+#> 2     20 0.60837413
+#> 3     20 0.33883281
 ```

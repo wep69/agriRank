@@ -288,12 +288,40 @@ doi:10.18637/jss.v089.i05.
 data(agri_dose)
 fit1 <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
 fit1
+#> agriRank nonparametric regression
+#>   Method: smoothing_spline
+#>   Response: yield
+#>   Predictors: dose
 # The response flattens beyond roughly 200 kg/ha: no parametric quadratic
 # reproduces both the rising part and the plateau.
 
 # Example 2: LOESS on the same gradient, for comparison of smoothers
 fit2 <- agri_np_regression(yield ~ dose, agri_dose, method = "loess", span = 0.6)
 summary(fit2)
+#> agriRank nonparametric regression summary
+#> Method: loess
+#> 
+#>   n     RMSE       MAE    MedAE         bias  Spearman
+#>  40 0.352558 0.3036027 0.307143 -0.008741923 0.8724666
+#> 
+#> Backend summary:
+#> Call:
+#> stats::loess(formula = formula, data = dat, weights = weights, 
+#>     span = span, degree = degree)
+#> 
+#> Number of Observations: 40 
+#> Equivalent Number of Parameters: 6.48 
+#> Residual Standard Error: 0.3931 
+#> Trace of smoother matrix: 7.15  (exact)
+#> 
+#> Control settings:
+#>   span     :  0.6 
+#>   degree   :  2 
+#>   family   :  gaussian
+#>   surface  :  interpolate      cell = 0.2
+#>   normalize:  TRUE
+#>  parametric:  FALSE
+#> drop.square:  FALSE 
 
 # Example 3: block-adjusted GAM, the design-aware choice for this trial
 if (requireNamespace("mgcv", quietly = TRUE)) {
@@ -301,6 +329,38 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   summary(fit3)
   # Adjusting for block removes soil-fertility variation from the residual.
 }
+#> agriRank nonparametric regression summary
+#> Method: gam
+#> 
+#>   n      RMSE       MAE     MedAE          bias  Spearman
+#>  40 0.1849693 0.1451067 0.1100682 -3.330415e-17 0.9534218
+#> 
+#> Backend summary:
+#> 
+#> Family: gaussian 
+#> Link function: identity 
+#> 
+#> Formula:
+#> yield ~ s(dose, k = 7) + block
+#> 
+#> Parametric coefficients:
+#>             Estimate Std. Error t value Pr(>|t|)    
+#> (Intercept)  4.22575    0.07412  57.010  < 2e-16 ***
+#> blockB2      0.04150    0.10483   0.396   0.6949    
+#> blockB3      0.34637    0.10483   3.304   0.0024 ** 
+#> blockB4      0.68200    0.10483   6.506 2.87e-07 ***
+#> blockB5      0.71650    0.10483   6.835 1.14e-07 ***
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> 
+#> Approximate significance of smooth terms:
+#>           edf Ref.df     F p-value    
+#> s(dose) 3.864  4.634 122.1  <2e-16 ***
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> 
+#> R-sq.(adj) =  0.943   Deviance explained = 95.5%
+#> -REML = 5.6206  Scale est. = 0.043954  n = 40
 
 # Example 4: direct transition from a declared quantitative RCBD
 if (requireNamespace("mgcv", quietly = TRUE)) {
@@ -310,6 +370,11 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   fit4
   # The block declared in the design is carried into the regression.
 }
+#> agriRank nonparametric regression
+#>   Method: gam
+#>   Response: yield
+#>   Predictors: dose
+#>   Block adjustment: block
 
 # Example 5: ordered-discrete kernel regression on an integer treatment
 data(agri_density)
@@ -319,6 +384,16 @@ if (requireNamespace("np", quietly = TRUE)) {
                              predictor_support = "observed_integer")
   agri_integer_predict(fit5)
 }
+#>   plants      fit
+#> 1      1 3.350963
+#> 2      2 4.285799
+#> 3      3 4.794360
+#> 4      4 5.323503
+#> 5      5 5.599586
+#> 6      6 5.675249
+#> 7      7 5.400202
+#> 8      8 5.067453
+#> 9      9 5.057671
 
 # Example 6: unimodal isotonic plant-density response
 if (requireNamespace("Iso", quietly = TRUE)) {
@@ -329,12 +404,26 @@ if (requireNamespace("Iso", quietly = TRUE)) {
   # Density responses rise and then fall through competition, so an
   # increase-then-decrease constraint is scientifically justified here.
 }
+#> agriRank integer-support optimum
+#>   Objective: max
+#>   Admissible support: {1, 2, 3, 4, 5, 6, 7, 8, 9}
+#>   Optimal integer value(s): 6
+#>   Fitted response: 5.72267
 
 # Example 7: continuous latent spline, integer-only decisions
 fit7 <- agri_np_regression(yield ~ plants, agri_density, method = "integer_grid",
                            integer_base_method = "smoothing_spline",
                            predictor_support = "observed_integer")
 agri_integer_difference(fit7, order = 1)
+#>   from to delta_x fit_from   fit_to  difference difference_per_integer
+#> 1    1  2       1 3.303982 4.201545  0.89756344             0.89756344
+#> 2    2  3       1 4.201545 4.858834  0.65728887             0.65728887
+#> 3    3  4       1 4.858834 5.348576  0.48974195             0.48974195
+#> 4    4  5       1 5.348576 5.633219  0.28464302             0.28464302
+#> 5    5  6       1 5.633219 5.653211  0.01999178             0.01999178
+#> 6    6  7       1 5.653211 5.409864 -0.24334647            -0.24334647
+#> 7    7  8       1 5.409864 5.130370 -0.27949453            -0.27949453
+#> 8    8  9       1 5.130370 5.004565 -0.12580537            -0.12580537
 # Each row is the yield gain, in Mg/ha, of adding one more plant per hill.
 
 # Example 8: umbrella-order regression with an RCBD block adjustment
@@ -343,6 +432,11 @@ if (requireNamespace("cgam", quietly = TRUE)) {
                              block = block, predictor_support = "observed_integer")
   agri_integer_optimum(fit8)
 }
+#> agriRank integer-support optimum
+#>   Objective: max
+#>   Admissible support: {1, 2, 3, 4, 5, 6, 7, 8, 9}
+#>   Optimal integer value(s): 5, 6
+#>   Fitted response: 5.32609
 
 # Example 9: two interacting gradients
 data(agri_surface)
@@ -352,6 +446,7 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   agri_np_predict(fit9, newdata = data.frame(nitrogen = 160, water = c(0.6, 1.0)))
   # The return to 160 kg/ha of nitrogen depends on irrigation depth.
 }
+#> [1] 5.360970 5.764386
 
 # Example 10: a qualitative factor alongside the nitrogen gradient
 if (requireNamespace("quantreg", quietly = TRUE)) {
@@ -363,4 +458,7 @@ if (requireNamespace("quantreg", quietly = TRUE)) {
   # Cultivar Bela adds about 0.9 Mg/ha at every nitrogen rate; the dose slope
   # is shared by both cultivars. Plot the intervals with agri_np_forest().
 }
+#> Warning: Solution may be nonunique
+#>  (Intercept)         dose cultivarBela 
+#>   3.30700000   0.00785625   1.05575000 
 ```

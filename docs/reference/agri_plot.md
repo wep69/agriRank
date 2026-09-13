@@ -54,8 +54,10 @@ verified references.
 # Example 1
 x<-simulate_agri("crd"); d<-agri_design(yield~treatment,x,"crd"); agri_plot(d,"data")
 
+
 # Example 2
 x<-simulate_agri("crd"); f<-np_crd(yield~treatment,x); agri_plot(f,"effects")
+
 
 # Example 3
 x<-simulate_agri("factorial"); d<-agri_design(yield~A*B,x,"factorial"); agri_plot(d,"interaction")

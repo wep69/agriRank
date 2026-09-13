@@ -75,6 +75,7 @@ data(agri_dose)
 agri_np_curves(yield ~ dose, agri_dose,
                methods = c("smoothing_spline", "loess"))
 
+
 # Example 2: adding a rank-robust straight line makes the contrast explicit
 if (requireNamespace("mblm", quietly = TRUE)) {
   agri_np_curves(yield ~ dose, agri_dose,
@@ -82,9 +83,11 @@ if (requireNamespace("mblm", quietly = TRUE)) {
   # The straight line cannot follow the plateau, which is visible at a glance.
 }
 
+
 # Example 3: every engine adjusted for the same declared block
 if (requireNamespace("mgcv", quietly = TRUE)) {
   agri_np_curves(yield ~ dose, agri_dose, methods = c("gam", "quantile"),
                  block = "block")
 }
+#> Warning: Solution may be nonunique
 ```

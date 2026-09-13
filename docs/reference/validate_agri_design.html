@@ -72,19 +72,51 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># Example 1</span></span>
-<span><span class="fu">validate_agri_design</span><span class="op">(</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">treatment</span>, <span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>, <span class="st">"crd"</span><span class="op">)</span>, error <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 2</span></span>
-<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"factorial"</span><span class="op">)</span>;</span>
-<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">x</span>, <span class="op">!</span><span class="op">(</span><span class="va">A</span><span class="op">==</span><span class="st">"A2"</span> <span class="op">&amp;</span> <span class="va">B</span><span class="op">==</span><span class="st">"B3"</span><span class="op">)</span><span class="op">)</span>;</span>
-<span><span class="fu">validate_agri_design</span><span class="op">(</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">A</span><span class="op">*</span><span class="va">B</span>,<span class="va">x</span>,<span class="st">"factorial"</span><span class="op">)</span>, error<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 3</span></span>
-<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated"</span><span class="op">)</span>;</span>
-<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">x</span>,<span class="va">x</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span><span class="op">)</span>;</span>
-<span><span class="fu">validate_agri_design</span><span class="op">(</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">height</span> <span class="op">~</span> <span class="va">treatment</span> <span class="op">*</span> <span class="va">time</span>, <span class="va">x</span>, <span class="st">"repeated"</span>, </span>
-<span>    subject <span class="op">=</span> <span class="va">subject</span>, within <span class="op">=</span> <span class="va">time</span><span class="op">)</span>, error <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Example 1</span></span></span>
+<span class="r-in"><span><span class="fu">validate_agri_design</span><span class="op">(</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">treatment</span>, <span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>, <span class="st">"crd"</span><span class="op">)</span>, error <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ok</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $problems</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] severity code     message </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;0 rows&gt; (or 0-length row.names)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_validation"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 2</span></span></span>
+<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"factorial"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">x</span>, <span class="op">!</span><span class="op">(</span><span class="va">A</span><span class="op">==</span><span class="st">"A2"</span> <span class="op">&amp;</span> <span class="va">B</span><span class="op">==</span><span class="st">"B3"</span><span class="op">)</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="fu">validate_agri_design</span><span class="op">(</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">A</span><span class="op">*</span><span class="va">B</span>,<span class="va">x</span>,<span class="st">"factorial"</span><span class="op">)</span>, error<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ok</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $problems</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   severity                 code</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  warning empty_factorial_cell</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                                                              message</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 At least one factorial treatment cell is empty; some effects may be non-estimable.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_validation"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3</span></span></span>
+<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"repeated"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">x</span>,<span class="va">x</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="fu">validate_agri_design</span><span class="op">(</span><span class="fu"><a href="agri_design.html">agri_design</a></span><span class="op">(</span><span class="va">height</span> <span class="op">~</span> <span class="va">treatment</span> <span class="op">*</span> <span class="va">time</span>, <span class="va">x</span>, <span class="st">"repeated"</span>, </span></span>
+<span class="r-in"><span>    subject <span class="op">=</span> <span class="va">subject</span>, within <span class="op">=</span> <span class="va">time</span><span class="op">)</span>, error <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ok</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $problems</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   severity                    code</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    error duplicate_repeated_cell</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                                                                                                                                                           message</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 A subject has more than one observation for the same within-subject cell within its between-subject treatment group. Aggregate technical replicates explicitly before analysis.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_validation"</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

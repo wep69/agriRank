@@ -1179,7 +1179,7 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   print(gvar$formula_used)
 }
 #> yield ~ cultivar + s(dose, by = cultivar, k = 10)
-#> <environment: 0x0000021deb80cba0>
+#> <environment: 0x000002554668d428>
 ```
 
 ``` r

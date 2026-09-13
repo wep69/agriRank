@@ -133,10 +133,21 @@ f <- agri_np_regression(yield ~ dose, agri_dose, method = "smoothing_spline")
 # Example 1: resampled uncertainty of the fitted curve
 b1 <- agri_np_bootstrap(f, B = 19, n = 30)
 head(b1)
+#>        dose      fit    lower    upper
+#> 1  0.000000 3.096659 2.769755 3.181638
+#> 2  9.655172 3.250765 3.045854 3.338330
+#> 3 19.310345 3.403596 3.234033 3.495303
+#> 4 28.965517 3.553867 3.394229 3.704220
+#> 5 38.620690 3.700297 3.523608 3.942493
+#> 6 48.275862 3.841688 3.631339 4.148371
 
 # Example 2: uncertainty exactly at the rates under discussion
 b2 <- agri_np_bootstrap(f, newdata = data.frame(dose = c(80, 160, 240)), B = 19)
 b2
+#>   dose      fit    lower    upper
+#> 1   80 4.263777 4.037220 4.629105
+#> 2  160 4.991988 4.796493 5.195342
+#> 3  240 5.302895 5.009802 5.394004
 # The width of each interval, in Mg/ha, is what separates a recommendation
 # from a point estimate.
 
@@ -147,18 +158,41 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   # Resampling complete blocks preserves the randomization structure of the
   # trial; resampling individual plots would not.
 }
+#> Warning: factor levels B1 not in original fit
+#> Warning: factor levels B1 not in original fit
+#> Warning: factor levels B1 not in original fit
+#> Warning: factor levels B1 not in original fit
+#> Warning: factor levels B1 not in original fit
+#> Warning: factor levels B1 not in original fit
+#> Warning: factor levels B1 not in original fit
+#> Warning: factor levels B1 not in original fit
+#> Warning: factor levels B1 not in original fit
+#> Warning: factor levels B1 not in original fit
+#> Warning: factor levels B1 not in original fit
+#>       dose block      fit    lower    upper
+#> 1  0.00000    B1 2.650496 2.630398 2.659326
+#> 2 14.73684    B1 2.932684 2.863870 2.998247
+#> 3 29.47368    B1 3.205112 3.103608 3.317160
+#> 4 44.21053    B1 3.458055 3.384060 3.557420
+#> 5 58.94737    B1 3.684881 3.650532 3.750022
+#> 6 73.68421    B1 3.884407 3.766412 3.987865
 
 # Example 4: pointwise against simultaneous. The simultaneous band is wider
 # because it must contain the whole curve, not each point separately.
 bp <- agri_np_bootstrap(f, B = 19, n = 12, band = "pointwise")
 bs <- agri_np_bootstrap(f, B = 19, n = 12, band = "simultaneous")
 c(pointwise = mean(bp$upper - bp$lower), simultaneous = mean(bs$upper - bs$lower))
+#>    pointwise simultaneous 
+#>    0.4188297    0.7756648 
 
 # Example 5: a bootstrap interval for a rank-robust slope
 if (requireNamespace("mblm", quietly = TRUE)) {
   ts <- agri_np_regression(yield ~ dose, agri_dose, method = "theil_sen")
   agri_np_bootstrap(ts, target = "coefficients", B = 19, seed = 1)
 }
+#>          term    estimate       lower       upper
+#> 1 (Intercept) 3.382166667 3.267866667 3.762400625
+#> 2        dose 0.008008333 0.006450135 0.008966875
 
 # Example 6: keeping the replicates allows a histogram of the slope
 if (requireNamespace("mblm", quietly = TRUE)) {
@@ -167,6 +201,8 @@ if (requireNamespace("mblm", quietly = TRUE)) {
   slope <- attr(bt, "replicates")[2, ]
   summary(slope)
 }
+#>     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+#> 0.006267 0.007822 0.007900 0.007939 0.008294 0.009100 
 
 # Example 7: the band drawn as a figure
 plot(bp)

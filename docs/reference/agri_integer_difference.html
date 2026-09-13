@@ -71,27 +71,50 @@ $$\Delta^2\hat m_j=\hat m(x_{j+1})-2\hat m(x_j)+\hat m(x_{j-1}).$$</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_density</span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span>
-<span>                          integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span>
-<span>                          predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 1: the yield gain, in Mg/ha, of adding one more plant per hill</span></span>
-<span><span class="fu">agri_integer_difference</span><span class="op">(</span><span class="va">fit</span>, order <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="co"># The row where the difference turns negative marks the density beyond which</span></span>
-<span><span class="co"># competition costs more than the extra plant contributes.</span></span>
-<span></span>
-<span><span class="co"># Example 2: second differences, the rate at which that gain shrinks</span></span>
-<span><span class="fu">agri_integer_difference</span><span class="op">(</span><span class="va">fit</span>, order <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co"># Consistently negative second differences describe a concave response.</span></span>
-<span></span>
-<span><span class="co"># Example 3: when only alternate densities were tested, `delta_x` is 2 and</span></span>
-<span><span class="co"># `difference_per_integer` rescales the gain to a single plant.</span></span>
-<span><span class="va">d2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">agri_density</span>, <span class="va">plants</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">3</span>, <span class="fl">5</span>, <span class="fl">7</span>, <span class="fl">9</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">fit2</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">d2</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span>
-<span>                           integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span>
-<span>                           predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span>
-<span><span class="fu">agri_integer_difference</span><span class="op">(</span><span class="va">fit2</span>, order <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">agri_density</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">agri_density</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span></span>
+<span class="r-in"><span>                          integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span></span>
+<span class="r-in"><span>                          predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 1: the yield gain, in Mg/ha, of adding one more plant per hill</span></span></span>
+<span class="r-in"><span><span class="fu">agri_integer_difference</span><span class="op">(</span><span class="va">fit</span>, order <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   from to delta_x fit_from   fit_to  difference difference_per_integer</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    1  2       1 3.303982 4.201545  0.89756344             0.89756344</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    2  3       1 4.201545 4.858834  0.65728887             0.65728887</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    3  4       1 4.858834 5.348576  0.48974195             0.48974195</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    4  5       1 5.348576 5.633219  0.28464302             0.28464302</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5    5  6       1 5.633219 5.653211  0.01999178             0.01999178</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6    6  7       1 5.653211 5.409864 -0.24334647            -0.24334647</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7    7  8       1 5.409864 5.130370 -0.27949453            -0.27949453</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8    8  9       1 5.130370 5.004565 -0.12580537            -0.12580537</span>
+<span class="r-in"><span><span class="co"># The row where the difference turns negative marks the density beyond which</span></span></span>
+<span class="r-in"><span><span class="co"># competition costs more than the extra plant contributes.</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 2: second differences, the rate at which that gain shrinks</span></span></span>
+<span class="r-in"><span><span class="fu">agri_integer_difference</span><span class="op">(</span><span class="va">fit</span>, order <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   center fit_left fit_center fit_right second_difference</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      2 3.303982   4.201545  4.858834       -0.24027457</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      3 4.201545   4.858834  5.348576       -0.16754693</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3      4 4.858834   5.348576  5.633219       -0.20509892</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4      5 5.348576   5.633219  5.653211       -0.26465124</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5      6 5.633219   5.653211  5.409864       -0.26333825</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6      7 5.653211   5.409864  5.130370       -0.03614806</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7      8 5.409864   5.130370  5.004565        0.15368916</span>
+<span class="r-in"><span><span class="co"># Consistently negative second differences describe a concave response.</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3: when only alternate densities were tested, `delta_x` is 2 and</span></span></span>
+<span class="r-in"><span><span class="co"># `difference_per_integer` rescales the gain to a single plant.</span></span></span>
+<span class="r-in"><span><span class="va">d2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">agri_density</span>, <span class="va">plants</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">3</span>, <span class="fl">5</span>, <span class="fl">7</span>, <span class="fl">9</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit2</span> <span class="op">&lt;-</span> <span class="fu"><a href="agri_np_regression.html">agri_np_regression</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">plants</span>, <span class="va">d2</span>, method <span class="op">=</span> <span class="st">"integer_grid"</span>,</span></span>
+<span class="r-in"><span>                           integer_base_method <span class="op">=</span> <span class="st">"smoothing_spline"</span>,</span></span>
+<span class="r-in"><span>                           predictor_support <span class="op">=</span> <span class="st">"observed_integer"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">agri_integer_difference</span><span class="op">(</span><span class="va">fit2</span>, order <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   from to delta_x fit_from   fit_to difference difference_per_integer</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    1  3       2 3.282990 4.769071  1.4860811             0.74304054</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    3  5       2 4.769071 5.556309  0.7872374             0.39361869</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    5  7       2 5.556309 5.453706 -0.1026028            -0.05130141</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    7  9       2 5.453706 5.062256 -0.3914496            -0.19572479</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

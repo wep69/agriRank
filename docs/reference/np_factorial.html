@@ -81,16 +81,48 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># Example 1</span></span>
-<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"factorial"</span><span class="op">)</span>; <span class="fu">np_factorial</span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">A</span><span class="op">*</span><span class="va">B</span>,<span class="va">x</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 2</span></span>
-<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"factorial"</span><span class="op">)</span>;</span>
-<span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rankFD"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">np_factorial</span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">A</span><span class="op">*</span><span class="va">B</span>,<span class="va">x</span>,method<span class="op">=</span><span class="st">"rankFD"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Example 3</span></span>
-<span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"factorial"</span><span class="op">)</span>;</span>
-<span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ARTool"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">np_factorial</span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">A</span><span class="op">*</span><span class="va">B</span>,<span class="va">x</span>,method<span class="op">=</span><span class="st">"ART"</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Example 1</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"factorial"</span><span class="op">)</span>; <span class="fu">np_factorial</span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">A</span><span class="op">*</span><span class="va">B</span>,<span class="va">x</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: factorial</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: rankFD pseudo-rank factorial inference</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic     df p_value    df1     df2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A    6.9339 1.0000  0.0149 1.0000 22.8596</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B    6.6740 1.9702  0.0054 1.9702 22.8596</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B    1.8632 1.9702  0.1784 1.9702 22.8596</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 2</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"factorial"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rankFD"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">np_factorial</span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">A</span><span class="op">*</span><span class="va">B</span>,<span class="va">x</span>,method<span class="op">=</span><span class="st">"rankFD"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: factorial</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: rankFD pseudo-rank factorial inference</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic     df p_value    df1     df2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A    6.9339 1.0000  0.0149 1.0000 22.8596</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B    6.6740 1.9702  0.0054 1.9702 22.8596</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B    1.8632 1.9702  0.1784 1.9702 22.8596</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"factorial"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ARTool"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">np_factorial</span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">A</span><span class="op">*</span><span class="va">B</span>,<span class="va">x</span>,method<span class="op">=</span><span class="st">"ART"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agriRank fit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Design: factorial</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Method: Aligned Rank Transform</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Response: yield</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Resampling: none (asymptotic test)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   effect statistic df      p_value Term Df Df.res    Sum Sq Sum Sq.res  F value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A  7.833677  1 0.0088775925    A  1     30  802.7778   3074.333 7.833677</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      B  8.948476  2 0.0008957788    B  2     30 1441.5000   2416.333 8.948476</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A:B  3.829436  2 0.0330224447  A:B  2     30  786.0556   3079.000 3.829436</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         Pr(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.0088775925</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.0008957788</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0.0330224447</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

@@ -94,20 +94,162 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># Example 1</span></span>
-<span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"permuco"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">{</span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>;</span>
-<span><span class="va">x</span><span class="op">$</span><span class="va">base</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>;</span>
-<span><span class="fu">agri_ancova</span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">treatment</span>,<span class="va">x</span>,covariates<span class="op">=</span><span class="va">base</span>,np<span class="op">=</span><span class="fl">299</span><span class="op">)</span><span class="op">}</span></span>
-<span></span>
-<span><span class="co"># Example 2</span></span>
-<span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"permuco"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">{</span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>;</span>
-<span><span class="va">x</span><span class="op">$</span><span class="va">base</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>;</span>
-<span><span class="fu">agri_ancova</span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">treatment</span>,<span class="va">x</span>,covariates<span class="op">=</span><span class="va">base</span>,np<span class="op">=</span><span class="fl">299</span>,rank_response<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span><span class="op">}</span></span>
-<span></span>
-<span><span class="co"># Example 3</span></span>
-<span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"permuco"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">{</span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"rcbd"</span><span class="op">)</span>;</span>
-<span><span class="va">x</span><span class="op">$</span><span class="va">base</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>;</span>
-<span><span class="fu">agri_ancova</span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">treatment</span>,<span class="va">x</span>,covariates<span class="op">=</span><span class="va">base</span>,block<span class="op">=</span><span class="va">block</span>,np<span class="op">=</span><span class="fl">299</span><span class="op">)</span><span class="op">}</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Example 1</span></span></span>
+<span class="r-in"><span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"permuco"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">{</span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">$</span><span class="va">base</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="fu">agri_ancova</span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">treatment</span>,<span class="va">x</span>,covariates<span class="op">=</span><span class="va">base</span>,np<span class="op">=</span><span class="fl">299</span><span class="op">)</span><span class="op">}</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`np` was renamed to `nperm`: it is the number of permutations, not a switch for nonparametric analysis.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>The number of permutations is below 2000, p-values might be unreliable.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $method</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Freedman-Lane permutation ANCOVA on response mid-ranks"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $formula</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> .agri_rank_y ~ base + treatment</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x000002dd3804c268&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $covariates</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "base"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $block</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $response</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "yield"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $seed</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $nperm</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 299</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $omnibus</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      effect statistic df   p_value       SS         F parametric P(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      base 0.9513916  1 0.3678930 50.91219 0.9513916        0.3416214</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 treatment 0.5685924  3 0.6120401 91.28192 0.5685924        0.6424474</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   resampled P(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1       0.3678930</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2       0.6120401</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $raw</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Anova Table</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Resampling test using freedman_lane to handle nuisance variables and 299 permutations.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                SS df      F parametric P(&gt;F) resampled P(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> base        50.91  1 0.9514           0.3416          0.3679</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treatment   91.28  3 0.5686           0.6424          0.6120</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Residuals 1016.75 19                                        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $call</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agri_ancova(formula = yield ~ treatment, data = x, covariates = base, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     np = 299)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_ancova_fit"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 2</span></span></span>
+<span class="r-in"><span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"permuco"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">{</span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"crd"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">$</span><span class="va">base</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="fu">agri_ancova</span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">treatment</span>,<span class="va">x</span>,covariates<span class="op">=</span><span class="va">base</span>,np<span class="op">=</span><span class="fl">299</span>,rank_response<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span><span class="op">}</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`np` was renamed to `nperm`: it is the number of permutations, not a switch for nonparametric analysis.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>The number of permutations is below 2000, p-values might be unreliable.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $method</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Freedman-Lane permutation ANCOVA"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $formula</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> yield ~ base + treatment</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x000002dd388b1508&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $covariates</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "base"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $block</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $response</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "yield"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $seed</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $nperm</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 299</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $omnibus</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      effect statistic df   p_value       SS         F parametric P(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      base 0.2539565  1 0.5852843 2.288271 0.2539565        0.6200962</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 treatment 0.3342956  3 0.7792642 9.036498 0.3342956        0.8006775</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   resampled P(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1       0.5852843</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2       0.7792642</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $raw</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Anova Table</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Resampling test using freedman_lane to handle nuisance variables and 299 permutations.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                SS df      F parametric P(&gt;F) resampled P(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> base        2.288  1 0.2540           0.6201          0.5853</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treatment   9.036  3 0.3343           0.8007          0.7793</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Residuals 171.199 19                                        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $call</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agri_ancova(formula = yield ~ treatment, data = x, covariates = base, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     rank_response = FALSE, np = 299)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_ancova_fit"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3</span></span></span>
+<span class="r-in"><span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"permuco"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">{</span><span class="va">x</span><span class="op">&lt;-</span><span class="fu"><a href="simulate_agri.html">simulate_agri</a></span><span class="op">(</span><span class="st">"rcbd"</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">$</span><span class="va">base</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>;</span></span>
+<span class="r-in"><span><span class="fu">agri_ancova</span><span class="op">(</span><span class="va">yield</span><span class="op">~</span><span class="va">treatment</span>,<span class="va">x</span>,covariates<span class="op">=</span><span class="va">base</span>,block<span class="op">=</span><span class="va">block</span>,np<span class="op">=</span><span class="fl">299</span><span class="op">)</span><span class="op">}</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`np` was renamed to `nperm`: it is the number of permutations, not a switch for nonparametric analysis.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>The number of permutations is below 2000, p-values might be unreliable.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $method</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Freedman-Lane permutation ANCOVA on response mid-ranks"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $formula</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> .agri_rank_y ~ block + base + treatment</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x000002dd38e2faf0&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $covariates</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "base"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $block</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "block"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $response</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "yield"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $seed</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $nperm</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 299</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $omnibus</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      effect statistic df    p_value        SS        F parametric P(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     block  1.125320  5 0.40802676 181.47586 1.125320       0.39161224</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      base  1.776209  1 0.25752508  57.28844 1.776209       0.20390063</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 treatment  5.553693  3 0.01672241 537.37321 5.553693       0.01006666</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   resampled P(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      0.40802676</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      0.25752508</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3      0.01672241</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $raw</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Anova Table</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Resampling test using freedman_lane to handle nuisance variables and 299 permutations.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               SS df     F parametric P(&gt;F) resampled P(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> block     181.48  5 1.125          0.39161         0.40803</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> base       57.29  1 1.776          0.20390         0.25753</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treatment 537.37  3 5.554          0.01007         0.01672</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Residuals 451.54 14                                       </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $call</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agri_ancova(formula = yield ~ treatment, data = x, covariates = base, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     block = block, np = 299)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agri_ancova_fit"</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

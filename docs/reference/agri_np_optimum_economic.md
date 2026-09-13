@@ -151,4 +151,8 @@ if (requireNamespace("mgcv", quietly = TRUE)) {
   # optimum. It is a check on the solver, not a recommendation.
   agri_np_optimum_economic(fit, price_ratio = 0, B = 99, seed = 1)$optimum
 }
+#>   price_ratio level optimum    lower upper fitted_response p_boundary
+#> 1           0   all     280 250.6849   280        5.023068  0.9322034
+#>   replicates identified
+#> 1         59      FALSE
 ```
