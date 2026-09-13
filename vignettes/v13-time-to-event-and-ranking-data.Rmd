@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 **Non-measurement vignette**
 **Package:** `agriRank`
-**Version targeted:** `0.14.0`
+**Version targeted:** `0.14.1`
 **Owns:** the two agronomic experiments whose datum is not a measurement.
 Germination counted inside intervals, and on-farm trials returning an order.
 

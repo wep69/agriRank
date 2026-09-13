@@ -14,7 +14,7 @@ reference:
              np_stripplot, np_repeated, incomplete_wild_rank_test]
 
 - title: Effects, comparisons and contrasts
-  contents: [agri_effects, agri_pairs, agri_conover, agri_cld, agri_contrast]
+  contents: [agri_effects, agri_p, agri_pairs, agri_conover, agri_cld, agri_contrast]
 
 - title: Regression for quantitative gradients
   desc: >

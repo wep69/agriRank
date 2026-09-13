@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 **Repeated measures vignette**
 **Package:** `agriRank`
-**Version targeted:** `0.14.0`
+**Version targeted:** `0.14.1`
 **Owns:** measurements taken more than once on the same unit, and what to do
 when some of them are absent.
 

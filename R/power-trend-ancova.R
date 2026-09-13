@@ -1,7 +1,10 @@
 # Planning, trends and covariate adjustment -------------------------------
 
 #' Simulation-based power for the actual analysis workflow
-#' @param generator Function with one argument `i` returning a simulated data frame.
+#' @param generator Function of exactly one argument, the simulation index `i`,
+#'   returning one simulated data frame. A generator written as `function()`
+#'   fails with `unused argument (i)`, which is why the expected signature is
+#'   stated here rather than implied.
 #' @param analyzer Function receiving one simulated data frame and returning either a p-value or an agri_rank_fit.
 #' @export
 agri_power <- function(generator, analyzer, nsim = 1000, alpha = 0.05, seed = 1) {
@@ -21,6 +24,9 @@ agri_power <- function(generator, analyzer, nsim = 1000, alpha = 0.05, seed = 1)
 }
 
 #' Ordered-treatment trend test using permutation of rank association
+#' @param scores Optional numeric scores. When unnamed, they are taken in the
+#'   order of `levels()` of the treatment, which is the behaviour of
+#'   `stats::contr.poly()` and of most of base R.
 #' @export
 agri_trend <- function(design, treatment = NULL, scores = NULL, B = 4999, seed = 1) {
   if (!inherits(design, "agri_design")) .agri_stop("agri_design required.")
@@ -29,9 +35,29 @@ agri_trend <- function(design, treatment = NULL, scores = NULL, B = 4999, seed =
   treatment <- treatment %||% design$quantitative[1L] %||% design$predictors[1L]
   if (is.null(treatment)) .agri_stop("A treatment variable is required.")
   y <- design$data[[design$response[1L]]]; tr <- design$data[[treatment]]
+  trf <- .safe_factor(tr)
+  lev <- levels(trf)
   s <- if (is.null(scores)) {
-    if (is.numeric(tr)) tr else as.numeric(.safe_factor(tr))
-  } else scores[match(as.character(tr), names(scores))]
+    if (is.numeric(tr)) tr else as.numeric(trf)
+  } else {
+    sc <- as.numeric(scores)
+    # `as.numeric()` drops the names, so the names are read from the argument
+    # itself and carried onto the converted vector. Losing them here sent a
+    # correctly named `scores` down the unnamed branch and refused it.
+    nm <- names(scores)
+    if (is.null(nm)) {
+      # Accept the vector in the order of levels(), which is how the scale is
+      # naturally written, instead of failing inside stats::cor().
+      if (length(sc) != length(lev))
+        .agri_stop(sprintf("`scores` must have one value per level of `%s` (%d levels: %s), or names matching those levels.",
+                           treatment, length(lev), paste(lev, collapse = ", ")))
+      nm <- lev
+    }
+    names(sc) <- nm
+    sc[match(as.character(trf), nm)]
+  }
+  if (anyNA(s)) .agri_stop(sprintf("`scores` has no value for every level of `%s`; supply names matching %s.",
+                                   treatment, paste(lev, collapse = ", ")))
   stat_fun <- function(yy, ss) suppressWarnings(stats::cor(rank(yy, na.last = "keep"), ss, method = "pearson", use = "complete.obs"))
   obs <- stat_fun(y, s)
   dat <- design$data
@@ -54,8 +80,18 @@ agri_trend <- function(design, treatment = NULL, scores = NULL, B = 4999, seed =
 #' Covariates are treated as nuisance/adjustment variables in a permutation
 #' linear-model analysis. `rank_response=TRUE` analyzes response mid-ranks;
 #' set FALSE for a classical Freedman-Lane permutation ANCOVA on the original scale.
+#' @param nperm Number of permutations. The former name `np` is kept as a
+#'   deprecated alias, because in a nonparametric package `np` reads as a
+#'   switch rather than as a count.
 #' @export
-agri_ancova <- function(formula, data, covariates, block = NULL, np = 4999, seed = 1, rank_response = TRUE, ...) {
+agri_ancova <- function(formula, data, covariates, block = NULL, nperm = 4999, seed = 1, rank_response = TRUE, np = NULL, ...) {
+  if (!is.null(np)) {
+    .agri_warn("`np` was renamed to `nperm`: it is the number of permutations, not a switch for nonparametric analysis.")
+    nperm <- np
+  }
+  if (!is.numeric(nperm) || length(nperm) != 1L || !is.finite(nperm) || nperm < 1)
+    .agri_stop("`nperm` must be a single positive number of permutations, e.g. nperm = 4999.")
+  nperm <- as.integer(round(nperm))
   .require_pkg("permuco", "permutation ANCOVA")
   covars <- .capture_names(substitute(covariates), names(data))
   response <- .response_names(formula)[1L]
@@ -71,9 +107,15 @@ agri_ancova <- function(formula, data, covariates, block = NULL, np = 4999, seed
   }
   rhs <- unique(c(block_nm, covars, terms0))
   f <- stats::as.formula(paste(yname, "~", paste(rhs, collapse = " + ")))
-  z <- .seed_eval(seed, permuco::aovperm(f, data = dat, np = np, method = "freedman_lane", ...))
+  z <- .seed_eval(seed, permuco::aovperm(f, data = dat, np = nperm, method = "freedman_lane", ...))
   structure(list(method = if (rank_response) "Freedman-Lane permutation ANCOVA on response mid-ranks" else "Freedman-Lane permutation ANCOVA",
        formula = f, covariates = covars, block = block_nm, response = response, seed = seed,
-       omnibus = tryCatch(as.data.frame(z$table), error = function(e) NULL), raw = z, call = match.call()),
+       nperm = nperm,
+       # permuco splits the p-value into parametric and resampled and reports a
+       # Residuals row; the canonical columns make fit$omnibus$p_value answer the
+       # same way here as in agri_rank(). See finding 7.
+       omnibus = .agri_omnibus_standardize(tryCatch(as.data.frame(z$table), error = function(e) NULL),
+                                           statistic = "F"),
+       raw = z, call = match.call()),
        class = "agri_ancova_fit")
 }

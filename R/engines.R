@@ -158,8 +158,15 @@
   z <- .seed_eval(seed, permuco::aovperm(f, data = dat, np = np, ...))
   tab <- tryCatch(as.data.frame(z$table), error = function(e) NULL)
   if (is.null(tab)) tab <- tryCatch(as.data.frame(z$anova_table), error = function(e) NULL)
+  # aovperm returns one row per model term plus a Residuals row, and it splits the
+  # p-value into `parametric P(>F)` and `resampled P(>F)`. Neither column answers
+  # to `p_value`, so `fit$omnibus$p_value` was NULL for this engine while the same
+  # call worked for kruskal and rankFD. The resampled p is the one the user asked
+  # for by choosing a permutation engine, so it defines the canonical column.
+  # See finding 7 of RELATORIO-AO-AUTOR.md.
   list(method = if (rank_response) "permuco permutation ANOVA on mid-ranks" else "permuco permutation ANOVA",
-       omnibus = tab, raw = z, formula = f)
+       omnibus = .agri_omnibus_standardize(tab, statistic = "F"),
+       raw = z, formula = f)
 }
 
 .engine_nparld <- function(design, response = NULL, alpha = 0.05, ...) {
@@ -175,8 +182,22 @@
   dots <- list(...)
   if (length(dots)) nparld_args <- c(nparld_args, dots)
   z <- do.call(nparLD::nparLD, nparld_args)
-  tab <- as.data.frame(z$ANOVA.test)
-  tab$effect <- rownames(tab); rownames(tab) <- NULL
+  # Version-tolerant extraction. Recent nparLD returns the ANOVA-type table as
+  # `ATS`; older versions used `ANOVA.test`. Reading only one of the two names
+  # produced an omnibus with zero rows and no error, which reads as "nothing to
+  # report" instead of "the adapter did not find the table".
+  tab <- NULL
+  for (nm in c("ANOVA.test", "ATS", "ANOVA.Type.Statistic", "WTS", "Wald.test")) {
+    if (!is.null(z[[nm]])) { tab <- as.data.frame(z[[nm]]); break }
+  }
+  if (!is.null(tab)) {
+    if (!"effect" %in% names(tab)) tab <- cbind(effect = rownames(tab), tab)
+    nm2 <- names(tab)
+    nm2[tolower(nm2) %in% c("p-value", "p.value", "pvalue", "p_value")] <- "p_value"
+    nm2[tolower(nm2) == "statistic"] <- "statistic"
+    names(tab) <- nm2
+    rownames(tab) <- NULL
+  }
   list(method = "nparLD ANOVA-type rank inference", omnibus = tab,
        effects = as.data.frame(z$RTE), raw = z, formula = f)
 }
@@ -193,5 +214,10 @@
                      within = design$within, iter = iter, alpha = alpha,
                      resampling = resampling, seed = seed, ...)
   tab <- tryCatch(as.data.frame(z$ATS), error = function(e) NULL)
-  list(method = paste("MANOVA.RM", resampling), omnibus = tab, raw = z, formula = f)
+  # MANOVA.RM names the p-value column `p-value`, so the canonical `p_value` is
+  # added here rather than left to the caller of agri_repeated(), which builds its
+  # fit without passing through agri_rank().
+  list(method = paste("MANOVA.RM", resampling),
+       omnibus = .agri_omnibus_standardize(tab, statistic = "Statistic"),
+       raw = z, formula = f)
 }

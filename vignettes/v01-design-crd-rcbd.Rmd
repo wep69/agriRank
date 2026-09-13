@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 **Foundational vignette**
 **Package:** `agriRank`
-**Version targeted:** `0.14.0`
+**Version targeted:** `0.14.1`
 **Owns:** the design-foundation block. Declaring the experimental unit and the
 randomization, validating the declaration, and the one-factor rank workflows for
 completely randomized and randomized complete block experiments.

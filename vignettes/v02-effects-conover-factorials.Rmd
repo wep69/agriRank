@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 **Comparison vignette**
 **Package:** `agriRank`
-**Version targeted:** `0.14.0`
+**Version targeted:** `0.14.1`
 **Owns:** what happens after a significant omnibus test. Effects, design-aware
 pairwise comparisons, compact letter displays, factorial decomposition, and
 simple effects.

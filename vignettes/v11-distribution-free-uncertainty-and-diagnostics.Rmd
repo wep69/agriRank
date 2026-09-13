@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 **Uncertainty vignette**
 **Package:** `agriRank`
-**Version targeted:** `0.14.0`
+**Version targeted:** `0.14.1`
 **Owns:** where a response is really changing, what interval covers the next
 plot, and whether a fit describes the data, all without assuming a distribution.
 

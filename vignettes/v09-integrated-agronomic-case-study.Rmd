@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 **Integrated instructional vignette**
 **Package:** `agriRank`
-**Version targeted:** `0.14.0`
+**Version targeted:** `0.14.1`
 **Purpose:** a practical starting point for students, researchers, reviewers and
 analysts who need to move from a field notebook to a defensible agronomic
 recommendation, without losing the logic of the experimental design along the

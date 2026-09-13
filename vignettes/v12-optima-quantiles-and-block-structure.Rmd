@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 **Recommendation vignette**
 **Package:** `agriRank`
-**Version targeted:** `0.14.0`
+**Version targeted:** `0.14.1`
 **Owns:** turning a fitted curve into something a grower can act on. What rate,
 for whom, with what interval, and how the declared block enters.
 

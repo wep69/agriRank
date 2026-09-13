@@ -6,7 +6,7 @@
 agri_power(generator, analyzer, nsim = 1000, alpha = 0.05, seed = 1)
 }
 \arguments{
-  \item{generator}{Function receiving simulation index `i` and returning one synthetic data frame.}
+  \item{generator}{Function of exactly one argument, the simulation index `i`, returning one synthetic data frame. A generator written as `function()` fails with `unused argument (i)`, so the expected signature is stated rather than implied.}
   \item{analyzer}{Function receiving one synthetic data frame and returning a p-value or an `agri_rank_fit`.}
   \item{nsim}{Number of simulated experiments.}
   \item{alpha}{Significance threshold used to derive a compact letter display.}

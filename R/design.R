@@ -118,6 +118,12 @@ agri_design <- function(formula, data,
 }
 
 #' Validate a declared agricultural design
+#'
+#' The scope of this check is the response and the occupation of the factorial
+#' cells, not the integrity of the declared randomization. A design that is
+#' broken structurally can still return `ok = TRUE` here and be refused later,
+#' with a specific reason, by the engine that would have to analyze it, so
+#' fitting is the step that validates the structure.
 #' @param x agri_design object.
 #' @param error Stop for fatal validation failures.
 #' @export

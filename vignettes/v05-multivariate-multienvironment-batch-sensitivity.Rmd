@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 **Scale-up vignette**
 **Package:** `agriRank`
-**Version targeted:** `0.14.0`
+**Version targeted:** `0.14.1`
 **Owns:** what changes when an experiment has several responses, several sites,
 or when the same design is analysed many times.
 

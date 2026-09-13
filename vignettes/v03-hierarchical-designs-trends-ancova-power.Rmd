@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 **Hierarchical designs vignette**
 **Package:** `agriRank`
-**Version targeted:** `0.14.0`
+**Version targeted:** `0.14.1`
 **Owns:** designs with more than one randomization level, ordered-dose trend
 tests, rank-based covariance adjustment, and simulation-based power.
 

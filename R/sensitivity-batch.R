@@ -26,6 +26,16 @@
   n <- nrow(tab)
   if (!n) return(numeric(0))
   nms <- names(tab)
+  # A standardized omnibus already carries the canonical column, and reading it
+  # first keeps this helper identical to agri_p(). The heuristic below would
+  # otherwise pick permuco's parametric p merely because it is the leftmost
+  # column whose name starts with "p", contradicting the documented contract that
+  # p_value is the resampled p-value. See finding 7 of RELATORIO-AO-AUTOR.md.
+  if ("p_value" %in% nms) {
+    p <- suppressWarnings(as.numeric(tab[["p_value"]]))
+    if (length(p) != n) p <- rep_len(p, n)
+    return(p)
+  }
   pc <- nms[grepl("^(p|p[._-]?val|p[._-]?value|pvalue|pr\\()", tolower(nms))]
   if (!length(pc)) pc <- nms[grepl("p[._-]?value|pr\\(>", tolower(nms))]
   if (!length(pc)) return(rep(NA_real_, n))
@@ -39,6 +49,12 @@
 agri_sensitivity <- function(x, methods = c("primary", "ART", "permuco"), seed = 1, ...) {
   design <- if (inherits(x, "agri_rank_fit")) x$design else x
   if (!inherits(design, "agri_design")) .agri_stop("agri_design or agri_rank_fit required.")
+  # Accept the vocabulary in any case, but refuse a name that is not part of
+  # it. Silently returning an empty table invites the reader to conclude that
+  # the engines agree when none of them ran.
+  known <- c("primary", "ART", "permuco")
+  methods <- match.arg(tolower(methods), tolower(known), several.ok = TRUE)
+  methods <- known[match(methods, tolower(known))]
   fits <- list()
   if ("primary" %in% methods) fits$primary <- tryCatch(if (inherits(x, "agri_rank_fit")) x else agri_rank(design, seed = seed, ...), error = identity)
   if ("ART" %in% methods && requireNamespace("ARTool", quietly = TRUE) && !design$design %in% c("repeated", "longitudinal")) fits$ART <- tryCatch(agri_rank(design, method = "ART", seed = seed, ...), error = identity)

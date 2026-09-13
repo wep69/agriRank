@@ -199,8 +199,14 @@ agri_rankings <- function(formula, data, block,
   pw <- .rk_pairwise(rk)
 
   wt <- NULL
-  if (isTRUE(worth) && requireNamespace("PlackettLuce", quietly = TRUE))
-    wt <- .rk_worth(rk, items)
+  if (isTRUE(worth)) {
+    # An argument that is accepted and does nothing is indistinguishable, for
+    # the user, from a legitimately null result. Say which of the two happened.
+    if (!requireNamespace("PlackettLuce", quietly = TRUE))
+      .agri_warn("`worth = TRUE` requires the PlackettLuce package, which is not installed; the model-based companion was not fitted.")
+    else
+      wt <- .rk_worth(rk, items)
+  }
 
   structure(
     list(summary = smry, pairwise = pw, rankings = rk, worth = wt,
@@ -217,25 +223,53 @@ agri_rankings <- function(formula, data, block,
 
 # Plackett-Luce worth, a model-based companion. Kept in its own helper so that
 # its absence changes nothing else.
+#
+# Every failure used to be swallowed into NULL, so `worth = TRUE` returned a null
+# component while PlackettLuce was installed and working, and the user could not
+# tell a legitimately null result from a call that never ran. Two causes were
+# real: the matrix entry point became `as.rankings()` and the older `rankings()`
+# gained a mandatory `id`, so the call failed with "argument id is missing" on a
+# current PlackettLuce. Each step now reports why it stopped. See finding 6 of
+# RELATORIO-AO-AUTOR.md.
 .rk_worth <- function(rk, items) {
   ord <- lapply(split(rk, rk$block), function(z) {
     z <- z[order(z$rank), , drop = FALSE]
     z$item
   })
-  R <- tryCatch(
-    PlackettLuce::rankings(
-      do.call(rbind, lapply(ord, function(o) {
-        v <- rep(NA_integer_, length(items))
-        names(v) <- items
-        v[o] <- seq_along(o)
-        v
-      })), input = "rankings"),
-    error = function(e) NULL)
-  if (is.null(R)) return(NULL)
-  m <- tryCatch(PlackettLuce::PlackettLuce(R), error = function(e) NULL)
-  if (is.null(m)) return(NULL)
-  cf <- tryCatch(stats::coef(m, log = FALSE), error = function(e) NULL)
-  if (is.null(cf)) return(NULL)
+  M <- do.call(rbind, lapply(ord, function(o) {
+    v <- rep(NA_integer_, length(items))
+    names(v) <- items
+    v[o] <- seq_along(o)
+    v
+  }))
+  last <- NULL
+  grab <- function(expr) tryCatch(expr, error = function(e) { last <<- conditionMessage(e); NULL })
+
+  # Version-tolerant: `as.rankings()` is the current name, `rankings()` the older
+  # one, and both produce the same object.
+  R <- grab(PlackettLuce::as.rankings(M, input = "rankings"))
+  if (is.null(R)) R <- grab(PlackettLuce::rankings(M, id = rownames(M), input = "rankings"))
+  if (is.null(R)) {
+    .agri_warn(sprintf(paste0("`worth = TRUE` found PlackettLuce but could not build the ranking ",
+                              "object from the within-block ranks (%s). The model-based companion ",
+                              "was not fitted; the summary and pairwise tables above are unaffected."),
+                       last %||% "reason unavailable"))
+    return(NULL)
+  }
+  m <- grab(PlackettLuce::PlackettLuce(R))
+  if (is.null(m)) {
+    .agri_warn(sprintf(paste0("`worth = TRUE` could not fit the Plackett-Luce model (%s). It needs ",
+                              "every item to be ranked inside a block; the summary and pairwise ",
+                              "tables above are unaffected."),
+                       last %||% "reason unavailable"))
+    return(NULL)
+  }
+  cf <- grab(stats::coef(m, log = FALSE))
+  if (is.null(cf)) {
+    .agri_warn(sprintf("`worth = TRUE` could not read the worth coefficients of the fitted model (%s).",
+                       last %||% "reason unavailable"))
+    return(NULL)
+  }
   data.frame(item = names(cf), worth = as.numeric(cf) / sum(as.numeric(cf)),
              row.names = NULL, stringsAsFactors = FALSE)
 }

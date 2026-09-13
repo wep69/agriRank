@@ -1,11 +1,30 @@
 # Main fitting API ---------------------------------------------------------
 
 #' Fit design-aware nonparametric/rank-based inference
+#'
+#' @description
+#' Dispatches a declared agronomic design to a rank-based engine and returns the
+#' omnibus test in a canonical shape: `effect`, `statistic`, `df` and `p_value`
+#' are always present, and the columns the backend itself reports are kept beside
+#' them, so a report reads the same table whichever engine ran.
+#'
+#' `B` is the resampling budget of the engines that resample. It reaches the
+#' native wild bootstrap directly, `permuco` as `np` and `MANOVA.RM` as `iter`. An
+#' engine that cannot use it (the asymptotic and F-based tests) warns when `B` is
+#' supplied, because a replicate count that never entered the p-value must not
+#' travel into a manuscript unnoticed. The fit records what actually ran in
+#' `fit$resampling`.
+#'
 #' @param design agri_design object.
 #' @param method auto or explicit engine/method.
 #' @param response Optional response for multi-response designs.
-#' @param estimand Target effect representation.
-#' @param B Resampling replicates for native wild engine.
+#' @param estimand Target effect representation. It selects the estimator that
+#'   [agri_effects()] reports: the Brunner-Munzel relative effect for
+#'   `"relative_effect"`, the Hodges-Lehmann shift against the first level for
+#'   `"location_shift"`, and the descriptive distribution summary for
+#'   `"distribution"`.
+#' @param B Resampling replicates for the engines that resample. Values below 999
+#'   warn, because the smallest attainable p-value is `1/(B + 1)`.
 #' @param seed Seed.
 #' @param missing_assumption Missingness assumption label.
 #' @export
@@ -21,6 +40,13 @@ agri_rank <- function(design, method = "auto", response = NULL,
   missing_assumption <- match.arg(missing_assumption)
   response <- response %||% design$response[1L]
   miss <- anyNA(design$data[[response]])
+  # The resampling budget is part of the reportable method, so it is validated
+  # here, before any engine runs, and whether the caller supplied it is recorded:
+  # an engine that cannot honor `B` must say so instead of returning a p-value
+  # computed some other way. See finding 1 of RELATORIO-AO-AUTOR.md.
+  B_supplied <- !missing(B)
+  B <- .agri_check_B(B)
+  dots <- list(...)
 
   selected <- method
   if (identical(method, "auto")) {
@@ -71,20 +97,50 @@ agri_rank <- function(design, method = "auto", response = NULL,
       .agri_stop(sprintf("Method `%s` is not allowed for blocked repeated measures in agriRank because the current adapter would not honor the declared block semantics. Use `permuco` for complete data.", selected))
   }
 
-  engine <- switch(tolower(selected),
+  # An engine that cannot reach a resampling decision must not accept `B` in
+  # silence: the user would report a replicate count that never entered the
+  # p-value. The message names the statistical reason, not only the symptom.
+  eng_low <- tolower(selected)
+  if (B_supplied && !eng_low %in% .agri_B_engines())
+    .agri_warn(sprintf(paste0("`B` = %d had no effect on this fit: %s. The reported p-value ",
+                              "does not depend on the resampling budget. Pass `B` only to the ",
+                              "engines that resample (`permuco`, `MANOVA.RM`, or the native wild ",
+                              "bootstrap)."),
+                       B, .agri_no_resampling_reason(selected)))
+  # An engine-specific argument outranks the generic budget, because the adapted
+  # backend would otherwise receive the same formal twice.
+  if (B_supplied && eng_low == "permuco" && !is.null(dots$np))
+    .agri_warn(sprintf(paste0("Both `B` = %d and `np` = %s were supplied. `np` is the permuco ",
+                              "argument itself and takes precedence, so this fit uses %s ",
+                              "permutations."),
+                       B, format(dots$np), format(dots$np)))
+
+  engine <- switch(eng_low,
     kruskal = .engine_kruskal(design, response),
     friedman = .engine_friedman(design, response),
     rankfd = .engine_rankfd(design, response, ...),
     art = .engine_art(design, response, ...),
-    permuco = .engine_permuco(design, response, seed = seed, ...),
+    permuco = do.call(.engine_permuco,
+                      c(list(design, response, seed = seed), .agri_with_default(dots, "np", B))),
     nparld = .engine_nparld(design, response, ...),
-    manova.rm = .engine_manovarm_rm(design, response, seed = seed, ...),
+    manova.rm = do.call(.engine_manovarm_rm,
+                        c(list(design, response, seed = seed), .agri_with_default(dots, "iter", B))),
     incomplete_wild = incomplete_wild_rank_test(design, response, B = B, seed = seed,
                                                 missing_assumption = missing_assumption, ...),
     native_wild = incomplete_wild_rank_test(design, response, B = B, seed = seed,
                                             missing_assumption = missing_assumption, ...),
-    .agri_stop(sprintf("Unknown method `%s`.", selected))
+    .agri_stop(sprintf(paste0("Unknown method `%s`. Accepted engines are: %s. ",
+                              "`agri_methods()` reports which of them is admissible for each ",
+                              "declared design."),
+                       selected, paste(.agri_engine_keys(), collapse = ", ")))
   )
+
+  # The replicate count that actually ran, so that the returned object answers the
+  # question the report asked: which of the two sister functions is in front of me.
+  resampling <- if (eng_low %in% c("incomplete_wild", "native_wild")) B
+    else if (eng_low == "permuco") as.numeric(dots$np %||% B)
+    else if (eng_low == "manova.rm") as.numeric(dots$iter %||% B)
+    else NA_real_
 
   out <- list(
     design = design,
@@ -92,10 +148,16 @@ agri_rank <- function(design, method = "auto", response = NULL,
     method = selected,
     estimand = estimand,
     engine = engine,
-    omnibus = engine$omnibus,
+    omnibus = .agri_omnibus_standardize(engine$omnibus),
     effects = engine$effects %||% NULL,
     missing = agri_missing_report(design, response = response),
     seed = seed,
+    B = B,
+    resampling = resampling,
+    resampling_used = eng_low %in% .agri_B_engines(),
+    # Which layer answered the declared estimand: the engine itself when it
+    # estimates effects (nparLD, native wild bootstrap), otherwise agri_effects().
+    estimand_source = if (is.null(engine$effects)) "agri_effects" else "engine",
     call = match.call()
   )
   class(out) <- "agri_rank_fit"
@@ -108,6 +170,9 @@ print.agri_rank_fit <- function(x, ...) {
   cat("  Design: ", x$design$design, "\n", sep = "")
   cat("  Method: ", x$engine$method %||% x$method, "\n", sep = "")
   cat("  Response: ", x$response, "\n", sep = "")
+  if (!is.null(x$resampling) && !is.na(x$resampling))
+    cat("  Resampling replicates: ", format(x$resampling), "\n", sep = "")
+  else cat("  Resampling: none (asymptotic test)\n")
   if (!is.null(x$omnibus)) print(x$omnibus)
   invisible(x)
 }

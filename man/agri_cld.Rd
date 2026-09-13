@@ -3,13 +3,15 @@
 \title{Create a compact letter display}
 \description{Summarizes multiplicity-adjusted ordinary pairwise comparisons as letters.}
 \usage{
-agri_cld(x, adjust = "holm", alpha = 0.05, ...)
+agri_cld(x, method = c("wilcoxon", "conover"), adjust = "holm", 
+    alpha = 0.05, ...)
 }
 \arguments{
   \item{x}{An \code{agri_rank_fit} object, or a pairwise comparison table already produced by \code{\link{agri_pairs}} or \code{\link{agri_conover}}.}
+  \item{method}{Comparison route, with the same vocabulary as \code{\link{agri_pairs}}: \code{"wilcoxon"} for the paired signed-rank route and \code{"conover"} for design-aware all-pairs comparisons. The two can give different letters on the same fit, so the route is an explicit argument rather than a value forwarded through \code{...}.}
   \item{adjust}{Multiplicity adjustment method. Used only when \code{x} is a fitted object and the pairwise table still has to be computed.}
   \item{alpha}{Significance threshold used to derive a compact letter display.}
-  \item{...}{Additional arguments passed to \code{\link{agri_pairs}}, such as \code{method}, \code{by} and \code{factor}.}
+  \item{...}{Additional arguments passed to \code{\link{agri_pairs}}, such as \code{by} and \code{factor}.}
 }
 \details{CLD is secondary to effect estimates and confidence intervals. The vignette suite documents the experimental-design logic, estimand, hypothesis, resampling structure, missing/unbalanced-data behavior, and backend-specific limitations in greater depth.
 

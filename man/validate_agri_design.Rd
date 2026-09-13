@@ -9,7 +9,7 @@ validate_agri_design(x, error = TRUE)
   \item{x}{An agriRank design or fitted object as documented for the function.}
   \item{error}{Logical; if `TRUE`, fatal design-validation problems stop execution.}
 }
-\details{Fatal structural errors can stop execution; warnings preserve information that may affect estimability or interpretation. The vignette suite documents the experimental-design logic, estimand, hypothesis, resampling structure, missing/unbalanced-data behavior, and backend-specific limitations in greater depth.}
+\details{Fatal structural errors can stop execution; warnings preserve information that may affect estimability or interpretation. The scope of this check is the response and the occupation of the factorial cells, not the integrity of the declared randomization: a design that is broken structurally can still return \code{ok = TRUE} here and be refused later, with a specific reason, by the engine that would have to analyze it. Fitting is therefore the step that validates the structure. The vignette suite documents the experimental-design logic, estimand, hypothesis, resampling structure, missing/unbalanced-data behavior, and backend-specific limitations in greater depth.}
 \value{An `agri_validation` list with `ok` and a table of problems.}
 \references{
 Pauly M, Brunner E, Konietschke F (2015), DOI: 10.1111/rssb.12073. Brunner E, Konietschke F, Pauly M, Puri ML (2017), DOI: 10.1111/rssb.12222. Konietschke F, Brunner E (2023), DOI: 10.32614/RJ-2023-029. See the package vignettes and `inst/references/agriRank-methods-verified.ris` for engine-specific verified references.

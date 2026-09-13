@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 **Regression vignette**
 **Package:** `agriRank`
-**Version targeted:** `0.14.0`
+**Version targeted:** `0.14.1`
 **Owns:** fitting a curve to a quantitative agronomic gradient without assuming
 its functional form.
 

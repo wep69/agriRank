@@ -33,16 +33,28 @@ agri_repeated <- function(design, backend = c("auto", "native_wild", "nparLD", "
   if (miss && backend == "permuco") {
     .agri_stop("`permuco` is not used here as an all-available incomplete repeated-measures method. Use the native wild-rank engine only for unblocked incomplete repeated designs; blocked incomplete repeated designs require further validated methodology.")
   }
+  # `B` is the budget of the native wild bootstrap and `iter` the budget of the
+  # adapted backends. A caller who supplies only `B` and lands on an adapted
+  # backend would otherwise believe the replicate count was honored. See finding 1
+  # of RELATORIO-AO-AUTOR.md.
+  if (!missing(B) && backend != "native_wild" && missing(iter)) {
+    reason <- if (backend %in% c("MANOVA.RM", "permuco"))
+      "`iter` is the argument that controls the replicate count of this backend"
+    else .agri_no_resampling_reason(backend)
+    .agri_warn(sprintf(paste0("`B` = %d was ignored by backend `%s`: %s. In `agri_repeated()` ",
+                              "`B` is the budget of the native wild bootstrap."),
+                       as.integer(round(B)), backend, reason))
+  }
   switch(backend,
     native_wild = agri_rank(design, method = "incomplete_wild", B = B, seed = seed, missing_assumption = missing_assumption, ...),
     nparLD = agri_rank(design, method = "nparLD", seed = seed, ...),
     MANOVA.RM = {
       eng <- .engine_manovarm_rm(design, iter = iter, seed = seed, ...)
-      out <- list(design = design, response = design$response[1L], method = "MANOVA.RM", estimand = "mean-based semiparametric", engine = eng, omnibus = eng$omnibus, effects = NULL, missing = agri_missing_report(design), seed = seed, call = match.call()); class(out) <- "agri_rank_fit"; out
+      out <- list(design = design, response = design$response[1L], method = "MANOVA.RM", estimand = "mean-based semiparametric", engine = eng, omnibus = .agri_omnibus_standardize(eng$omnibus), effects = NULL, missing = agri_missing_report(design), seed = seed, B = B, resampling = iter, resampling_used = TRUE, estimand_source = "engine", call = match.call()); class(out) <- "agri_rank_fit"; out
     },
     permuco = {
       eng <- .engine_permuco(design, np = iter, seed = seed, ...)
-      out <- list(design = design, response = design$response[1L], method = "permuco", estimand = "permutation rank", engine = eng, omnibus = eng$omnibus, effects = NULL, missing = agri_missing_report(design), seed = seed, call = match.call()); class(out) <- "agri_rank_fit"; out
+      out <- list(design = design, response = design$response[1L], method = "permuco", estimand = "permutation rank", engine = eng, omnibus = .agri_omnibus_standardize(eng$omnibus), effects = NULL, missing = agri_missing_report(design), seed = seed, B = B, resampling = iter, resampling_used = TRUE, estimand_source = "engine", call = match.call()); class(out) <- "agri_rank_fit"; out
     }
   )
 }

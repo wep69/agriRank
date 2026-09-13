@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 **Communication vignette**
 **Package:** `agriRank`
-**Version targeted:** `0.14.0`
+**Version targeted:** `0.14.1`
 **Owns:** turning a fitted object into a figure, a table, a report and a record
 that a reviewer can check and a future analyst can rerun.
 

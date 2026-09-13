@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 **Integer decision vignette**
 **Package:** `agriRank`
-**Version targeted:** `0.14.0`
+**Version targeted:** `0.14.1`
 **Owns:** treatments whose admissible values are whole numbers, and the decision
 support that follows from that fact.
 

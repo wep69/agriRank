@@ -24,6 +24,37 @@
 }
 
 #' Effect estimates
+#'
+#' @description
+#' Estimates of the effect declared in `agri_rank(estimand = )`. The descriptive
+#' block (`cell`, `n`, `median`, `mean_rank`) is always reported, and the
+#' estimator of the declared estimand is added beside it:
+#'
+#' * `"relative_effect"`: the Brunner-Munzel relative effect of each cell against
+#'   the pooled sample, `p_i = (Rbar_i - (n_i + 1)/2) / N`. It is a function of
+#'   the mean rank already reported, so it costs nothing extra and it is the
+#'   quantity the rank-based omnibus test is about.
+#' * `"location_shift"`: the Hodges-Lehmann shift of each cell against the first
+#'   level, with the reference level named in its own column. Location shift is a
+#'   paired statement, and the first level is the reference by convention.
+#' * `"distribution"`: the descriptive block alone, because the target is the
+#'   whole distribution and not a single summary number.
+#'
+#' Before 0.14.1 the declaration changed nothing at all: the same table came back
+#' for the three values, so a user who declared a relative-effect analysis
+#' received medians without being told. See finding 2 of RELATORIO-AO-AUTOR.md.
+#' When the selected engine estimates effects itself (nparLD and the native wild
+#' bootstrap do), those engine estimates are returned, and `fit$estimand_source`
+#' records that the declared estimand was answered by the engine rather than by
+#' this function.
+#'
+#' @param x agri_rank_fit.
+#' @param ci Reserved for interval estimates; the declared estimand decides which
+#'   columns carry the target and not the interval.
+#' @param level Confidence level for interval estimates.
+#' @param B Resampling replicates for interval estimates.
+#' @param seed Seed for interval estimates.
+#' @return A data frame with one row per treatment cell.
 #' @export
 agri_effects <- function(x, ci = FALSE, level = 0.95, B = if (ci) 999 else 0, seed = 1) {
   if (!inherits(x, "agri_rank_fit")) .agri_stop("`x` must be an agri_rank_fit.")
@@ -32,11 +63,33 @@ agri_effects <- function(x, ci = FALSE, level = 0.95, B = if (ci) 999 else 0, se
   if (!length(trt)) return(data.frame())
   cell <- .interaction_key(dat, trt)
   lev <- levels(cell)
+  yy <- dat[[y]]
+  rr <- rank(yy, na.last = "keep", ties.method = "average")
+  n_obs <- sum(!is.na(yy))
   out <- lapply(lev, function(g) {
-    z <- dat[[y]][cell == g]; z <- z[!is.na(z)]
-    data.frame(cell = g, n = length(z), median = stats::median(z), mean_rank = mean(rank(dat[[y]], na.last = "keep")[cell == g], na.rm = TRUE), stringsAsFactors = FALSE)
+    sel <- !is.na(yy) & cell == g
+    z <- yy[sel]
+    ni <- length(z)
+    mr <- mean(rr[cell == g], na.rm = TRUE)
+    data.frame(cell = g, n = ni, median = stats::median(z), mean_rank = mr,
+               stringsAsFactors = FALSE)
   })
-  do.call(rbind, out)
+  eff <- do.call(rbind, out)
+  est <- x$estimand %||% "relative_effect"
+  if (identical(est, "relative_effect")) {
+    # N is the number of analyzed observations, so a cell effect is always on the
+    # same scale as the pooled sample it is compared with.
+    eff$relative_effect <- (eff$mean_rank - (eff$n + 1) / 2) / n_obs
+  } else if (identical(est, "location_shift")) {
+    ref <- lev[1L]
+    xr <- yy[!is.na(yy) & cell == ref]
+    eff$reference <- ref
+    eff$hodges_lehmann <- vapply(lev, function(g) {
+      if (identical(as.character(g), as.character(ref))) return(0)
+      .pair_effect(yy[!is.na(yy) & cell == g], xr)[["hodges_lehmann"]]
+    }, numeric(1))
+  }
+  eff
 }
 
 .make_pairwise_C <- function(engine, by = NULL, factor = NULL) {
@@ -123,6 +176,12 @@ agri_pairs <- function(x, by = NULL, factor = NULL, method = c("wilcoxon", "cono
             paired <- TRUE
             wt <- tryCatch(stats::wilcox.test(m[[paste0(y,".1")]], m[[paste0(y,".2")]], paired = TRUE, exact = FALSE, conf.int = FALSE), error = function(e) NULL)
             dif <- m[[paste0(y,".1")]] - m[[paste0(y,".2")]]
+            # Paired versions of the two effect-size measures, computed on the
+            # within-block differences. Leaving them absent made the blocked
+            # design, the most common one in agronomic experimentation, the only
+            # one without effect sizes in the table.
+            ef["A"] <- mean(dif > 0) + 0.5 * mean(dif == 0)
+            ef["cliff_delta"] <- 2 * ef["A"] - 1
             ef["hodges_lehmann"] <- stats::median(dif)
           }
         }
@@ -329,10 +388,21 @@ agri_contrast <- function(x, C, labels = NULL, B = NULL, seed = NULL, adjust = "
 }
 
 #' Compact letter display
+#'
+#' The comparison route is part of the contract: `method` decides whether the
+#' letters come from the paired signed-rank route or from Conover all-pairs
+#' comparisons, and the two can give different letters on the same fit. It is
+#' therefore an explicit argument rather than a value forwarded through `...`.
+#' @param x An `agri_rank_fit`, or a comparison table already produced by
+#'   `agri_pairs()` or `agri_conover()`.
+#' @param method Comparison route, with the same vocabulary as `agri_pairs()`.
+#' @param adjust Multiplicity adjustment.
+#' @param alpha Significance level that defines the letters.
 #' @export
-agri_cld <- function(x, adjust = "holm", alpha = 0.05, ...) {
+agri_cld <- function(x, method = c("wilcoxon", "conover"), adjust = "holm", alpha = 0.05, ...) {
+  method <- match.arg(method)
   # Accept either a fitted model, in which case the pairwise table is computed
   # here, or a table already produced by agri_pairs() or agri_conover().
-  pr <- if (is.data.frame(x)) x else agri_pairs(x, adjust = adjust, ...)
+  pr <- if (is.data.frame(x)) x else agri_pairs(x, method = method, adjust = adjust, ...)
   .cld_from_pairs(pr, alpha = alpha)
 }

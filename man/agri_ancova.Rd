@@ -3,20 +3,21 @@
 \title{Fit a permutation ANCOVA adapter}
 \description{Uses `permuco` Freedman-Lane permutation ANCOVA, optionally on response mid-ranks.}
 \usage{
-agri_ancova(formula, data, covariates, block = NULL, np = 4999, seed = 1, 
-    rank_response = TRUE, ...)
+agri_ancova(formula, data, covariates, block = NULL, nperm = 4999, seed = 1, 
+    rank_response = TRUE, np = NULL, ...)
 }
 \arguments{
   \item{formula}{A model formula defining the scientific treatment structure.}
   \item{data}{A data frame, preferably in long format.}
   \item{covariates}{Covariate column name(s) used as nuisance adjustment variables.}
   \item{block}{Blocking variable(s) identifying the RCBD or nuisance randomization stratum.}
-  \item{np}{Number of permutations passed to `permuco`.}
+  \item{nperm}{Number of permutations passed to \code{permuco}. It must be a single positive number; the p-value cannot fall below \code{1/(nperm + 1)}.}
   \item{seed}{Random seed used for reproducible resampling.}
   \item{rank_response}{Logical; if `TRUE`, apply Freedman-Lane ANCOVA to response mid-ranks.}
+  \item{np}{Deprecated name of \code{nperm}. In a nonparametric package \code{np} reads as a switch while being a count, so the argument was renamed; this alias warns and forwards.}
   \item{...}{Additional arguments passed to the selected backend or downstream method.}
 }
-\details{This function is not the 2026 resampling NANCOVA method; that remains a future engine. The vignette suite documents the experimental-design logic, estimand, hypothesis, resampling structure, missing/unbalanced-data behavior, and backend-specific limitations in greater depth.}
+\details{This function is not the 2026 resampling NANCOVA method; that remains a future engine. The examples below use the deprecated \code{np} name on purpose, because that is how the argument appeared in the released 0.14.0 and the alias must keep them working. The vignette suite documents the experimental-design logic, estimand, hypothesis, resampling structure, missing/unbalanced-data behavior, and backend-specific limitations in greater depth.}
 \value{An object of class \code{agri_ancova_fit}, accepted by \code{agri_table()}, \code{agri_report()}, and \code{export_results()}.}
 \references{
 Pauly M, Brunner E, Konietschke F (2015), DOI: 10.1111/rssb.12073. Brunner E, Konietschke F, Pauly M, Puri ML (2017), DOI: 10.1111/rssb.12222. Konietschke F, Brunner E (2023), DOI: 10.32614/RJ-2023-029. See the package vignettes and `inst/references/agriRank-methods-verified.ris` for engine-specific verified references.
